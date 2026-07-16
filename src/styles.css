@@ -279,6 +279,27 @@ p {
   z-index: 10;
 }
 
+.avatar .heart svg {
+  color: var(--magenta);
+  animation: heartBeat 1.8s ease-in-out infinite;
+}
+
+@keyframes heartBeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  18% {
+    transform: scale(1.24);
+  }
+  32% {
+    transform: scale(0.92);
+  }
+  48% {
+    transform: scale(1.16);
+  }
+}
+
 .pc-name {
   color: var(--wine);
   font-family: "Baloo 2";
@@ -449,38 +470,21 @@ p {
 
 .stat-circles {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   justify-content: space-between;
   margin: 0 0 16px;
 }
 
 .stat-c {
-  align-items: center;
-  background: #fff;
-  border: 1.5px solid #fcd7e2;
-  border-radius: 22px;
-  box-shadow: var(--shadow-soft);
-  display: flex;
   flex: 1;
-  flex-direction: column;
-  min-height: 82px;
-  justify-content: center;
-  padding: 10px;
+  min-width: 0;
 }
 
-.stat-c strong {
-  color: var(--wine);
-  font-family: "Baloo 2";
-  font-size: 24px;
-  line-height: 1;
-}
-
-.stat-c span {
-  color: var(--magenta);
-  font-size: 11px;
-  font-weight: 800;
-  margin-top: 4px;
-  text-transform: lowercase;
+.stat-c svg {
+  display: block;
+  filter: drop-shadow(0 6px 14px rgba(216, 27, 122, 0.12));
+  height: auto;
+  width: 100%;
 }
 
 .filters {
@@ -829,6 +833,175 @@ p {
   min-height: 42px;
   min-width: 0;
   outline: none;
+}
+
+.home-share-panel {
+  background: linear-gradient(135deg, #fff7fb, #fff0f6);
+  border: 1.5px solid #fcd7e2;
+  border-radius: 22px;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 16px;
+  overflow: hidden;
+  padding: 18px;
+  position: relative;
+  text-align: center;
+}
+
+.home-share-panel h3 {
+  color: var(--magenta);
+  font-family: "Dancing Script", cursive;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.home-share-panel > p {
+  color: var(--magenta);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.home-share-preview {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 14px;
+}
+
+.share-card {
+  background: var(--magenta);
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(158, 27, 74, 0.16);
+  color: #fff;
+  overflow: hidden;
+  padding: 15px;
+  position: relative;
+  text-align: left;
+  width: 240px;
+}
+
+.share-card::before {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  content: "";
+  height: 110px;
+  position: absolute;
+  right: -45px;
+  top: -45px;
+  width: 110px;
+}
+
+.share-card-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.share-card-head span {
+  color: #f4c0d1;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.share-card-head b {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 9px;
+  padding: 3px 8px;
+}
+
+.share-card-user {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  position: relative;
+}
+
+.share-avatar {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.52);
+  border-radius: 50%;
+  display: flex;
+  font-family: "Baloo 2";
+  font-size: 13px;
+  font-weight: 800;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.share-card-user strong {
+  color: #fff;
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.share-bar {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 99px;
+  height: 5px;
+  overflow: hidden;
+}
+
+.share-bar i {
+  background: #fff;
+  border-radius: 99px;
+  display: block;
+  height: 100%;
+}
+
+.share-card-user em {
+  color: #fff;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.share-card-stats {
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 10px;
+}
+
+.share-card-stats span {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  flex: 1;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 7px 6px;
+  text-align: center;
+}
+
+.home-share-buttons {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr;
+}
+
+.share-outline {
+  align-items: center;
+  background: transparent;
+  border: 1.5px solid var(--magenta);
+  border-radius: 999px;
+  color: var(--magenta);
+  display: flex;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 8px;
+  justify-content: center;
+  padding: 11px 12px;
 }
 
 .notice-card {

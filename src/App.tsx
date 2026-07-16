@@ -1,7 +1,7 @@
 import {
-  BadgeCheck,
   BookOpen,
   Check,
+  Copy,
   CreditCard,
   Gift,
   Heart,
@@ -11,6 +11,7 @@ import {
   Search,
   Settings,
   ShoppingBag,
+  Smartphone,
   Sparkles,
   Star,
   Trash2,
@@ -119,7 +120,6 @@ export function App() {
   const [access, setAccess] = useState<AccessStatus>("none");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [paymentEmail, setPaymentEmail] = useState("");
-  const [migrationClaimed, setMigrationClaimed] = useState(false);
   const [packs, setPacks] = useState(demoPacks);
   const [selectedPack, setSelectedPack] = useState<StickerPack | null>(null);
 
@@ -174,8 +174,6 @@ export function App() {
 
     return (
       <HomePage
-        migrationClaimed={migrationClaimed}
-        setMigrationClaimed={setMigrationClaimed}
         readyPacks={readyPacks}
         setPage={setPage}
       />
@@ -347,16 +345,30 @@ function GatewayPage({
 }
 
 function HomePage({
-  migrationClaimed,
-  setMigrationClaimed,
   readyPacks,
   setPage,
 }: {
-  migrationClaimed: boolean;
-  setMigrationClaimed: (value: boolean) => void;
   readyPacks: StickerPack[];
   setPage: (page: Page) => void;
 }) {
+  const [adWatched, setAdWatched] = useState(false);
+  const ownedCount = 118;
+  const rareCount = 3;
+  const duplicatesCount = 7;
+  const pct = Math.round((ownedCount / 300) * 100);
+
+  const shareText = `Ja tenho ${ownedCount}/300 figurinhas no meu album do Clube das Colecionadoras.`;
+  const publicAlbumUrl = "https://lendosaficos.com.br/clubedascolecionadoras/album/u/colecionadora";
+
+  const shareStatus = () => {
+    const shareUrl = `https://x.com/intent/post?text=${encodeURIComponent(shareText)}`;
+    window.open(shareUrl, "_blank");
+  };
+
+  const copyPublicLink = async () => {
+    await navigator.clipboard?.writeText(publicAlbumUrl);
+  };
+
   return (
     <main className="screen">
       <h1 className="section-title">Meu clube</h1>
@@ -372,14 +384,14 @@ function HomePage({
               </span>
             </div>
           </div>
-          <div className="pc-right">
-            <div className="pc-name">colecionadora</div>
-            <div className="pc-count">118 de 300 figurinhas</div>
+            <div className="pc-right">
+              <div className="pc-name">colecionadora</div>
+            <div className="pc-count">{ownedCount} de 300 figurinhas</div>
             <div className="pc-progress-row">
               <div className="bar">
-                <i style={{ width: "39%" }} />
+                <i style={{ width: `${pct}%` }} />
               </div>
-              <span className="bar-pct">39%</span>
+              <span className="bar-pct">{pct}%</span>
             </div>
             <div className="status-tag">
               <Star size={13} fill="currentColor" /> 42 creditos disponiveis
@@ -389,25 +401,25 @@ function HomePage({
       </section>
 
       <section className="stat-circles">
-        <Metric label="pacotes" value={String(readyPacks.length)} />
-        <Metric label="raras" value="3/20" />
-        <Metric label="repetidas" value="7" />
+        <StatBadge id="coladas" label="COLADAS" value={ownedCount} />
+        <StatBadge id="repetidas" label="REPETIDAS" value={duplicatesCount} />
+        <StatBadge id="raras" label="RARAS" value={rareCount} />
       </section>
 
       <section className="set-block">
         <div className="set-head">
-          <BadgeCheck size={19} />
+          <Sparkles size={19} />
           <div>
-            <b>Resgate do progresso</b>
-            <span>figurinhas coladas entram no album e repetidas viram pontos</span>
+            <b>Propaganda do dia</b>
+            <span>assista uma propaganda para ganhar uma figurinha</span>
           </div>
         </div>
         <button
-          className={migrationClaimed ? "btn soft" : "btn"}
-          disabled={migrationClaimed}
-          onClick={() => setMigrationClaimed(true)}
+          className={adWatched ? "btn soft" : "btn"}
+          disabled={adWatched}
+          onClick={() => setAdWatched(true)}
         >
-          {migrationClaimed ? "Progresso resgatado" : "Resgatar progresso"}
+          {adWatched ? "Figurinha recebida" : "Assistir propaganda"}
         </button>
       </section>
 
@@ -423,15 +435,118 @@ function HomePage({
           Ver meus pacotes
         </button>
       </section>
+
+      <section className="home-share-panel">
+        <h3>Compartilhar progresso</h3>
+        <p>{ownedCount} coladas · {pct}% completo</p>
+
+        <div className="home-share-preview">
+          <div className="share-card">
+            <div className="share-card-head">
+              <span>LENDO SAFICOS</span>
+              <b>Colecionadora</b>
+            </div>
+            <div className="share-card-user">
+              <div className="share-avatar">CG</div>
+              <div>
+                <strong>colecionadora</strong>
+                <div className="share-bar"><i style={{ width: `${pct}%` }} /></div>
+              </div>
+              <em>{pct}%</em>
+            </div>
+            <div className="share-card-stats">
+              <span>{ownedCount} coladas</span>
+              <span>{rareCount} raras</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="home-share-buttons">
+          <button className="share-outline" onClick={shareStatus}>
+            <Smartphone size={14} /> Compartilhar status
+          </button>
+          <button className="share-outline" onClick={copyPublicLink}>
+            <Copy size={14} /> Copiar link publico
+          </button>
+        </div>
+      </section>
     </main>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function getSealPath(cx: number, cy: number, Rout: number, Rin: number, N: number) {
+  let path = "";
+  const step = (2 * Math.PI) / N;
+  const halfStep = step / 2;
+
+  for (let i = 0; i < N; i++) {
+    const angle = i * step;
+    const v1Angle = angle - halfStep;
+    const v2Angle = angle + halfStep;
+
+    const xV1 = cx + Rin * Math.cos(v1Angle);
+    const yV1 = cy + Rin * Math.sin(v1Angle);
+    const xP = cx + Rout * Math.cos(angle);
+    const yP = cy + Rout * Math.sin(angle);
+    const xV2 = cx + Rin * Math.cos(v2Angle);
+    const yV2 = cy + Rin * Math.sin(v2Angle);
+
+    if (i === 0) path += `M ${xV1} ${yV1}`;
+    path += ` Q ${xP} ${yP} ${xV2} ${yV2}`;
+  }
+
+  return `${path} Z`;
+}
+
+function StatBadge({ id, value, label }: { id: string; value: number | string; label: string }) {
   return (
     <div className="stat-c">
-      <strong>{value}</strong>
-      <span>{label}</span>
+      <svg viewBox="0 0 200 200" width="100%" aria-hidden="true">
+        <defs>
+          <path id={`st-path-top-${id}`} d="M 46 100 A 54 54 0 0 1 154 100" fill="none" />
+          <path id={`st-path-bottom-${id}`} d="M 34 100 A 66 66 0 0 0 166 100" fill="none" />
+        </defs>
+        <path d={getSealPath(100, 100, 98, 85, 24)} fill="#FEB4C4" />
+        <circle cx="100" cy="100" r="76" fill="none" stroke="white" strokeWidth="1.2" />
+        <circle cx="34" cy="100" r="3" fill="#6e1638" />
+        <circle cx="166" cy="100" r="3" fill="#6e1638" />
+        <text
+          fontFamily="'Fredoka', sans-serif"
+          fontWeight="800"
+          fontSize="14.5"
+          letterSpacing="1.5"
+          fill="#6e1638"
+        >
+          <textPath href={`#st-path-top-${id}`} startOffset="50%" textAnchor="middle">
+            FIGURINHAS
+          </textPath>
+        </text>
+        <text
+          x="100"
+          y="105"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontFamily="'Pacifico', cursive"
+          fontWeight="400"
+          fontSize="62"
+          fill="#ffcddc"
+          stroke="#6e1638"
+          strokeWidth="2"
+        >
+          {value}
+        </text>
+        <text
+          fontFamily="'Fredoka', sans-serif"
+          fontWeight="800"
+          fontSize="14.5"
+          letterSpacing="1.2"
+          fill="#6e1638"
+        >
+          <textPath href={`#st-path-bottom-${id}`} startOffset="50%" textAnchor="middle">
+            {label}
+          </textPath>
+        </text>
+      </svg>
     </div>
   );
 }
