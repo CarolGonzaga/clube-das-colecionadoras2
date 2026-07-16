@@ -5,21 +5,22 @@ import {
   CreditCard,
   Gift,
   Heart,
+  Image as ImageIcon,
   LogIn,
   PackageOpen,
   Search,
-  ShieldCheck,
+  Settings,
   ShoppingBag,
   Sparkles,
   Star,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { demoDuplicates, demoPacks, demoStoreItems } from "./mockData";
-import { isSupabaseConfigured } from "./supabase";
 import type { AccessStatus, StickerPack, StoreItem } from "./types";
 
-type Page = "home" | "album" | "pacotes" | "repetidas" | "trocas" | "compras";
+type Page = "home" | "album" | "pacotes" | "troca" | "compras" | "config";
 type StoreFilter = "all" | "pack" | "common" | "rare";
 type PackAnimationState = "idle" | "opening" | "ready" | "revealing" | "complete";
 
@@ -31,9 +32,9 @@ const navItems: Array<{ page: Page; label: string; icon: string }> = [
   { page: "home", label: "home", icon: "/icons/home.png" },
   { page: "album", label: "album", icon: "/icons/album.png" },
   { page: "pacotes", label: "registro", icon: "/icons/registro.png" },
-  { page: "repetidas", label: "repetidas", icon: "/icons/repetidas.png" },
-  { page: "trocas", label: "trocas", icon: "/icons/codigos.png" },
+  { page: "troca", label: "troca", icon: "/icons/repetidas.png" },
   { page: "compras", label: "compras", icon: "/icons/shop.png" },
+  { page: "config", label: "ajustes", icon: "/icons/config.png" },
 ];
 
 class SoundEffects {
@@ -167,9 +168,9 @@ export function App() {
         />
       );
     }
-    if (page === "repetidas") return <DuplicatesPage />;
-    if (page === "trocas") return <TradesPage />;
+    if (page === "troca") return <ExchangePage />;
     if (page === "compras") return <PurchasePage />;
+    if (page === "config") return <ConfigPage />;
 
     return (
       <HomePage
@@ -188,18 +189,6 @@ export function App() {
 
       {isV2 && <Navigation page={page} setPage={setPage} />}
 
-      {!isSupabaseConfigured && (
-        <div className="screen">
-          <div className="notice-card">
-            <ShieldCheck size={18} />
-            <span>
-              Supabase configurado parcialmente. A URL ja esta salva; a anon key foi adicionada no
-              ambiente local.
-            </span>
-          </div>
-        </div>
-      )}
-
       {selectedPack && (
         <PackOpener
           pack={selectedPack}
@@ -212,7 +201,7 @@ export function App() {
 }
 
 function TopBar({ isLoggedIn, access }: { isLoggedIn: boolean; access: AccessStatus }) {
-  const label = !isLoggedIn ? "login" : access === "v2" ? "V2 ativa" : "V1";
+  const label = !isLoggedIn ? "login" : "acesso";
 
   return (
     <header className="topbar">
@@ -220,7 +209,7 @@ function TopBar({ isLoggedIn, access }: { isLoggedIn: boolean; access: AccessSta
       <div className="sp" />
       <div className="mini-stat">
         {label}
-        <small>album 2.0</small>
+        <small>album</small>
       </div>
     </header>
   );
@@ -250,9 +239,9 @@ function GatewayPage({
   return (
     <main className="screen">
       <section className="hero-card">
-        <div className="hero-badge">2.0</div>
+        <div className="hero-badge">300</div>
         <h1 className="section-title">Clube das Colecionadoras</h1>
-        <p className="section-sub">mesmo link, novo album com 300 figurinhas</p>
+        <p className="section-sub">colecione, compre pacotes e complete seu album</p>
         <div className="hero-pack">
           <img src="/frames/1.png" alt="Pacote de figurinhas" />
         </div>
@@ -269,13 +258,13 @@ function GatewayPage({
             </div>
           </div>
           <div className="pc-right">
-            <div className="pc-name">gateway inteligente</div>
+            <div className="pc-name">minha conta</div>
             <div className="pc-count">
               {!isLoggedIn
-                ? "Aguardando login"
+                ? "Entre para continuar"
                 : access === "v2"
-                  ? "Direciona para V2"
-                  : "Mostra V1 + upgrade"}
+                  ? "Acesso liberado"
+                  : "Acesso pendente"}
             </div>
             <div className="pc-progress-row">
               <div className="bar">
@@ -284,7 +273,7 @@ function GatewayPage({
               <span className="bar-pct">{isLoggedIn ? "ok" : "login"}</span>
             </div>
             <div className="status-tag">
-              <Sparkles size={13} fill="currentColor" /> V1 encerra em {V1_END_DATE}
+              <Sparkles size={13} fill="currentColor" /> disponivel ate {V1_END_DATE}
             </div>
           </div>
         </div>
@@ -294,8 +283,8 @@ function GatewayPage({
         <div className="set-head">
           <LogIn size={19} />
           <div>
-            <b>Entrada unica</b>
-            <span>lendosaficos.com.br/clubedascolecionadoras</span>
+            <b>Entrar no clube</b>
+            <span>use seu e-mail e senha cadastrados</span>
           </div>
         </div>
 
@@ -319,7 +308,7 @@ function GatewayPage({
               setAccess("v1");
             }}
           >
-            Entrar V1
+            Entrar
           </button>
           <button
             className="btn"
@@ -329,7 +318,7 @@ function GatewayPage({
               setAccess("v2");
             }}
           >
-            Simular V2
+            Acessar album
           </button>
         </div>
       </section>
@@ -370,8 +359,8 @@ function HomePage({
 }) {
   return (
     <main className="screen">
-      <h1 className="section-title">Album 2.0</h1>
-      <p className="section-sub">continue da V1 e avance ate 300 figurinhas</p>
+      <h1 className="section-title">Meu clube</h1>
+      <p className="section-sub">acompanhe seu progresso e seus pacotes</p>
 
       <section className="progress-card">
         <div className="pc-layout">
@@ -409,8 +398,8 @@ function HomePage({
         <div className="set-head">
           <BadgeCheck size={19} />
           <div>
-            <b>Resgate V1</b>
-            <span>coladas entram na V2, repetidas viram creditos</span>
+            <b>Resgate do progresso</b>
+            <span>figurinhas coladas entram no album e repetidas viram pontos</span>
           </div>
         </div>
         <button
@@ -418,7 +407,7 @@ function HomePage({
           disabled={migrationClaimed}
           onClick={() => setMigrationClaimed(true)}
         >
-          {migrationClaimed ? "Progresso resgatado" : "Resgatar progresso da V1"}
+          {migrationClaimed ? "Progresso resgatado" : "Resgatar progresso"}
         </button>
       </section>
 
@@ -427,7 +416,7 @@ function HomePage({
           <PackageOpen size={19} />
           <div>
             <b>Registro de pacotes</b>
-            <span>o backend registra tudo antes da animacao</span>
+            <span>seus pacotes ficam salvos para abrir quando quiser</span>
           </div>
         </div>
         <button className="btn ghost" onClick={() => setPage("pacotes")}>
@@ -453,11 +442,11 @@ function AlbumPage() {
   return (
     <main className="screen">
       <h1 className="section-title">Meu album</h1>
-      <p className="section-sub">V1 1-100 + novas figurinhas 101-300</p>
+      <p className="section-sub">300 figurinhas para completar</p>
       <div className="filters">
         <button className="chip active">todas <b>300</b></button>
-        <button className="chip">V1 <b>100</b></button>
-        <button className="chip">V2 <b>200</b></button>
+        <button className="chip">iniciais <b>100</b></button>
+        <button className="chip">novas <b>200</b></button>
         <button className="chip">raras <b>20</b></button>
       </div>
       <div className="album">
@@ -491,7 +480,7 @@ function PacksPage({
   return (
     <main className="screen">
       <h1 className="section-title">Meus pacotes</h1>
-      <p className="section-sub">registro de compras e abertura com animacao da V1</p>
+      <p className="section-sub">abra seus pacotes e veja o historico</p>
       <PackList title="Pacotes para abrir" packs={readyPacks} action="Abrir" onSelect={setSelectedPack} />
       <PackList title="Historico de pacotes" packs={openedPacks} action="Ver" onSelect={setSelectedPack} />
     </main>
@@ -525,7 +514,7 @@ function PackList({
             </div>
             <div className="t">
               <b>{pack.title}</b>
-              <span>{pack.items.length} figurinhas ja registradas</span>
+              <span>{pack.items.length} figurinhas</span>
             </div>
             <em>{action}</em>
           </button>
@@ -535,11 +524,27 @@ function PackList({
   );
 }
 
-function DuplicatesPage() {
+function ExchangePage() {
   return (
     <main className="screen">
-      <h1 className="section-title">Repetidas</h1>
-      <p className="section-sub">somente sobras podem virar credito ou troca</p>
+      <h1 className="section-title">Troca</h1>
+      <p className="section-sub">use suas figurinhas repetidas</p>
+      <section className="exchange-actions">
+        <button className="exchange-action-card">
+          <div className="exchange-action-icon">
+            <Star size={23} />
+          </div>
+          <b>Trocar por pontos</b>
+          <span>converta repetidas em pontos para novos pacotes</span>
+        </button>
+        <button className="exchange-action-card">
+          <div className="exchange-action-icon">
+            <Gift size={23} />
+          </div>
+          <b>Trocar com usuaria</b>
+          <span>uma repetida sai e outra figurinha entra ao mesmo tempo</span>
+        </button>
+      </section>
       <div className="duplicates-grid">
         {demoDuplicates.map((item) => (
           <section className="duplicate-card" key={item.number}>
@@ -552,32 +557,10 @@ function DuplicatesPage() {
               <b>{item.name}</b>
               <span>{item.copies} repetidas disponiveis</span>
             </div>
-            <button className="btn sm duplicate-card-button">Converter em creditos</button>
+            <button className="btn sm duplicate-card-button">Usar na troca</button>
           </section>
         ))}
       </div>
-    </main>
-  );
-}
-
-function TradesPage() {
-  return (
-    <main className="screen">
-      <h1 className="section-title">Trocas</h1>
-      <p className="section-sub">uma sai e outra entra simultaneamente</p>
-      <section className="set-block">
-        <div className="set-head">
-          <Gift size={19} />
-          <div>
-            <b>Nova troca</b>
-            <span>raras e figurinhas coladas nao aparecem aqui</span>
-          </div>
-        </div>
-        <div className="trade-rule"><Check size={15} /> usa apenas repetidas</div>
-        <div className="trade-rule"><Check size={15} /> executa em transacao no banco</div>
-        <div className="trade-rule"><Check size={15} /> nao permite troca de rara</div>
-        <button className="btn">Criar oferta de troca</button>
-      </section>
     </main>
   );
 }
@@ -601,14 +584,14 @@ function PurchasePage() {
   return (
     <main className="screen">
       <h1 className="section-title">Compras</h1>
-      <p className="section-sub">pacotes, comuns por creditos e raras individuais</p>
+      <p className="section-sub">pacotes, figurinhas comuns e raras</p>
 
       <section className="set-block">
         <div className="set-head">
           <ShoppingBag size={19} />
           <div>
-            <b>Loja V2</b>
-            <span>filtre por nome, numero, raras ou comuns</span>
+            <b>Loja</b>
+            <span>buscar por nome ou numero</span>
           </div>
         </div>
         <label className="shop-search">
@@ -657,7 +640,7 @@ function StoreItemRow({ item }: { item: StoreItem }) {
         <b>{item.number ? `#${item.number} · ${item.name}` : item.name}</b>
         <span>
           {isPack
-            ? "gera pacote no registro"
+            ? "pacote de figurinhas"
             : isRare
               ? item.unavailable
                 ? "ja adquirida"
@@ -669,6 +652,84 @@ function StoreItemRow({ item }: { item: StoreItem }) {
         {item.unavailable ? "Indisponivel" : item.price}
       </button>
     </section>
+  );
+}
+
+function ConfigPage() {
+  return (
+    <main className="screen">
+      <h1 className="section-title">Ajustes</h1>
+      <p className="section-sub">deixe o app com a sua cara</p>
+
+      <section className="set-block">
+        <div className="set-head">
+          <UserRound size={19} />
+          <div>
+            <b>Nome de exibicao</b>
+            <span>aparece no seu perfil e no mural</span>
+          </div>
+        </div>
+        <input className="club-input" defaultValue="colecionadora" />
+        <button className="btn sm config-full-button">Salvar nome</button>
+      </section>
+
+      <section className="set-block">
+        <div className="set-head">
+          <ImageIcon size={19} />
+          <div>
+            <b>Avatar</b>
+            <span>escolha uma imagem para sua conta</span>
+          </div>
+        </div>
+        <div className="avatar-grid">
+          {Array.from({ length: 8 }, (_, index) => (
+            <button className={index === 0 ? "av sel" : "av"} key={index}>
+              <img src={`/avatar/${index + 1}.png`} alt="" />
+            </button>
+          ))}
+          <button className="av up">+ foto</button>
+        </div>
+      </section>
+
+      <section className="set-block">
+        <div className="set-head">
+          <Sparkles size={19} />
+          <div>
+            <b>Estilizacoes</b>
+            <span>itens visuais liberados na conta</span>
+          </div>
+        </div>
+        <StyleToggle icon="tema" label="Tema lilas" active />
+        <StyleToggle icon="lua" label="Tema dark" />
+        <StyleToggle icon="story" label="Layout de story premium" active />
+      </section>
+
+      <section className="set-block">
+        <div className="set-head">
+          <Trash2 size={19} />
+          <div>
+            <b>Excluir conta</b>
+            <span>solicitacao com prazo de seguranca</span>
+          </div>
+        </div>
+        <button className="btn soft">Solicitar exclusao</button>
+      </section>
+    </main>
+  );
+}
+
+function StyleToggle({ icon, label, active = false }: { icon: string; label: string; active?: boolean }) {
+  return (
+    <div className="style-row">
+      <div className="si">{icon}</div>
+      <div className="st">
+        <b>{label}</b>
+        <span>{active ? "ativado" : "desativado"}</span>
+      </div>
+      <div className={active ? "switch on" : "switch"}>
+        <i />
+      </div>
+    </div>
   );
 }
 
@@ -754,7 +815,7 @@ function PackOpener({
       <section className="pack-opener">
         <div className="pack-title">
           <h2>{pack.title}</h2>
-          <p>som e animacao da abertura original, com itens ja registrados</p>
+          <p>toque no pacote para abrir</p>
         </div>
 
         <div className={animState === "opening" ? "pack-animation-stage opening" : "pack-animation-stage"}>

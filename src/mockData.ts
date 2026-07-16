@@ -34,7 +34,7 @@ export const demoPacks: StickerPack[] = [
 export const demoDuplicates: DuplicateSticker[] = [
   { number: 18, name: "Os Segredos Que Contei ao Oceano", copies: 2 },
   { number: 53, name: "Familia Baldaverso", copies: 1 },
-  { number: 112, name: "Nova Figurinha V2", copies: 4 },
+  { number: 112, name: "Nova Figurinha", copies: 4 },
 ];
 
 export const demoStoreItems: StoreItem[] = [
