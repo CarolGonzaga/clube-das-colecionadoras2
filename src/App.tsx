@@ -5,33 +5,112 @@ import {
   CreditCard,
   Gift,
   Heart,
-  History,
-  Lock,
   LogIn,
   PackageOpen,
-  RefreshCcw,
+  Search,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   Star,
   UserRound,
 } from "lucide-react";
-import { useMemo, useState } from "react";
-import { demoDuplicates, demoPacks } from "./mockData";
+import { useEffect, useMemo, useState } from "react";
+import { demoDuplicates, demoPacks, demoStoreItems } from "./mockData";
 import { isSupabaseConfigured } from "./supabase";
-import type { AccessStatus, StickerPack } from "./types";
+import type { AccessStatus, StickerPack, StoreItem } from "./types";
 
-type Page = "home" | "album" | "pacotes" | "repetidas" | "trocas" | "raras";
+type Page = "home" | "album" | "pacotes" | "repetidas" | "trocas" | "compras";
+type StoreFilter = "all" | "pack" | "common" | "rare";
+type PackAnimationState = "idle" | "opening" | "ready" | "revealing" | "complete";
 
 const V1_END_DATE = "24/07/2026";
+const TOTAL_FRAMES = 9;
+const FRAME_DURATION_MS = 65;
 
 const navItems: Array<{ page: Page; label: string; icon: string }> = [
   { page: "home", label: "home", icon: "/icons/home.png" },
   { page: "album", label: "album", icon: "/icons/album.png" },
-  { page: "pacotes", label: "pacotes", icon: "/icons/ticket.png" },
+  { page: "pacotes", label: "registro", icon: "/icons/registro.png" },
   { page: "repetidas", label: "repetidas", icon: "/icons/repetidas.png" },
   { page: "trocas", label: "trocas", icon: "/icons/codigos.png" },
-  { page: "raras", label: "raras", icon: "/icons/star.png" },
+  { page: "compras", label: "compras", icon: "/icons/shop.png" },
 ];
+
+class SoundEffects {
+  private ctx: AudioContext | null = null;
+
+  private init() {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!this.ctx && AudioCtx) this.ctx = new AudioCtx();
+      if (this.ctx?.state === "suspended") this.ctx.resume();
+    } catch {
+      this.ctx = null;
+    }
+  }
+
+  playTear() {
+    this.init();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const bufferSize = ctx.sampleRate * 0.35;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    noise.buffer = buffer;
+    filter.type = "bandpass";
+    filter.Q.value = 6;
+    filter.frequency.setValueAtTime(900, ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.35);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start();
+  }
+
+  playSparkle() {
+    this.init();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    [987.77, 1174.66, 1318.51, 1567.98, 1975.53].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.04);
+      gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.04);
+      gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + idx * 0.04 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.04 + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.04);
+      osc.stop(ctx.currentTime + idx * 0.04 + 0.2);
+    });
+  }
+
+  playFlip() {
+    this.init();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(300, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.07);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.08);
+  }
+}
+
+const sfx = new SoundEffects();
 
 export function App() {
   const [page, setPage] = useState<Page>("home");
@@ -90,7 +169,7 @@ export function App() {
     }
     if (page === "repetidas") return <DuplicatesPage />;
     if (page === "trocas") return <TradesPage />;
-    if (page === "raras") return <RareStorePage />;
+    if (page === "compras") return <PurchasePage />;
 
     return (
       <HomePage
@@ -122,7 +201,7 @@ export function App() {
       )}
 
       {selectedPack && (
-        <PackModal
+        <PackOpener
           pack={selectedPack}
           onClose={() => setSelectedPack(null)}
           onConfirm={() => markPackOpened(selectedPack.id)}
@@ -347,7 +426,7 @@ function HomePage({
         <div className="set-head">
           <PackageOpen size={19} />
           <div>
-            <b>Pacotes seguros</b>
+            <b>Registro de pacotes</b>
             <span>o backend registra tudo antes da animacao</span>
           </div>
         </div>
@@ -412,7 +491,7 @@ function PacksPage({
   return (
     <main className="screen">
       <h1 className="section-title">Meus pacotes</h1>
-      <p className="section-sub">historico preservado mesmo se a animacao falhar</p>
+      <p className="section-sub">registro de compras e abertura com animacao da V1</p>
       <PackList title="Pacotes para abrir" packs={readyPacks} action="Abrir" onSelect={setSelectedPack} />
       <PackList title="Historico de pacotes" packs={openedPacks} action="Ver" onSelect={setSelectedPack} />
     </main>
@@ -503,26 +582,93 @@ function TradesPage() {
   );
 }
 
-function RareStorePage() {
+function PurchasePage() {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<StoreFilter>("all");
+
+  const filteredItems = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return demoStoreItems.filter((item) => {
+      const matchesFilter = filter === "all" || item.kind === filter;
+      const matchesQuery =
+        !normalized ||
+        item.name.toLowerCase().includes(normalized) ||
+        String(item.number || "").includes(normalized);
+      return matchesFilter && matchesQuery;
+    });
+  }, [filter, query]);
+
   return (
     <main className="screen">
-      <h1 className="section-title">Raras</h1>
-      <p className="section-sub">20 figurinhas vendidas separadamente</p>
-      {[287, 291, 294].map((number, index) => (
-        <section className="rare-row" key={number}>
-          <div className="rare-thumb">
-            <Sparkles size={22} />
-          </div>
+      <h1 className="section-title">Compras</h1>
+      <p className="section-sub">pacotes, comuns por creditos e raras individuais</p>
+
+      <section className="set-block">
+        <div className="set-head">
+          <ShoppingBag size={19} />
           <div>
-            <b>Rara #{number}</b>
-            <span>{index === 0 ? "ja adquirida" : "disponivel para compra"}</span>
+            <b>Loja V2</b>
+            <span>filtre por nome, numero, raras ou comuns</span>
           </div>
-          <button className="btn sm" disabled={index === 0}>
-            {index === 0 ? "Indisponivel" : "Comprar"}
+        </div>
+        <label className="shop-search">
+          <Search size={17} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="buscar por nome ou numero"
+          />
+        </label>
+        <div className="filters">
+          <button className={filter === "all" ? "chip active" : "chip"} onClick={() => setFilter("all")}>
+            tudo <b>{demoStoreItems.length}</b>
           </button>
-        </section>
+          <button className={filter === "pack" ? "chip active" : "chip"} onClick={() => setFilter("pack")}>
+            pacotes <b>2</b>
+          </button>
+          <button
+            className={filter === "common" ? "chip active" : "chip"}
+            onClick={() => setFilter("common")}
+          >
+            comuns <b>3</b>
+          </button>
+          <button className={filter === "rare" ? "chip active" : "chip"} onClick={() => setFilter("rare")}>
+            raras <b>3</b>
+          </button>
+        </div>
+      </section>
+
+      {filteredItems.map((item) => (
+        <StoreItemRow item={item} key={item.id} />
       ))}
     </main>
+  );
+}
+
+function StoreItemRow({ item }: { item: StoreItem }) {
+  const isRare = item.kind === "rare";
+  const isPack = item.kind === "pack";
+  return (
+    <section className={isRare ? "rare-row" : "shop-row"}>
+      <div className={isRare ? "rare-thumb" : "shop-thumb"}>
+        {isPack ? <PackageOpen size={22} /> : isRare ? <Sparkles size={22} /> : <BookOpen size={22} />}
+      </div>
+      <div>
+        <b>{item.number ? `#${item.number} · ${item.name}` : item.name}</b>
+        <span>
+          {isPack
+            ? "gera pacote no registro"
+            : isRare
+              ? item.unavailable
+                ? "ja adquirida"
+                : "rara individual"
+              : "figurinha comum por credito"}
+        </span>
+      </div>
+      <button className="btn sm" disabled={item.unavailable}>
+        {item.unavailable ? "Indisponivel" : item.price}
+      </button>
+    </section>
   );
 }
 
@@ -550,7 +696,7 @@ function Navigation({ page, setPage }: { page: Page; setPage: (page: Page) => vo
   );
 }
 
-function PackModal({
+function PackOpener({
   pack,
   onClose,
   onConfirm,
@@ -559,31 +705,110 @@ function PackModal({
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  const [animState, setAnimState] = useState<PackAnimationState>(
+    pack.status === "opened" ? "complete" : "idle",
+  );
+  const [currentFrame, setCurrentFrame] = useState(1);
+  const [revealedCount, setRevealedCount] = useState(pack.status === "opened" ? pack.items.length : 0);
+
+  useEffect(() => {
+    for (let i = 1; i <= TOTAL_FRAMES; i++) {
+      const img = new Image();
+      img.src = `/frames/${i}.png`;
+    }
+  }, []);
+
+  const startOpening = () => {
+    if (animState !== "idle") return;
+    setAnimState("opening");
+    setCurrentFrame(1);
+    sfx.playFlip();
+
+    let frame = 1;
+    const interval = window.setInterval(() => {
+      frame++;
+      setCurrentFrame(frame);
+      if (frame === 2) sfx.playTear();
+      if (frame >= TOTAL_FRAMES) {
+        window.clearInterval(interval);
+        setAnimState("ready");
+        sfx.playSparkle();
+      }
+    }, FRAME_DURATION_MS);
+  };
+
+  const revealNext = () => {
+    if (animState !== "ready" && animState !== "revealing") return;
+    sfx.playFlip();
+    setAnimState("revealing");
+    setRevealedCount((count) => {
+      const next = Math.min(count + 1, pack.items.length);
+      if (pack.items[next - 1]?.isRare) window.setTimeout(() => sfx.playSparkle(), 160);
+      if (next >= pack.items.length) window.setTimeout(() => setAnimState("complete"), 250);
+      return next;
+    });
+  };
+
   return (
-    <div className="modal-bg">
-      <section className="modal pack-open-modal">
-        <div className="pack-stage">
-          <img src={pack.status === "ready_to_open" ? "/frames/1.png" : "/frames/9.png"} alt="Pacote" />
+    <div className="pack-opener-bg">
+      <section className="pack-opener">
+        <div className="pack-title">
+          <h2>{pack.title}</h2>
+          <p>som e animacao da abertura original, com itens ja registrados</p>
         </div>
-        <h2>{pack.title}</h2>
-        <p className="section-sub">as figurinhas ja foram registradas com seguranca</p>
-        <div className="reveal-grid">
-          {pack.items.map((item) => (
-            <div className={item.isRare ? "reveal-card foil" : "reveal-card"} key={item.number}>
-              <span>#{String(item.number).padStart(3, "0")}</span>
-              <b>{item.name}</b>
-              <small>{item.isRare ? "rara" : item.isNew ? "nova" : "repetida"}</small>
+
+        <div className={animState === "opening" ? "pack-animation-stage opening" : "pack-animation-stage"}>
+          <div className={animState !== "idle" ? "pack-glow active" : "pack-glow"} />
+          <img
+            src={`/frames/${animState === "idle" ? 1 : animState === "complete" ? 9 : currentFrame}.png`}
+            alt="Pacote"
+            className="pack-frame"
+            onClick={startOpening}
+          />
+          {animState !== "idle" && (
+            <div className="reveal-shelf">
+              {pack.items.map((item, index) => {
+                const isRevealed = index < revealedCount;
+                return (
+                  <div
+                    className={item.isRare && isRevealed ? "mini-reveal rare" : "mini-reveal"}
+                    key={item.number}
+                  >
+                    {isRevealed ? `#${String(item.number).padStart(3, "0")}` : "?"}
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          )}
         </div>
+
+        {revealedCount > 0 && (
+          <div className="active-reveal-card-wrap">
+            {pack.items.slice(0, revealedCount).map((item, index) => (
+              <div
+                className={item.isRare ? "reveal-card foil pop-card" : "reveal-card pop-card"}
+                key={`${item.number}-${index}`}
+              >
+                <span>#{String(item.number).padStart(3, "0")}</span>
+                <b>{item.name}</b>
+                <small>{item.isRare ? "rara" : item.isNew ? "nova" : "repetida"}</small>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="two-actions">
           <button className="btn ghost" onClick={onClose}>
             Fechar
           </button>
-          {pack.status === "ready_to_open" && (
-            <button className="btn" onClick={onConfirm}>
-              Marcar como visto
+          {animState === "idle" && <button className="btn" onClick={startOpening}>Abrir pacote</button>}
+          {(animState === "ready" || animState === "revealing") && (
+            <button className="btn" onClick={revealNext}>
+              {revealedCount === 0 ? "Revelar figurinha" : "Proxima"}
             </button>
+          )}
+          {animState === "complete" && pack.status === "ready_to_open" && (
+            <button className="btn" onClick={onConfirm}>Marcar como visto</button>
           )}
         </div>
       </section>

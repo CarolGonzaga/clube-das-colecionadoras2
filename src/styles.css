@@ -718,14 +718,16 @@ p {
   color: var(--magenta);
 }
 
-.rare-row {
+.rare-row,
+.shop-row {
   align-items: center;
   display: grid;
   gap: 12px;
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
-.rare-thumb {
+.rare-thumb,
+.shop-thumb {
   align-items: center;
   background: linear-gradient(135deg, #fff5c9, #f3c968);
   border-radius: 16px;
@@ -736,18 +738,48 @@ p {
   width: 52px;
 }
 
-.rare-row b {
+.shop-thumb {
+  background: var(--blush);
+  color: var(--magenta);
+}
+
+.rare-row b,
+.shop-row b {
   color: var(--wine);
   display: block;
   font-family: "Baloo 2";
   font-size: 16px;
 }
 
-.rare-row span {
+.rare-row span,
+.shop-row span {
   color: var(--magenta);
   display: block;
   font-size: 12px;
   font-weight: 800;
+}
+
+.shop-search {
+  align-items: center;
+  background: #fff;
+  border: 1.5px solid #f5c9db;
+  border-radius: 18px;
+  color: var(--magenta);
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+}
+
+.shop-search input {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  flex: 1;
+  font-weight: 800;
+  min-height: 42px;
+  min-width: 0;
+  outline: none;
 }
 
 .notice-card {
@@ -835,6 +867,179 @@ p {
   padding: 18px;
   position: fixed;
   z-index: 100;
+}
+
+.pack-opener-bg {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(10px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow: hidden;
+  padding: 18px;
+  position: fixed;
+  z-index: 100;
+}
+
+.pack-opener {
+  align-items: center;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100vh - 36px);
+  max-width: 460px;
+  overflow-y: auto;
+  padding: 10px 0;
+  text-align: center;
+  width: 100%;
+}
+
+.pack-title h2 {
+  color: var(--pink-soft);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+  font-family: "Baloo 2";
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.pack-title p {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 4px;
+  opacity: 0.86;
+}
+
+.pack-animation-stage {
+  align-items: center;
+  display: flex;
+  height: 335px;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+  width: 100%;
+}
+
+.pack-animation-stage.opening .pack-frame {
+  animation: packShake 0.42s ease-in-out infinite;
+}
+
+.pack-glow {
+  background: radial-gradient(circle, rgba(194, 24, 91, 0.48) 0%, transparent 60%);
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+  transition: opacity 0.25s ease;
+}
+
+.pack-glow.active {
+  animation: glowPulse 1.4s ease-in-out infinite;
+  opacity: 1;
+}
+
+.pack-frame {
+  cursor: pointer;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.56));
+  height: 310px;
+  object-fit: contain;
+  position: relative;
+  transition: transform 0.18s ease;
+  width: 245px;
+  z-index: 2;
+}
+
+.pack-frame:hover {
+  transform: scale(1.03);
+}
+
+@keyframes packShake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  20% {
+    transform: translateX(-5px) rotate(-3deg);
+  }
+  40% {
+    transform: translateX(5px) rotate(3deg);
+  }
+  60% {
+    transform: translateX(-4px) rotate(-2deg);
+  }
+  80% {
+    transform: translateX(4px) rotate(2deg);
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.reveal-shelf {
+  bottom: 0;
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  left: 0;
+  position: absolute;
+  right: 0;
+  z-index: 3;
+}
+
+.mini-reveal {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(247, 168, 203, 0.45);
+  border-radius: 9px;
+  color: var(--pink-soft);
+  display: flex;
+  font-family: "Baloo 2";
+  font-size: 13px;
+  font-weight: 800;
+  height: 54px;
+  justify-content: center;
+  width: 40px;
+}
+
+.mini-reveal.rare {
+  background: rgba(231, 181, 59, 0.22);
+  border-color: rgba(231, 181, 59, 0.85);
+  color: #ffe390;
+}
+
+.active-reveal-card-wrap {
+  display: flex;
+  gap: 9px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 6px 8px 10px;
+}
+
+.active-reveal-card-wrap .reveal-card {
+  flex: 0 0 92px;
+}
+
+.pop-card {
+  animation: cardPop 0.28s ease-out both;
+}
+
+@keyframes cardPop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.84) rotateY(70deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateY(0);
+  }
 }
 
 .modal {

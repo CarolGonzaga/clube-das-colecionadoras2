@@ -21,3 +21,12 @@ export type DuplicateSticker = {
   name: string;
   copies: number;
 };
+
+export type StoreItem = {
+  id: string;
+  number?: number;
+  name: string;
+  kind: "pack" | "common" | "rare";
+  price: string;
+  unavailable?: boolean;
+};

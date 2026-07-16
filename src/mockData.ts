@@ -1,4 +1,4 @@
-import type { DuplicateSticker, StickerPack } from "./types";
+import type { DuplicateSticker, StickerPack, StoreItem } from "./types";
 
 export const demoPacks: StickerPack[] = [
   {
@@ -35,4 +35,15 @@ export const demoDuplicates: DuplicateSticker[] = [
   { number: 18, name: "Os Segredos Que Contei ao Oceano", copies: 2 },
   { number: 53, name: "Familia Baldaverso", copies: 1 },
   { number: 112, name: "Nova Figurinha V2", copies: 4 },
+];
+
+export const demoStoreItems: StoreItem[] = [
+  { id: "pack-5", name: "Pacote com 5 figurinhas", kind: "pack", price: "R$ 4,90" },
+  { id: "pack-15", name: "Combo com 3 pacotes", kind: "pack", price: "R$ 12,90" },
+  { id: "common-108", number: 108, name: "Nova Autora", kind: "common", price: "8 creditos" },
+  { id: "common-144", number: 144, name: "Cena Especial", kind: "common", price: "8 creditos" },
+  { id: "common-203", number: 203, name: "Frase Colecionavel", kind: "common", price: "8 creditos" },
+  { id: "rare-287", number: 287, name: "Rara Safica", kind: "rare", price: "R$ 6,90", unavailable: true },
+  { id: "rare-291", number: 291, name: "Rara Dourada", kind: "rare", price: "R$ 6,90" },
+  { id: "rare-294", number: 294, name: "Rara Autografada", kind: "rare", price: "R$ 6,90" },
 ];
