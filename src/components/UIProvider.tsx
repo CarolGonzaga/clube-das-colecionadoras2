@@ -419,7 +419,15 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const handleCloseReveals = () => {
+  const handleCloseReveals = (completed = false) => {
+    const packCompleted = completed || (reveals.length > 0 && openedPacks.length >= reveals.length);
+    if (packCompleted) {
+      localStorage.removeItem("pending_pack");
+      dbService.syncPendingPack(null).catch(() => undefined);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("pending_pack_change"));
+      }
+    }
     setReveals([]);
     setQueue((currentQueue) => {
       if (currentQueue.length > 0) {
@@ -674,7 +682,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         <div
           className="modal-bg"
           onClick={(e) => {
-            if (e.target === e.currentTarget) handleCloseReveals();
+            if (e.target === e.currentTarget) handleCloseReveals(false);
           }}
         >
           <div
@@ -686,7 +694,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
               maxWidth: "440px",
             }}
           >
-            <div className="grab" onClick={handleCloseReveals}></div>
+            <div className="grab" onClick={() => handleCloseReveals(false)}></div>
             <PackOpener
               key={`${revealsTitle}-${reveals[0]?.slug || "empty"}-${reveals.length}`}
               reveals={reveals}

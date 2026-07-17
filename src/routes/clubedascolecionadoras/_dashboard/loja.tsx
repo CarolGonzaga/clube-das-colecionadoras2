@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
 import { Minus, Plus, Search, ShoppingBag, Sparkles, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
+import { purchaseStorage, type SimPurchaseItem } from "@/lib/shopSimulation";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
   component: LojaPage,
@@ -67,6 +68,8 @@ function formatMoney(value: number) {
 
 function LojaPage() {
   const ui = useUI();
+  const router = useRouter();
+  const parentData = useLoaderData({ from: "/clubedascolecionadoras/_dashboard" });
   const [cart, setCart] = useState<CartLine[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
@@ -131,6 +134,24 @@ function LojaPage() {
       return;
     }
     setCheckoutStatus("pending");
+    const items: SimPurchaseItem[] = cart.map((item) => ({
+      id: item.id,
+      name: item.name,
+      qty: item.qty,
+      price: item.price,
+      kind: item.section === "raras" ? "rare" : item.id === "single-random" ? "single" : "pack",
+    }));
+    purchaseStorage.createPurchase({
+      userId: parentData.profile.id,
+      items,
+      stickers: parentData.stickers,
+      userStickers: parentData.userStickers,
+    });
+    setCart([]);
+    setCartOpen(false);
+    setCheckoutStatus("idle");
+    ui.toast("Compra simulada aprovada. Itens adicionados em Registros.");
+    router.navigate({ to: "/clubedascolecionadoras/registros" });
   };
 
   return (

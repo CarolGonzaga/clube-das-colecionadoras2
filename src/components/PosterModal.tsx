@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { Sticker, UserStyle } from "@/lib/types";
 import { getClubAssetUrl } from "@/lib/urls";
+import { isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
 
 interface PosterModalProps {
   mode: "final" | "progress";
@@ -15,6 +16,7 @@ interface PosterModalProps {
   avatarUrl?: string | null;
   avatarEmoji?: string | null;
   rareCount?: number;
+  exclusiveCount?: number;
   premiumLayout?: boolean;
   onClose: () => void;
 }
@@ -30,14 +32,22 @@ export default function PosterModal({
   avatarUrl,
   avatarEmoji,
   rareCount = 0,
+  exclusiveCount: explicitExclusiveCount,
   premiumLayout = false,
   onClose,
 }: PosterModalProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const ownedCount = ownedSlugs.length;
-  const pct = Math.round((ownedCount / 100) * 100);
-  const commonCount = Math.max(0, ownedCount - rareCount);
+  const albumTotal = Math.max(stickers.length, TOTAL_ALBUM_STICKERS);
+  const pct = Math.round((ownedCount / albumTotal) * 100);
+  const exclusiveCount =
+    explicitExclusiveCount ??
+    ownedSlugs.filter((slug) => {
+      const sticker = stickers.find((item) => item.slug === slug);
+      return sticker ? isExclusiveSticker(sticker) : false;
+    }).length;
+  const commonCount = Math.max(0, ownedCount - rareCount - exclusiveCount);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -205,15 +215,6 @@ export default function PosterModal({
 
             ctx.drawImage(stampCanvas, stampX, stampY);
 
-            // Sparkles
-            ctx.save();
-            ctx.fillStyle = "#F6C153";
-            ctx.font = "40px sans-serif";
-            ctx.fillText("✨", stampX + 70, stampY + 90);
-            ctx.fillText("✨", stampX + stampW - 90, stampY + stampH - 180);
-            ctx.fillText("✨", stampX + 110, stampY + stampH - 130);
-            ctx.fillText("✨", stampX + stampW - 70, stampY + 110);
-            ctx.restore();
           } else {
             ctx.drawImage(stampCanvas, stampX, stampY);
           }
@@ -332,8 +333,9 @@ export default function PosterModal({
 
         const pillH = 96;
         const pillX = cx - pillW / 2;
-        const pill1Y = stampY + 840;
-        const pill2Y = stampY + 956;
+        const pill1Y = stampY + 830;
+        const pill2Y = stampY + 936;
+        const pill3Y = stampY + 1042;
 
         ctx.fillStyle = "#FFFFFF";
         ctx.beginPath();
@@ -355,6 +357,17 @@ export default function PosterModal({
         ctx.textAlign = "center";
         ctx.font = "bold 44px 'Quicksand', 'Nunito', sans-serif";
         ctx.fillText(`${rareCount} Raras`, cx, pill2Y + 62);
+        ctx.restore();
+
+        ctx.fillStyle = "#DDE3EA";
+        ctx.beginPath();
+        ctx.roundRect(pillX, pill3Y, pillW, pillH, pillH / 2);
+        ctx.fill();
+        ctx.save();
+        ctx.fillStyle = "#4E5967";
+        ctx.textAlign = "center";
+        ctx.font = "bold 44px 'Quicksand', 'Nunito', sans-serif";
+        ctx.fillText(`${exclusiveCount} Exclusivas`, cx, pill3Y + 62);
         ctx.restore();
 
         // 5. RIBBON
@@ -381,7 +394,7 @@ export default function PosterModal({
         }
       },
     );
-  }, [nick, ownedSlugs, avatarUrl, avatarEmoji, rareCount, pct, commonCount]);
+  }, [nick, ownedSlugs, avatarUrl, avatarEmoji, rareCount, exclusiveCount, pct, commonCount]);
 
   const handleDownload = () => {
     const canvas = canvasRef.current;

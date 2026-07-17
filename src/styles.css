@@ -765,6 +765,15 @@ button {
   gap: 10px;
   margin: -4px 0 14px;
 }
+.album-toolbar.right {
+  justify-content: flex-end;
+}
+.album-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
 .album-page-size,
 .album-view-toggle {
   display: inline-flex;
@@ -850,11 +859,44 @@ button {
   min-height: 104px;
   justify-content: flex-start;
   padding: 8px;
+  gap: 12px;
 }
 .album.album-list .cell > svg,
 .album.album-list .cell > img,
 .album.album-list .cell > div:first-child {
   max-width: 74px;
+}
+.album-list-info {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  padding-right: 28px;
+  color: var(--wine);
+  pointer-events: none;
+}
+.album-list-info b {
+  font-size: 13px;
+  line-height: 1.15;
+}
+.album-list-info span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #fde8f2;
+  color: var(--magenta);
+  padding: 2px 7px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.album-list-info small,
+.album-list-info em {
+  color: rgba(126, 23, 70, 0.66);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.25;
 }
 .info-line {
   text-align: center;
@@ -3888,8 +3930,40 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   padding: 0 14px 14px;
 }
 
+.registry-empty-state {
+  border: 1px solid rgba(194, 24, 91, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff, #fff7fb);
+  color: var(--wine);
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 30px 18px;
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.registry-empty-state svg {
+  color: var(--magenta);
+}
+
+.registry-empty-state b {
+  font-family: "Baloo 2";
+  font-size: 20px;
+}
+
+.registry-empty-state p {
+  max-width: 300px;
+  margin: 0;
+  color: rgba(126, 23, 70, 0.64);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .registry-pack-list,
 .registry-sticker-list,
+.registry-purchase-list,
 .shop-cart-lines {
   display: flex;
   flex-direction: column;
@@ -3904,7 +3978,8 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 }
 
 .registry-pack-card,
-.registry-sticker-row {
+.registry-sticker-row,
+.registry-purchase-card {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -3928,7 +4003,8 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 }
 
 .registry-pack-card > div,
-.registry-sticker-row > div:nth-child(2) {
+.registry-sticker-row > div:nth-child(2),
+.registry-purchase-card > div {
   display: flex;
   min-width: 0;
   flex: 1;
@@ -3937,17 +4013,25 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 }
 
 .registry-pack-card b,
-.registry-sticker-row b {
+.registry-sticker-row b,
+.registry-purchase-card b {
   color: var(--wine);
   font-size: 14px;
 }
 
 .registry-pack-card span,
 .registry-pack-card small,
-.registry-sticker-row span {
+.registry-sticker-row span,
+.registry-purchase-card span {
   color: rgba(126, 23, 70, 0.62);
   font-size: 12px;
   font-weight: 700;
+}
+
+.registry-purchase-card strong {
+  color: var(--magenta);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .registry-open-btn {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { Donation, Profile, Sticker, UserStyle, RevealItem } from "@/lib/types";
 import { getClubAssetUrl, getPublicAlbumUrl } from "@/lib/urls";
+import { isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
 import { dbService, getLocalDateStr } from "@/lib/db";
 import { useUI } from "@/components/UIProvider";
 import { claimDailyElementAction, completeMissionAction, logoutAction } from "@/lib/actions";
@@ -285,10 +286,13 @@ export default function HomeClient({
   const [posterMode, setPosterMode] = useState<"final" | "progress">("progress");
 
   const ownedCount = ownedSlugs.length;
-  const pct = Math.round((ownedCount / 100) * 100);
-  const commonCount = Math.max(0, ownedCount - rareCount);
-  const exclusiveCount =
-    userStyles?.filter((style) => style.unlocked).length + (ownedCount === 100 ? 1 : 0);
+  const albumTotal = Math.max(stickers.length, TOTAL_ALBUM_STICKERS);
+  const pct = Math.round((ownedCount / albumTotal) * 100);
+  const exclusiveCount = ownedSlugs.filter((slug) => {
+    const sticker = stickers.find((item) => item.slug === slug);
+    return sticker ? isExclusiveSticker(sticker) : false;
+  }).length;
+  const commonCount = Math.max(0, ownedCount - rareCount - exclusiveCount);
 
   // Active category evolution achievements
   const [activeAchievements, setActiveAchievements] = useState<string[]>([]);
@@ -353,7 +357,7 @@ export default function HomeClient({
     if (ownedCount >= 16 && !acknowledged.includes("bronze")) active.push("bronze");
     if (ownedCount >= 41 && !acknowledged.includes("prata")) active.push("prata");
     if (ownedCount >= 66 && !acknowledged.includes("ouro")) active.push("ouro");
-    if (ownedCount === 100 && !acknowledged.includes("purpurina")) active.push("purpurina");
+    if (ownedCount >= albumTotal && !acknowledged.includes("purpurina")) active.push("purpurina");
     setActiveAchievements(active);
   }, [ownedCount]);
 
@@ -458,6 +462,19 @@ export default function HomeClient({
     if (completedMissions.includes(id)) return;
     if (missionProgress[id] !== undefined) return;
 
+    const persistMissionPack = (reveals: RevealItem[]) => {
+      if (!reveals || reveals.length === 0) return;
+      const pendingObj = {
+        reveals,
+        title: "Missão concluída! ✦",
+        flippedCards: [],
+        isOpened: false,
+      };
+      localStorage.setItem("pending_pack", JSON.stringify(pendingObj));
+      dbService.syncPendingPack(pendingObj).catch(() => undefined);
+      window.dispatchEvent(new Event("pending_pack_change"));
+    };
+
     if (id === "copy-link") {
       const shareUrl = getPublicAlbumUrl(profile.id);
       try {
@@ -470,10 +487,10 @@ export default function HomeClient({
       try {
         const res = await completeMissionAction(id);
         if (res.success && res.data) {
-          setCompletedMissions((prev) => [...prev, id]);
-          router.invalidate();
+          persistMissionPack(res.data.reveals || []);
+          setCompletedMissions((prev) => (prev.includes(id) ? prev : [...prev, id]));
           setTimeout(() => {
-            ui.showReveals(res.data.reveals, "Missão concluída! ✦");
+            ui.triggerPendingPack();
           }, 300);
         } else {
           ui.toast(res.message || "Erro ao concluir missão.");
@@ -487,8 +504,33 @@ export default function HomeClient({
       }
 
       setMissionProgress((prev) => ({ ...prev, [id]: 10 }));
+      let missionReward: RevealItem[] | null = null;
 
-      const interval = setInterval(async () => {
+      try {
+        const res = await completeMissionAction(id);
+        if (res.success && res.data) {
+          missionReward = res.data.reveals || [];
+          persistMissionPack(missionReward);
+        } else {
+          setMissionProgress((p) => {
+            const copy = { ...p };
+            delete copy[id];
+            return copy;
+          });
+          ui.toast(res.message || "Erro ao concluir missão.");
+          return;
+        }
+      } catch (e) {
+        setMissionProgress((p) => {
+          const copy = { ...p };
+          delete copy[id];
+          return copy;
+        });
+        ui.toast("Erro ao concluir missão.");
+        return;
+      }
+
+      const interval = setInterval(() => {
         setMissionProgress((prev) => {
           const currentVal = prev[id];
           if (currentVal === undefined) {
@@ -497,29 +539,17 @@ export default function HomeClient({
           }
           if (currentVal <= 1) {
             clearInterval(interval);
-            // Time to complete!
-            (async () => {
-              try {
-                const res = await completeMissionAction(id);
-                if (res.success && res.data) {
-                  setCompletedMissions((p) => [...p, id]);
-                  router.invalidate();
-                  setTimeout(() => {
-                    ui.showReveals(res.data.reveals, "Missão concluída! ✦");
-                  }, 300);
-                } else {
-                  ui.toast(res.message || "Erro ao concluir missão.");
-                }
-              } catch (e) {
-                ui.toast("Erro ao concluir missão.");
-              } finally {
-                setMissionProgress((p) => {
-                  const copy = { ...p };
-                  delete copy[id];
-                  return copy;
-                });
-              }
-            })();
+            if (missionReward && missionReward.length > 0) {
+              setTimeout(() => {
+                setCompletedMissions((p) => (p.includes(id) ? p : [...p, id]));
+                ui.triggerPendingPack();
+              }, 300);
+            }
+            setMissionProgress((p) => {
+              const copy = { ...p };
+              delete copy[id];
+              return copy;
+            });
             return { ...prev, [id]: 0 };
           }
           return { ...prev, [id]: currentVal - 1 };
@@ -635,7 +665,7 @@ export default function HomeClient({
   // Check active styles for UI theme and visual overrides
   const isNeonEnabled = userStyles?.find((s) => s.style_id === "avatar-neon-frame" && s.enabled);
   const isDarkEnabled = userStyles?.find((s) => s.style_id === "theme-dark" && s.enabled);
-  const isStoryPremiumEnabled = ownedCount === 100;
+  const isStoryPremiumEnabled = ownedCount >= albumTotal;
   const isLilacEnabled = userStyles?.find((s) => s.style_id === "lilac" && s.enabled);
 
   // Discover next available reward based on what is unlocked
@@ -1707,6 +1737,7 @@ export default function HomeClient({
           avatarUrl={profile.avatar_url}
           avatarEmoji={profile.avatar_emoji}
           rareCount={rareCount}
+          exclusiveCount={exclusiveCount}
           premiumLayout={!!isStoryPremiumEnabled}
           onClose={() => setShowPoster(false)}
         />

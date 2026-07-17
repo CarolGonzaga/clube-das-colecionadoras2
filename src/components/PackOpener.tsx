@@ -9,7 +9,7 @@ import { dbService } from "@/lib/db";
 
 interface PackOpenerProps {
   reveals: RevealItem[];
-  onClose: () => void;
+  onClose: (completed?: boolean) => void;
   title?: string;
 }
 
@@ -267,6 +267,15 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
     }
   }, [flippedCards, reveals]);
 
+  useEffect(() => {
+    if (animState !== "cards-emerging") return;
+    const fallback = setTimeout(() => {
+      setAnimState((current) => (current === "cards-emerging" ? "cards-ready" : current));
+      setFxParticles([]);
+    }, 1800);
+    return () => clearTimeout(fallback);
+  }, [animState]);
+
   const triggerFxBurst = (isRareOnly = false) => {
     const newParticles: FxParticle[] = [];
     const colors = isRareOnly
@@ -426,7 +435,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
         setAnimState("cards-ready");
       }, 850);
     } else {
-      onClose();
+      onClose(true);
     }
   };
 

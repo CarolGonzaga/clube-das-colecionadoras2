@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Profile, Sticker, UserSticker } from "@/lib/types";
 import { useUI } from "@/components/UIProvider";
 import { getClubAssetUrl } from "@/lib/urls";
+import { getVisibleStickerTag, isExclusiveSticker } from "@/lib/albumRules";
 import Stamp from "./Stamp";
 import StickerShareModal from "./StickerShareModal";
 import {
@@ -231,10 +232,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     return info?.is_rare || false;
   };
 
-  const isExclusiveSticker = (sticker: Sticker) => {
-    return sticker.number <= 16;
-  };
-
   const filteredStickers = stickers.filter((s) => {
     const info = getOwnedInfo(s.number);
     const copies = getCopiesCount(s.number);
@@ -342,6 +339,16 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       </button>
     );
   };
+
+  const families = [
+    { tag: "Baldaverso", stickers: [1, 53, 54] },
+    { tag: "Frutaverso", stickers: [5, 59, 60] },
+    { tag: "Bright Falls", stickers: [22, 51, 52] },
+    { tag: "HQ", stickers: [84, 85, 87] },
+    { tag: "Opostos Co.", stickers: [19, 73, 74] },
+  ];
+
+  const getStickerFamily = (number: number) => families.find((family) => family.stickers.includes(number));
 
   const openZoomedAutograph = (sticker: Sticker) => {
     const filename = getAutographFilename(sticker.author);
@@ -587,15 +594,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       return;
     }
 
-    const families = [
-      { tag: "Baldaverso", stickers: [1, 53, 54] },
-      { tag: "Frutaverso", stickers: [5, 59, 60] },
-      { tag: "Bright Falls", stickers: [22, 51, 52] },
-      { tag: "HQ", stickers: [84, 85, 87] },
-      { tag: "Opostos Co.", stickers: [19, 73, 74] },
-    ];
-
-    const stickerFamily = families.find((f) => f.stickers.includes(sticker.number));
+    const stickerFamily = getStickerFamily(sticker.number);
 
     ui.openModal(
       <div
@@ -828,8 +827,30 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
 
   return (
     <div className="screen">
-      <div className="section-title">Meu álbum</div>
-      <div className="section-sub">desbloqueie · troque · colecione</div>
+      <div className="album-title-row">
+        <div>
+          <div className="section-title">Meu álbum</div>
+          <div className="section-sub">desbloqueie · troque · colecione</div>
+        </div>
+        <div className="album-view-toggle" aria-label="Modo de visualizacao">
+          <button
+            type="button"
+            className={viewMode === "grid" ? "active" : ""}
+            onClick={() => setViewMode("grid")}
+            aria-label="Ver em grade"
+          >
+            <Grid3X3 size={15} />
+          </button>
+          <button
+            type="button"
+            className={viewMode === "list" ? "active" : ""}
+            onClick={() => setViewMode("list")}
+            aria-label="Ver em lista"
+          >
+            <List size={15} />
+          </button>
+        </div>
+      </div>
 
       {/* Filter Chips */}
       <div className="filters">
@@ -853,7 +874,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
         </section>
       )}
 
-      <div className="album-toolbar">
+      <div className="album-toolbar right">
         <div className="album-page-size" aria-label="Quantidade de figurinhas por pagina">
           {pageSizeOptions.map((option) => (
             <button
@@ -868,24 +889,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               {option}
             </button>
           ))}
-        </div>
-        <div className="album-view-toggle" aria-label="Modo de visualizacao">
-          <button
-            type="button"
-            className={viewMode === "grid" ? "active" : ""}
-            onClick={() => setViewMode("grid")}
-            aria-label="Ver em grade"
-          >
-            <Grid3X3 size={15} />
-          </button>
-          <button
-            type="button"
-            className={viewMode === "list" ? "active" : ""}
-            onClick={() => setViewMode("list")}
-            aria-label="Ver em lista"
-          >
-            <List size={15} />
-          </button>
         </div>
       </div>
 
@@ -903,6 +906,8 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               const info = getOwnedInfo(sticker.number);
               const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
               const isExclusive = isExclusiveSticker(sticker);
+              const visibleTag = getVisibleStickerTag(sticker, info);
+              const stickerFamily = getStickerFamily(sticker.number);
               const copies = getCopiesCount(sticker.number);
 
               return (
@@ -944,6 +949,28 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                     >
                       +{copies - 1}
                     </span>
+                  )}
+                  {viewMode === "list" && (
+                    <div className="album-list-info">
+                      <b>
+                        #{String(sticker.number).padStart(3, "0")} - {sticker.name}
+                      </b>
+                      <span>{visibleTag}</span>
+                      <small>{sticker.author || "Autoria a definir"}</small>
+                      {stickerFamily && (
+                        <em>
+                          {stickerFamily.tag}: {stickerFamily.stickers.length} itens (
+                          {stickerFamily.stickers
+                            .map((num) => {
+                              const owned = !!getOwnedInfo(num);
+                              const famSticker = stickers.find((item) => item.number === num);
+                              return owned ? `#${String(num).padStart(3, "0")} ${famSticker?.name || ""}` : `#${String(num).padStart(3, "0")}`;
+                            })
+                            .join(", ")}
+                          )
+                        </em>
+                      )}
+                    </div>
                   )}
                 </div>
               );

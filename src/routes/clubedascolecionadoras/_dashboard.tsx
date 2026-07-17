@@ -4,6 +4,7 @@ import { UIProvider } from "../../components/UIProvider";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import TopBar from "../../components/TopBar";
 import Navigation from "../../components/Navigation";
+import { TOTAL_ALBUM_STICKERS } from "../../lib/albumRules";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
   ssr: false,
@@ -96,7 +97,8 @@ function DashboardLayout() {
 
   // Compute values for TopBar
   const ownedCount = data.userStickers.filter((us) => us.copies > 0).length;
-  const pct = Math.round((ownedCount / 100) * 100);
+  const albumTotal = Math.max(data.stickers.length, TOTAL_ALBUM_STICKERS);
+  const pct = Math.round((ownedCount / albumTotal) * 100);
 
   // Status phrases mapping
   const statusPhrases = [

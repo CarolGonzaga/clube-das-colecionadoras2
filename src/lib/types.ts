@@ -7,6 +7,7 @@ export interface Sticker {
   author: string | null;
   type: "quiz" | "sorteio" | "ls" | "frase";
   cover_url: string | null;
+  category?: "quiz" | "comum" | "exclusiva" | null;
   amazon_url?: string | null;
 }
 
@@ -63,7 +64,7 @@ export interface RevealItem {
 }
 
 export const answerQuizSchema = z.object({
-  stickerNumber: z.number().int().min(1).max(100),
+  stickerNumber: z.number().int().min(1).max(360),
   qIndex: z.number().int().min(0).max(1),
   chosenIndex: z.number().int().min(-1).max(3),
 });
@@ -73,7 +74,7 @@ export const redeemCodeSchema = z.object({
 });
 
 export const generateDonationSchema = z.object({
-  stickerNumber: z.number().int().min(1).max(100),
+  stickerNumber: z.number().int().min(1).max(360),
 });
 
 export const redeemDonationSchema = z.object({
