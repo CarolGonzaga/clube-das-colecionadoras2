@@ -53,6 +53,41 @@ export interface Donation {
   expires_at: string;
 }
 
+export interface TradeRequest {
+  id: string;
+  initiator_id?: string;
+  receiver_id?: string;
+  initiator_nick?: string;
+  receiver_nick?: string;
+  initiator_avatar_emoji?: string | null;
+  initiator_avatar_url?: string | null;
+  initiator_sticker: number;
+  receiver_sticker: number;
+  sticker_category: "free" | "shop";
+  status: "pending" | "accepted" | "rejected" | "cancelled" | "expired";
+  created_at: string;
+  expires_at: string;
+  initiator_sticker_name?: string;
+  receiver_sticker_name?: string;
+}
+
+export interface TradeUserLookup {
+  user_id: string;
+  nick: string;
+  avatar_emoji: string | null;
+  avatar_url: string | null;
+  free_dupes: { sticker_number: number; name: string; copies: number }[];
+  shop_dupes: { sticker_number: number; name: string; copies: number }[];
+}
+
+export interface PointTransaction {
+  id: string;
+  amount: number;
+  reason: string;
+  sticker_number: number | null;
+  created_at: string;
+}
+
 export interface RevealItem {
   slug: string;
   number: number;
@@ -91,4 +126,33 @@ export const updateProfileSchema = z.object({
   muralOptIn: z.boolean().optional(),
   styleId: z.string().optional(),
   styleEnabled: z.boolean().optional(),
+});
+
+export const validateNickSchema = z.object({
+  nick: z
+    .string()
+    .trim()
+    .min(3, "Mínimo 3 caracteres")
+    .max(24, "Máximo 24 caracteres")
+    .regex(/^[a-z0-9]+$/, "Use apenas letras minúsculas e números, sem espaços"),
+});
+
+export const createTradeRequestSchema = z.object({
+  receiverNick: z.string().trim().min(1).max(24),
+  mySticker: z.number().int().min(1).max(360),
+  desiredSticker: z.number().int().min(1).max(360),
+  category: z.enum(["free", "shop"]),
+});
+
+export const respondToTradeSchema = z.object({
+  tradeId: z.string().uuid(),
+  accept: z.boolean(),
+});
+
+export const cancelTradeSchema = z.object({
+  tradeId: z.string().uuid(),
+});
+
+export const exchangeForPointsSchema = z.object({
+  stickerNumber: z.number().int().min(201).max(360),
 });

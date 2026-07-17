@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData } from "@tanstack/react-router";
-import { CalendarDays, ChevronDown, ChevronUp, PackageOpen, Sparkles, Star } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronUp, PackageOpen, Sparkles, Star, Coins } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
@@ -103,6 +103,14 @@ function RegistrosPage() {
           <b>{lastPurchaseDate}</b>
         </article>
       </section>
+
+      <div className="trade-wallet-bar" style={{ margin: "14px 0" }}>
+        <Coins className="w-4 h-4 text-amber-600" />
+        <span className="trade-wallet-label">Carteira de Pontos:</span>
+        <span className="trade-wallet-balance">
+          {parentData.pointsBalance.toLocaleString("pt-BR")} pts
+        </span>
+      </div>
 
       {purchases.length === 0 ? (
         <section className="registry-empty-state">

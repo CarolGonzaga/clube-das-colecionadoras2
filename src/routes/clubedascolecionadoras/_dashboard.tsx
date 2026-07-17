@@ -1,4 +1,5 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { dbService } from "../../lib/db";
 import { UIProvider } from "../../components/UIProvider";
 import { ThemeProvider } from "../../components/ThemeProvider";
@@ -42,6 +43,8 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
         allElementsClaimed: false,
         userRank: null,
         donations: [],
+        pendingTradesCount: 0,
+        pointsBalance: 0,
       };
     }
 
@@ -59,6 +62,8 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
     const releaseDayNumber = await dbService.getReleaseDayNumber();
     const userRank = await dbService.getUserMuralRank(user.id);
     const donations = await dbService.getOutgoingDonations(user.id);
+    const pendingTradesCount = await dbService.countIncomingPendingTrades().catch(() => 0);
+    const pointsBalance = await dbService.getPointsBalance().catch(() => 0);
 
     const rewardIds = ["lilac", "avatar-neon-frame", "new-icon", "theme-dark", "story-layout"];
     const allElementsClaimed = rewardIds.every((id) =>
@@ -84,6 +89,8 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
       allElementsClaimed,
       userRank,
       donations,
+      pendingTradesCount,
+      pointsBalance,
     };
   },
   component: DashboardLayout,
@@ -91,6 +98,15 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
 
 function DashboardLayout() {
   const data = Route.useLoaderData();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const interval = setInterval(() => {
+      router.invalidate();
+    }, 180000); // 3 minutes
+    return () => clearInterval(interval);
+  }, [router]);
 
   // Calculate active styles for ThemeProvider
   const initialStyles = data.userStyles.filter((s) => s.enabled).map((s) => s.style_id);
@@ -120,7 +136,7 @@ function DashboardLayout() {
     <ThemeProvider initialStyles={initialStyles}>
       <UIProvider>
         <div className="club-dashboard-shell mx-auto max-w-[460px] h-screen overflow-hidden bg-background text-foreground relative">
-          <Navigation />
+          <Navigation pendingTradesCount={data.pendingTradesCount} />
           <div className="club-dashboard-main flex min-w-0 flex-col">
             <TopBar ownedCount={ownedCount} pct={pct} statusText={statusText} />
             <div className="club-dashboard-scroll flex-1 overflow-y-auto pb-[106px] min-h-0">

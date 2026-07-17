@@ -16,7 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: "/icons/loja.png", label: "loja", path: "/clubedascolecionadoras/loja" },
 ];
 
-export default function Navigation() {
+export default function Navigation({ pendingTradesCount = 0 }: { pendingTradesCount?: number }) {
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -44,8 +44,13 @@ export default function Navigation() {
               to={item.path}
               className={`club-navigation-item flex flex-col items-center gap-0.5 min-w-[44px] cursor-pointer ${active ? "club-navigation-item-active" : ""}`}
             >
-              <div className="club-navigation-icon w-7 h-7 flex items-center justify-center transition-transform">
+              <div className="club-navigation-icon w-7 h-7 flex items-center justify-center transition-transform relative">
                 <img src={item.icon} alt={item.label} className="w-6 h-6 object-contain" />
+                {item.path === "/clubedascolecionadoras/trocas" && pendingTradesCount > 0 && (
+                  <span className="nav-trade-badge">
+                    {pendingTradesCount > 9 ? "9+" : pendingTradesCount}
+                  </span>
+                )}
               </div>
               <span
                 className={`nav-label text-[9px] ${active ? "nav-label-active text-[#9e1b4a] font-extrabold" : "text-[#bf2a5e]/70 font-semibold"}`}

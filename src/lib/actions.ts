@@ -202,3 +202,91 @@ export async function triggerDonationExpirationAction() {
     return { success: false, message: err.message };
   }
 }
+
+// ── TRADE SYSTEM ──────────────────────────────────────────────────────────────
+
+export async function lookupUserByNickAction(nick: string) {
+  try {
+    const data = await dbService.lookupUserByNick(nick);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function createTradeRequestAction(
+  receiverNick: string,
+  mySticker: number,
+  desiredSticker: number,
+  category: "free" | "shop",
+) {
+  try {
+    const data = await dbService.createTradeRequest(receiverNick, mySticker, desiredSticker, category);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function getIncomingTradesAction() {
+  try {
+    const data = await dbService.getIncomingTrades();
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function getOutgoingTradesAction() {
+  try {
+    const data = await dbService.getOutgoingTrades();
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function respondToTradeAction(tradeId: string, accept: boolean) {
+  try {
+    const data = await dbService.respondToTrade(tradeId, accept);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function cancelTradeAction(tradeId: string) {
+  try {
+    const data = await dbService.cancelTrade(tradeId);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function getPointsBalanceAction() {
+  try {
+    const balance = await dbService.getPointsBalance();
+    return { success: true, balance };
+  } catch (err: any) {
+    return { success: false, message: err.message, balance: 0 };
+  }
+}
+
+export async function exchangeForPointsAction(stickerNumber: number) {
+  try {
+    const data = await dbService.exchangeForPoints(stickerNumber);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function validateAndUpdateNickAction(nick: string) {
+  try {
+    const data = await dbService.validateAndUpdateNick(nick);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}

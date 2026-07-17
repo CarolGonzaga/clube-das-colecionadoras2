@@ -1,5 +1,5 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { Sticker, Profile, UserSticker, Style, UserStyle, RevealItem, Donation } from "./types";
+import { Sticker, Profile, UserSticker, Style, UserStyle, RevealItem, Donation, TradeRequest, TradeUserLookup } from "./types";
 import { getLoginUrl } from "./urls";
 
 const TIMEZONE = "America/Sao_Paulo";
@@ -518,5 +518,88 @@ export const dbService = {
       .update({ reveals_queue: queue })
       .eq("id", user.id);
     if (error) throw new Error(error.message);
+  },
+
+  // ── TRADE SYSTEM ──────────────────────────────────────────────
+
+  async lookupUserByNick(nick: string): Promise<TradeUserLookup> {
+    const { data, error } = await supabase.rpc("lookup_user_by_nick", {
+      nick_param: nick,
+    });
+    if (error) throw new Error(error.message);
+    return data as TradeUserLookup;
+  },
+
+  async createTradeRequest(
+    receiverNick: string,
+    mySticker: number,
+    desiredSticker: number,
+    category: "free" | "shop",
+  ) {
+    const { data, error } = await supabase.rpc("create_trade_request", {
+      receiver_nick_param: receiverNick,
+      my_sticker_param: mySticker,
+      desired_sticker_param: desiredSticker,
+      category_param: category,
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async getIncomingTrades(): Promise<TradeRequest[]> {
+    const { data, error } = await supabase.rpc("get_incoming_trades");
+    if (error) throw new Error(error.message);
+    return (data || []) as TradeRequest[];
+  },
+
+  async getOutgoingTrades(): Promise<TradeRequest[]> {
+    const { data, error } = await supabase.rpc("get_outgoing_trades");
+    if (error) throw new Error(error.message);
+    return (data || []) as TradeRequest[];
+  },
+
+  async respondToTrade(tradeId: string, accept: boolean) {
+    const { data, error } = await supabase.rpc("respond_to_trade", {
+      trade_id_param: tradeId,
+      accept_param: accept,
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async cancelTrade(tradeId: string) {
+    const { data, error } = await supabase.rpc("cancel_trade", {
+      trade_id_param: tradeId,
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async getPointsBalance(): Promise<number> {
+    const { data, error } = await supabase.rpc("get_points_balance");
+    if (error) throw new Error(error.message);
+    return (data as number) || 0;
+  },
+
+  async exchangeForPoints(stickerNumber: number) {
+    const { data, error } = await supabase.rpc("exchange_for_points", {
+      sticker_number_param: stickerNumber,
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async countIncomingPendingTrades(): Promise<number> {
+    const { data, error } = await supabase.rpc("count_incoming_pending_trades");
+    if (error) return 0;
+    return (data as number) || 0;
+  },
+
+  async validateAndUpdateNick(nick: string) {
+    const { data, error } = await supabase.rpc("validate_and_update_nick", {
+      new_nick_param: nick,
+    });
+    if (error) throw new Error(error.message);
+    return data;
   },
 };
