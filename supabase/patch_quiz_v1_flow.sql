@@ -30,6 +30,9 @@ create table if not exists public.quiz_attempts (
 alter table public.quiz_answers
   add column if not exists attempt_day date;
 
+alter table public.quiz_answers
+  add column if not exists reward_is_rare boolean not null default false;
+
 update public.quiz_answers
 set attempt_day = (answered_at at time zone 'America/Sao_Paulo')::date
 where attempt_day is null;
@@ -110,6 +113,7 @@ declare
   today_count integer := 0;
   correct_count integer := 0;
   error_count integer := 0;
+  account_day integer := 1;
 begin
   if uid is null then
     raise exception 'Unauthorized';
@@ -125,6 +129,16 @@ begin
   where us.user_id = uid
     and us.sticker_number between 1 and 20
     and us.copies > 0;
+
+  select greatest(
+    1,
+    (local_day - ((coalesce(p.created_at, now()) at time zone 'America/Sao_Paulo')::date)) + 1
+  )
+  into account_day
+  from public.profiles p
+  where p.id = uid;
+
+  account_day := coalesce(account_day, 1);
 
   select * into attempt_row
   from public.quiz_attempts
@@ -161,18 +175,19 @@ begin
       uid,
       local_day_text,
       today_count,
-      coalesce(attempt_row.dia_atual + 1, 1),
+      account_day,
       final_pool
     )
     on conflict (user_id) do update
     set ultimo_dia_acesso = excluded.ultimo_dia_acesso,
         tentativas_hoje_count = excluded.tentativas_hoje_count,
-        dia_atual = excluded.dia_atual,
+        dia_atual = account_day,
         perguntas_pendentes = excluded.perguntas_pendentes
     returning * into attempt_row;
   else
     update public.quiz_attempts
-    set tentativas_hoje_count = today_count
+    set tentativas_hoje_count = today_count,
+        dia_atual = account_day
     where user_id = uid
     returning * into attempt_row;
   end if;
@@ -308,6 +323,9 @@ declare
   error_count integer := 0;
   sticker_row public.stickers%rowtype;
   was_new boolean := false;
+  quiz_rare_count integer := 0;
+  rare_reward_today boolean := false;
+  reward_is_rare boolean := false;
 begin
   if uid is null then
     raise exception 'Unauthorized';
@@ -344,6 +362,27 @@ begin
 
   is_correct := chosen_index_param = correct_answer;
 
+  if is_correct then
+    select count(*) into quiz_rare_count
+    from public.user_stickers us
+    where us.user_id = uid
+      and us.sticker_number between 1 and 20
+      and us.copies > 0
+      and us.is_rare = true;
+
+    select exists (
+      select 1
+      from public.quiz_answers qa
+      where qa.user_id = uid
+        and qa.attempt_day = local_day
+        and qa.correct = true
+        and qa.reward_is_rare = true
+    )
+    into rare_reward_today;
+
+    reward_is_rare := quiz_rare_count < 12 and not rare_reward_today;
+  end if;
+
   insert into public.quiz_answers (
     user_id,
     sticker_number,
@@ -351,7 +390,8 @@ begin
     chosen_index,
     correct,
     answered_at,
-    attempt_day
+    attempt_day,
+    reward_is_rare
   )
   values (
     uid,
@@ -360,7 +400,8 @@ begin
     chosen_index_param,
     is_correct,
     now(),
-    local_day
+    local_day,
+    reward_is_rare
   );
 
   update public.quiz_attempts
@@ -395,10 +436,10 @@ begin
   );
 
   insert into public.user_stickers (user_id, sticker_number, copies, is_rare, first_unlocked_at)
-  values (uid, sticker_number_param, 1, true, now())
+  values (uid, sticker_number_param, 1, reward_is_rare, now())
   on conflict (user_id, sticker_number) do update
   set copies = public.user_stickers.copies + 1,
-      is_rare = true;
+      is_rare = public.user_stickers.is_rare or excluded.is_rare;
 
   select * into sticker_row
   from public.stickers s
@@ -414,7 +455,7 @@ begin
         'title', coalesce(sticker_row.name, 'Figurinha ' || sticker_number_param::text),
         'author', sticker_row.author,
         'wasNew', was_new,
-        'isRare', true,
+        'isRare', reward_is_rare,
         'repeat', not was_new
       )
     )

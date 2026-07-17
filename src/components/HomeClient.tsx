@@ -531,8 +531,8 @@ export default function HomeClient({
   const getProgressShareTexts = () => {
     const publicAlbumUrl = getPublicAlbumUrl(profile.id);
     return {
-      x: `Meu álbum do @lendosaficos está com ${commonCount} comuns, ${rareCount} raras e ${exclusiveCount} exclusivas. Já criou seu álbum? Visite: ${publicAlbumUrl}`,
-      whatsapp: `Meu álbum do Lendo Sáficos está com ${commonCount} comuns, ${rareCount} raras e ${exclusiveCount} exclusivas. Já criou seu álbum? Visite: ${publicAlbumUrl}`,
+      x: `Meu álbum do @lendosaficos está com ${commonCount} comuns, ${rareCount} raras e ${exclusiveCount} exclusivas. ${pct === 100 ? "Álbum completo! 🎉" : "Já criou seu álbum?"} Visite: ${publicAlbumUrl}`,
+      whatsapp: `Meu álbum do Lendo Sáficos está com ${commonCount} comuns, ${rareCount} raras e ${exclusiveCount} exclusivas. ${pct === 100 ? "Álbum completo! 🎉" : "Já criou seu álbum?"} Visite: ${publicAlbumUrl}`,
     };
   };
 
@@ -1648,15 +1648,9 @@ export default function HomeClient({
                   <span className="text-[10px] font-bold">★</span>
                   <span className="text-[10px] font-extrabold">{rareCount} raras</span>
                 </div>
-                <div className="flex-1 bg-white/20 border border-white/30 backdrop-blur-sm rounded-[10px] py-[6px] px-[8px] flex items-center justify-center gap-1 text-white">
+                <div className="flex-1 bg-[linear-gradient(135deg,#f8fbff,#b8c1cb_52%,#eef3f8)] border border-[#f6fbff]/80 rounded-[10px] py-[6px] px-[8px] flex items-center justify-center gap-1 text-[#3d4652] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                  <span className="text-[10px] font-bold">✦</span>
                   <span className="text-[10px] font-extrabold">{exclusiveCount} exclusivas</span>
-                </div>
-              </div>
-
-              {/* Divider and Footer */}
-              <div className="relative border-t border-white/20 pt-[10px] text-center">
-                <div className="text-[11px] text-[#F4C0D1] font-bold leading-normal">
-                  já criou seu álbum?
                 </div>
               </div>
             </div>

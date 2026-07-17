@@ -39,7 +39,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
         <small>{statusText}</small>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="topbar-actions flex items-center gap-2">
         <button
           type="button"
           onClick={handleNotifications}

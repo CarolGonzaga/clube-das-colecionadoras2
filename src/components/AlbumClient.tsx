@@ -21,6 +21,8 @@ import {
   Sparkles,
   Settings,
   Share2,
+  Grid3X3,
+  List,
 } from "lucide-react";
 
 function getAutographFilename(author: string | null): string | null {
@@ -189,9 +191,10 @@ interface AlbumClientProps {
 
 export default function AlbumClient({ profile, stickers, userStickers }: AlbumClientProps) {
   const ui = useUI();
-  const [filter, setFilter] = useState<"todas" | "faltam" | "coladas" | "repetidas" | "raras">(
-    "todas",
-  );
+  type AlbumFilter = "todas" | "faltam" | "coladas" | "repetidas" | "raras" | "exclusivas";
+  const [filter, setFilter] = useState<AlbumFilter>("todas");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [itemsChoice, setItemsChoice] = useState<number | null>(null);
 
   // Fetch the user's rare signatures as soon as the Album opens. They are
   // small files and will already be in the browser cache when a rare sticker
@@ -228,6 +231,10 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     return info?.is_rare || false;
   };
 
+  const isExclusiveSticker = (sticker: Sticker) => {
+    return sticker.number <= 16;
+  };
+
   const filteredStickers = stickers.filter((s) => {
     const info = getOwnedInfo(s.number);
     const copies = getCopiesCount(s.number);
@@ -243,6 +250,9 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     if (filter === "raras") {
       return isRareVersion(s.number);
     }
+    if (filter === "exclusivas") {
+      return isExclusiveSticker(s);
+    }
     return true;
   });
 
@@ -256,7 +266,17 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
-  const itemsPerPage = windowWidth >= 900 ? 16 : windowWidth >= 540 ? 12 : 9;
+  const pageSizeOptions = windowWidth >= 1200 ? [16, 20, 24] : windowWidth >= 540 ? [12, 16, 20] : [9, 12, 15];
+  const defaultItemsPerPage = pageSizeOptions[0];
+  const itemsPerPage = itemsChoice && pageSizeOptions.includes(itemsChoice) ? itemsChoice : defaultItemsPerPage;
+  const gridColumns =
+    viewMode === "list"
+      ? "1fr"
+      : windowWidth >= 1200
+        ? `repeat(${itemsPerPage >= 24 ? 6 : itemsPerPage >= 20 ? 5 : 4}, minmax(0, 1fr))`
+        : windowWidth >= 540
+          ? `repeat(${itemsPerPage >= 20 ? 5 : 4}, minmax(0, 1fr))`
+          : "repeat(3, minmax(0, 1fr))";
 
   // Pagination details
   const totalPages = Math.ceil(filteredStickers.length / itemsPerPage) || 1;
@@ -293,7 +313,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     return pages;
   };
 
-  const getFilterCount = (type: "todas" | "faltam" | "coladas" | "repetidas" | "raras") => {
+  const getFilterCount = (type: AlbumFilter) => {
     return stickers.filter((s) => {
       const info = getOwnedInfo(s.number);
       const copies = getCopiesCount(s.number);
@@ -301,14 +321,12 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       if (type === "coladas") return !!info;
       if (type === "repetidas") return copies > 1;
       if (type === "raras") return isRareVersion(s.number);
+      if (type === "exclusivas") return isExclusiveSticker(s);
       return true;
     }).length;
   };
 
-  const renderFilterChip = (
-    type: "todas" | "faltam" | "coladas" | "repetidas" | "raras",
-    label: string,
-  ) => {
+  const renderFilterChip = (type: AlbumFilter, label: string) => {
     const active = filter === type;
     const count = getFilterCount(type);
     return (
@@ -811,7 +829,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   return (
     <div className="screen">
       <div className="section-title">Meu álbum</div>
-      <div className="section-sub">desbloqueie · doe · colecione</div>
+      <div className="section-sub">desbloqueie · troque · colecione</div>
 
       {/* Filter Chips */}
       <div className="filters">
@@ -820,6 +838,55 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
         {renderFilterChip("coladas", "Coladas")}
         {renderFilterChip("repetidas", "Repetidas")}
         {renderFilterChip("raras", "Raras")}
+        {renderFilterChip("exclusivas", "Exclusivas")}
+      </div>
+
+      {filter === "exclusivas" && (
+        <section className="exclusive-album-intro">
+          <div>
+            <Sparkles size={18} />
+            <b>Figurinhas exclusivas</b>
+          </div>
+          <p>
+            Uma área especial para destacar as figurinhas conquistadas em ações e eventos do clube.
+          </p>
+        </section>
+      )}
+
+      <div className="album-toolbar">
+        <div className="album-page-size" aria-label="Quantidade de figurinhas por pagina">
+          {pageSizeOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={itemsPerPage === option ? "active" : ""}
+              onClick={() => {
+                setItemsChoice(option);
+                setPage(1);
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+        <div className="album-view-toggle" aria-label="Modo de visualizacao">
+          <button
+            type="button"
+            className={viewMode === "grid" ? "active" : ""}
+            onClick={() => setViewMode("grid")}
+            aria-label="Ver em grade"
+          >
+            <Grid3X3 size={15} />
+          </button>
+          <button
+            type="button"
+            className={viewMode === "list" ? "active" : ""}
+            onClick={() => setViewMode("list")}
+            aria-label="Ver em lista"
+          >
+            <List size={15} />
+          </button>
+        </div>
       </div>
 
       {/* Album Grid */}
@@ -827,16 +894,21 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
         <div className="empty">Nenhuma figurinha encontrada com este filtro.</div>
       ) : (
         <>
-          <div className="album" id="album-grid">
+          <div
+            className={`album ${viewMode === "list" ? "album-list" : ""}`}
+            id="album-grid"
+            style={{ gridTemplateColumns: gridColumns }}
+          >
             {paginatedStickers.map((sticker) => {
               const info = getOwnedInfo(sticker.number);
               const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
+              const isExclusive = isExclusiveSticker(sticker);
               const copies = getCopiesCount(sticker.number);
 
               return (
                 <div
                   key={sticker.number}
-                  className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""}`}
+                  className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""} ${isExclusive ? "exclusive-cell" : ""}`}
                   onClick={() => openSticker(sticker)}
                 >
                   <Stamp
@@ -849,6 +921,11 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                   {isRare && (
                     <span className="auto-badge">
                       <Star size={10} fill="currentColor" />
+                    </span>
+                  )}
+                  {isExclusive && (
+                    <span className="exclusive-badge">
+                      <Sparkles size={10} />
                     </span>
                   )}
                   {copies > 1 && (

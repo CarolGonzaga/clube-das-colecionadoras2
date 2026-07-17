@@ -376,7 +376,7 @@ export default function PosterModal({
           ctx.fillStyle = "#FFFFFF";
           ctx.textAlign = "center";
           ctx.font = "800 42px 'Fredoka', 'Quicksand', sans-serif";
-          ctx.fillText("já criou seu álbum?", 0, 0);
+          ctx.fillText(pct >= 100 ? "álbum completo 🎉" : "já criou seu álbum?", 0, 0);
           ctx.restore();
         }
       },

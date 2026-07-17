@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Minus, Plus, Search, ShoppingBag, Sparkles, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 
@@ -14,6 +14,7 @@ type StoreItem = {
   price: number;
   image: string;
   tag: string;
+  section: "pacotes" | "unitarias" | "raras";
 };
 
 type CartLine = StoreItem & {
@@ -24,36 +25,41 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "pack-single",
     name: "Pacote com 5 figurinhas",
-    description: "Sorteio de figurinhas comuns com chance especial.",
-    price: 5.9,
+    description: "Pacote sortido para abrir na tela de registros.",
+    price: 2.5,
     image: "/verso-card.png",
     tag: "pacote",
+    section: "pacotes",
   },
   {
     id: "pack-combo",
-    name: "Combo 3 pacotes",
-    description: "Mais aberturas para completar o album.",
-    price: 14.9,
+    name: "Combo com 10 pacotes",
+    description: "Economia para completar o album mais rapido.",
+    price: 22.5,
     image: "/verso-card.png",
     tag: "combo",
+    section: "pacotes",
   },
   {
-    id: "rare-spotlight",
-    name: "Figurinha rara avulsa",
-    description: "Compra unica, liberada somente se ainda nao estiver no album.",
-    price: 9.9,
+    id: "single-random",
+    name: "Figurinha unitária sortida",
+    description: "Uma figurinha comum sorteada automaticamente.",
+    price: 1,
     image: "/verso-card.png",
-    tag: "rara",
-  },
-  {
-    id: "credits-pack",
-    name: "Pacote com creditos",
-    description: "Creditos internos para trocar por novos pacotes.",
-    price: 7.9,
-    image: "/icons/recompensa.png",
-    tag: "creditos",
+    tag: "unitaria",
+    section: "unitarias",
   },
 ];
+
+const RARE_ITEMS: StoreItem[] = Array.from({ length: 16 }, (_, index) => ({
+  id: `rare-${index + 1}`,
+  name: `Rara individual ${index + 1}`,
+  description: "Figurinha rara revelada para escolher antes da compra.",
+  price: 4.5,
+  image: "/verso-card.png",
+  tag: "rara",
+  section: "raras",
+}));
 
 function formatMoney(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -65,12 +71,24 @@ function LojaPage() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "pending">("idle");
+  const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias" | "raras">(
+    "todos",
+  );
+  const [rareSearch, setRareSearch] = useState("");
 
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   }, [cart]);
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const featuredItems = STORE_ITEMS.filter(
+    (item) => storeFilter === "todos" || item.section === storeFilter,
+  );
+  const rareItems = RARE_ITEMS.filter((item) => {
+    const matchesFilter = storeFilter === "todos" || storeFilter === "raras";
+    const matchesSearch = item.name.toLowerCase().includes(rareSearch.trim().toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
   const getQty = (id: string) => quantities[id] || 1;
 
@@ -120,7 +138,7 @@ function LojaPage() {
       <div className="shop-title-row">
         <div>
           <h1 className="section-title">Loja</h1>
-          <p className="section-sub">Pacotes, raras e creditos para completar sua colecao.</p>
+          <p className="section-sub">Pacotes, unitarias e raras para completar sua colecao.</p>
         </div>
         <button type="button" className="shop-cart-button" onClick={() => setCartOpen(true)}>
           <ShoppingBag size={18} />
@@ -128,15 +146,91 @@ function LojaPage() {
         </button>
       </div>
 
-      <section className="shop-grid">
-        {STORE_ITEMS.map((item) => {
+      <section className="shop-filter-bar">
+        {[
+          ["todos", "Todos"],
+          ["pacotes", "Pacotes"],
+          ["unitarias", "Unitárias"],
+          ["raras", "Raras"],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            className={storeFilter === id ? "active" : ""}
+            onClick={() => setStoreFilter(id as typeof storeFilter)}
+          >
+            {label}
+          </button>
+        ))}
+      </section>
+
+      {featuredItems.length > 0 && (
+        <section className="shop-section">
+          <div className="shop-section-head">
+            <h2>Itens principais</h2>
+            <span>Pacotes e unitárias</span>
+          </div>
+          <div className="shop-grid featured">
+            {featuredItems.map((item) => {
+              const qty = getQty(item.id);
+
+              return (
+                <article className="shop-card" key={item.id}>
+                  <div className="shop-card-media">
+                    <img src={item.image} alt={item.name} />
+                    <small>{item.tag}</small>
+                  </div>
+                  <div className="shop-card-body">
+                    <h2>{item.name}</h2>
+                    <p>{item.description}</p>
+                    <b>{formatMoney(item.price)}</b>
+                  </div>
+                  <div className="shop-card-actions">
+                    <div className="qty-stepper">
+                      <button type="button" onClick={() => setQty(item.id, qty - 1)} aria-label="Diminuir">
+                        <Minus size={14} />
+                      </button>
+                      <span>{qty}</span>
+                      <button type="button" onClick={() => setQty(item.id, qty + 1)} aria-label="Aumentar">
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                    <button type="button" className="btn shop-add-btn" onClick={() => addToCart(item)}>
+                      Adicionar
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {rareItems.length > 0 && (
+        <section className="shop-section rare-shop-section">
+          <div className="shop-section-head">
+            <h2>Raras individuais</h2>
+            <span>Escolha a figurinha revelada</span>
+          </div>
+          <label className="shop-search">
+            <Search size={15} />
+            <input
+              value={rareSearch}
+              onChange={(event) => setRareSearch(event.target.value)}
+              placeholder="Filtrar rara por nome"
+            />
+          </label>
+          <div className="shop-grid rare-grid">
+            {rareItems.map((item) => {
           const qty = getQty(item.id);
 
           return (
-            <article className="shop-card" key={item.id}>
+            <article className="shop-card rare-store-card" key={item.id}>
               <div className="shop-card-media">
                 <img src={item.image} alt={item.name} />
-                <small>{item.tag}</small>
+                <small>
+                  <Sparkles size={10} /> {item.tag}
+                </small>
               </div>
               <div className="shop-card-body">
                 <h2>{item.name}</h2>
@@ -159,8 +253,10 @@ function LojaPage() {
               </div>
             </article>
           );
-        })}
-      </section>
+            })}
+          </div>
+        </section>
+      )}
 
       {cartOpen && (
         <div className="modal-bg" onClick={(event) => event.target === event.currentTarget && setCartOpen(false)}>

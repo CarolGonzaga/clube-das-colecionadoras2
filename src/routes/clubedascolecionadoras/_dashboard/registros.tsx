@@ -53,7 +53,7 @@ const pendingPacks: PackRecord[] = [
 ];
 
 const latestStickers = [
-  { number: 96, name: "Figurinha rara", kind: "rara", date: "16/07/2026" },
+  { number: 96, name: "Rara escolhida na loja", kind: "rara individual", date: "16/07/2026" },
   { number: 41, name: "Historia marcada", kind: "comum", date: "16/07/2026" },
   { number: 22, name: "Novo capitulo", kind: "comum", date: "16/07/2026" },
   { number: 8, name: "Repetida enviada para trocas", kind: "comum", date: "16/07/2026" },
@@ -103,7 +103,7 @@ function RegistrosPage() {
         Acompanhe suas compras, pacotes pendentes e figurinhas recebidas.
       </p>
 
-      <section className="registry-dashboard">
+      <section className="registry-dashboard compact">
         <article className="registry-stat">
           <PackageOpen size={18} />
           <span>ultimas compras</span>
@@ -127,9 +127,12 @@ function RegistrosPage() {
       </section>
 
       <AccordionSection title="Pacotes para abrir" count={`${pendingPacks.length} pendentes`}>
-        <div className="registry-pack-list">
+        <div className="registry-pack-grid">
           {pendingPacks.map((pack) => (
             <article className="registry-pack-card" key={pack.id}>
+              <div className="registry-pack-cover">
+                <PackageOpen size={24} />
+              </div>
               <div>
                 <b>{pack.title}</b>
                 <span>{pack.date}</span>
@@ -145,8 +148,12 @@ function RegistrosPage() {
         </div>
       </AccordionSection>
 
-      <AccordionSection title="Ultimas figurinhas" count={`${latestStickers.length} itens`}>
-        <div className="registry-sticker-list">
+      <AccordionSection
+        title="Ultimas figurinhas adquiridas"
+        count={`${latestStickers.length} itens`}
+        defaultOpen={false}
+      >
+        <div className="registry-sticker-grid">
           {latestStickers.map((sticker) => (
             <article className="registry-sticker-row" key={`${sticker.number}-${sticker.date}`}>
               <div className="registry-sticker-number">{sticker.number}</div>
@@ -154,7 +161,7 @@ function RegistrosPage() {
                 <b>{sticker.name}</b>
                 <span>{sticker.date}</span>
               </div>
-              <small className={sticker.kind === "rara" ? "is-rare" : ""}>{sticker.kind}</small>
+              <small className={sticker.kind.includes("rara") ? "is-rare" : ""}>{sticker.kind}</small>
             </article>
           ))}
         </div>

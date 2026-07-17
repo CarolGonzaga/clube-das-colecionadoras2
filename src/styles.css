@@ -758,6 +758,104 @@ button {
   background: #ffffff33;
   color: #fff;
 }
+.album-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -4px 0 14px;
+}
+.album-page-size,
+.album-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  background: #fff3f8;
+  border: 1px solid rgba(194, 24, 91, 0.12);
+  padding: 4px;
+}
+.album-page-size button,
+.album-view-toggle button {
+  width: 32px;
+  height: 28px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--wine);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 900;
+}
+.album-page-size button.active,
+.album-view-toggle button.active {
+  background: var(--grad-brand);
+  color: #fff;
+}
+.exclusive-album-intro {
+  margin: -3px 0 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(174, 184, 196, 0.55);
+  background: linear-gradient(135deg, #ffffff, #edf2f7 48%, #fdf7fb);
+  box-shadow: 0 10px 24px rgba(91, 104, 121, 0.1);
+  padding: 13px 14px;
+  color: #4b5563;
+}
+.exclusive-album-intro div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #5c0d2b;
+  font-family: "Baloo 2";
+  font-size: 17px;
+}
+.exclusive-album-intro svg {
+  color: #7d8897;
+}
+.exclusive-album-intro p {
+  margin: 4px 0 0;
+  color: rgba(75, 85, 99, 0.78);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+.cell.exclusive-cell {
+  border: 2px solid rgba(185, 195, 205, 0.88);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+    0 8px 22px rgba(102, 113, 128, 0.14);
+}
+.cell.exclusive-cell:not(.foil)::after {
+  content: none;
+}
+.exclusive-badge {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fff, #c9d1da);
+  color: #5e6876;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 10px rgba(85, 96, 112, 0.18);
+}
+.album.album-list {
+  gap: 9px;
+}
+.album.album-list .cell {
+  aspect-ratio: auto;
+  min-height: 104px;
+  justify-content: flex-start;
+  padding: 8px;
+}
+.album.album-list .cell > svg,
+.album.album-list .cell > img,
+.album.album-list .cell > div:first-child {
+  max-width: 74px;
+}
 .info-line {
   text-align: center;
   font-size: 12px;
@@ -3657,8 +3755,8 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 }
 
 .topbar-icon-btn {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border: 0;
   border-radius: 999px;
   background: #fde8f2;
@@ -3679,6 +3777,14 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 
 .topbar-status {
   display: none;
+}
+
+.topbar-actions {
+  margin-left: auto;
+}
+
+.topbar-status {
+  margin-right: auto;
 }
 
 .btn.muted {
@@ -3702,6 +3808,11 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   gap: 10px;
 }
 
+.registry-dashboard.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .registry-stat,
 .registry-section,
 .trade-action-card,
@@ -3713,13 +3824,14 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 }
 
 .registry-stat {
-  min-height: 96px;
-  border-radius: 18px;
-  padding: 13px;
+  min-height: 76px;
+  border-radius: 14px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   color: var(--wine);
+  background: linear-gradient(135deg, #fff, #fff8fb);
 }
 
 .registry-stat svg {
@@ -3735,7 +3847,7 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 
 .registry-stat b {
   font-family: "Baloo 2";
-  font-size: 23px;
+  font-size: 19px;
   line-height: 1;
 }
 
@@ -3784,14 +3896,35 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   gap: 10px;
 }
 
+.registry-pack-grid,
+.registry-sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .registry-pack-card,
 .registry-sticker-row {
   display: flex;
   align-items: center;
   gap: 12px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.84);
   padding: 10px;
+}
+
+.registry-pack-card {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.registry-pack-cover {
+  height: 72px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #fff1f7, #ffffff);
+  color: var(--magenta);
+  display: grid;
+  place-items: center;
 }
 
 .registry-pack-card > div,
@@ -3892,6 +4025,93 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.shop-grid.featured {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.shop-filter-bar {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.shop-filter-bar button {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #fff3f8;
+  color: var(--wine);
+  border: 1px solid rgba(194, 24, 91, 0.12);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.shop-filter-bar button.active {
+  background: var(--grad-brand);
+  color: #fff;
+}
+
+.shop-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shop-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.shop-section-head h2 {
+  margin: 0;
+  color: var(--wine);
+  font-family: "Baloo 2";
+  font-size: 20px;
+}
+
+.shop-section-head span {
+  color: rgba(126, 23, 70, 0.58);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.shop-search {
+  height: 40px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(194, 24, 91, 0.14);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: var(--magenta);
+}
+
+.shop-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--wine);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.rare-store-card .shop-card-media {
+  background: linear-gradient(135deg, #fff8db, #fff, #e3e8ef);
+}
+
+.rare-store-card .shop-card-media small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff3c4;
+  color: #8a5d00;
 }
 
 .shop-card {
@@ -4105,6 +4325,46 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   color: var(--magenta);
 }
 
+@media (max-width: 719px) {
+  .registry-dashboard.compact,
+  .shop-grid.featured,
+  .registry-pack-grid,
+  .registry-sticker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .registry-stat span {
+    font-size: 9px;
+  }
+
+  .registry-stat b {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 520px) {
+  .shop-grid.featured,
+  .rare-grid,
+  .registry-pack-grid,
+  .registry-sticker-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-modal-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .registry-dashboard.compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .rare-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .trade-actions {
   display: grid;
   gap: 10px;
@@ -4241,6 +4501,11 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   .topbar-status small {
     color: inherit;
     font-size: 11px;
+  }
+
+  .topbar-icon-btn {
+    width: 32px;
+    height: 32px;
   }
 }
 html.theme-lilac .text-\[\#5a1331\] {
@@ -4770,7 +5035,7 @@ html.theme-lilac .empty {
   }
 
   .club-dashboard-shell .topbar {
-    justify-content: flex-end;
+    justify-content: space-between;
   }
 
   .club-dashboard-shell .topbar-brand-link {
