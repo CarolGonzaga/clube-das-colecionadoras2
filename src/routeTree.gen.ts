@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UIdRouteImport } from './routes/u.$id'
 import { Route as ClubedascolecionadorasSignupRouteImport } from './routes/clubedascolecionadoras/signup'
 import { Route as ClubedascolecionadorasLoginRouteImport } from './routes/clubedascolecionadoras/login'
+import { Route as ClubedascolecionadorasConfirmarEmailRouteImport } from './routes/clubedascolecionadoras/confirmar-email'
 import { Route as ClubedascolecionadorasDashboardRouteImport } from './routes/clubedascolecionadoras/_dashboard'
 import { Route as ClubedascolecionadorasDashboardIndexRouteImport } from './routes/clubedascolecionadoras/_dashboard/index'
 import { Route as ClubedascolecionadorasDashboardTrocasRouteImport } from './routes/clubedascolecionadoras/_dashboard/trocas'
@@ -46,6 +47,12 @@ const ClubedascolecionadorasLoginRoute =
   ClubedascolecionadorasLoginRouteImport.update({
     id: '/clubedascolecionadoras/login',
     path: '/clubedascolecionadoras/login',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ClubedascolecionadorasConfirmarEmailRoute =
+  ClubedascolecionadorasConfirmarEmailRouteImport.update({
+    id: '/clubedascolecionadoras/confirmar-email',
+    path: '/clubedascolecionadoras/confirmar-email',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ClubedascolecionadorasDashboardRoute =
@@ -124,6 +131,7 @@ const ClubedascolecionadorasAlbumUIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clubedascolecionadoras': typeof ClubedascolecionadorasDashboardRouteWithChildren
+  '/clubedascolecionadoras/confirmar-email': typeof ClubedascolecionadorasConfirmarEmailRoute
   '/clubedascolecionadoras/login': typeof ClubedascolecionadorasLoginRoute
   '/clubedascolecionadoras/signup': typeof ClubedascolecionadorasSignupRoute
   '/u/$id': typeof UIdRoute
@@ -141,6 +149,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/clubedascolecionadoras/confirmar-email': typeof ClubedascolecionadorasConfirmarEmailRoute
   '/clubedascolecionadoras/login': typeof ClubedascolecionadorasLoginRoute
   '/clubedascolecionadoras/signup': typeof ClubedascolecionadorasSignupRoute
   '/u/$id': typeof UIdRoute
@@ -160,6 +169,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clubedascolecionadoras/_dashboard': typeof ClubedascolecionadorasDashboardRouteWithChildren
+  '/clubedascolecionadoras/confirmar-email': typeof ClubedascolecionadorasConfirmarEmailRoute
   '/clubedascolecionadoras/login': typeof ClubedascolecionadorasLoginRoute
   '/clubedascolecionadoras/signup': typeof ClubedascolecionadorasSignupRoute
   '/u/$id': typeof UIdRoute
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/clubedascolecionadoras'
+    | '/clubedascolecionadoras/confirmar-email'
     | '/clubedascolecionadoras/login'
     | '/clubedascolecionadoras/signup'
     | '/u/$id'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/clubedascolecionadoras/confirmar-email'
     | '/clubedascolecionadoras/login'
     | '/clubedascolecionadoras/signup'
     | '/u/$id'
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/clubedascolecionadoras/_dashboard'
+    | '/clubedascolecionadoras/confirmar-email'
     | '/clubedascolecionadoras/login'
     | '/clubedascolecionadoras/signup'
     | '/u/$id'
@@ -234,6 +247,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClubedascolecionadorasDashboardRoute: typeof ClubedascolecionadorasDashboardRouteWithChildren
+  ClubedascolecionadorasConfirmarEmailRoute: typeof ClubedascolecionadorasConfirmarEmailRoute
   ClubedascolecionadorasLoginRoute: typeof ClubedascolecionadorasLoginRoute
   ClubedascolecionadorasSignupRoute: typeof ClubedascolecionadorasSignupRoute
   UIdRoute: typeof UIdRoute
@@ -268,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/clubedascolecionadoras/login'
       fullPath: '/clubedascolecionadoras/login'
       preLoaderRoute: typeof ClubedascolecionadorasLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubedascolecionadoras/confirmar-email': {
+      id: '/clubedascolecionadoras/confirmar-email'
+      path: '/clubedascolecionadoras/confirmar-email'
+      fullPath: '/clubedascolecionadoras/confirmar-email'
+      preLoaderRoute: typeof ClubedascolecionadorasConfirmarEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clubedascolecionadoras/_dashboard': {
@@ -403,6 +424,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClubedascolecionadorasDashboardRoute:
     ClubedascolecionadorasDashboardRouteWithChildren,
+  ClubedascolecionadorasConfirmarEmailRoute:
+    ClubedascolecionadorasConfirmarEmailRoute,
   ClubedascolecionadorasLoginRoute: ClubedascolecionadorasLoginRoute,
   ClubedascolecionadorasSignupRoute: ClubedascolecionadorasSignupRoute,
   UIdRoute: UIdRoute,
