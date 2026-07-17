@@ -111,61 +111,79 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
   useEffect(() => {
     if (typeof window === "undefined" || !data.profile?.id) return;
 
-    const channel = supabase
-      .channel("realtime-trades")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "trade_requests" },
-        async (payload) => {
-          const newRow = payload.new as any;
-          const oldRow = payload.old as any;
-          const isReceiver = newRow?.receiver_id === data.profile.id;
-          const isInitiator = newRow?.initiator_id === data.profile.id;
+    const handlePayload = async (payload: any) => {
+      const newRow = payload.new as any;
+      const oldRow = payload.old as any;
+      const isReceiver = newRow?.receiver_id === data.profile.id;
+      const isInitiator = newRow?.initiator_id === data.profile.id;
 
-          if (!isReceiver && !isInitiator) return;
+      if (payload.eventType === "INSERT" && isReceiver) {
+        ui.toast(`Você recebeu uma nova solicitação de troca! 🔄`);
+        router.invalidate();
+      }
 
-          if (payload.eventType === "INSERT" && isReceiver) {
-            ui.toast(`Você recebeu uma nova solicitação de troca! 🔄`);
+      if (payload.eventType === "UPDATE") {
+        if (newRow.status === "accepted" && oldRow?.status === "pending") {
+          const gainedSticker = isInitiator ? newRow.receiver_sticker : newRow.initiator_sticker;
+          const formattedNumber = String(gainedSticker).padStart(3, "0");
+          
+          ui.toast(`Troca realizada! Você tem uma nova figurinha para receber 🎁`);
+          router.invalidate();
+
+          const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
+          savedNotifs.unshift({
+            id: newRow.id,
+            message: `Troca concluída! Nova figurinha #${formattedNumber} pronta para resgate`,
+            date: new Date().toISOString(),
+            seen: false
+          });
+          localStorage.setItem("trade_notifications", JSON.stringify(savedNotifs));
+          window.dispatchEvent(new Event("trade_notifications_change"));
+        } else if (newRow.status === "rejected" && oldRow?.status === "pending") {
+          if (isInitiator) {
+            ui.toast(`Sua solicitação de troca foi recusada. ❌`);
             router.invalidate();
           }
-
-          if (payload.eventType === "UPDATE") {
-            if (newRow.status === "accepted" && oldRow?.status === "pending") {
-              const gainedSticker = isInitiator ? newRow.receiver_sticker : newRow.initiator_sticker;
-              const formattedNumber = String(gainedSticker).padStart(3, "0");
-              
-              ui.toast(`Troca realizada! Você recebeu a figurinha #${formattedNumber} 🎉`);
-              
-              if (ui.triggerHearts) ui.triggerHearts();
-              router.invalidate();
-
-              const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
-              savedNotifs.unshift({
-                id: newRow.id,
-                message: `Troca realizada! Você recebeu a figurinha #${formattedNumber}`,
-                date: new Date().toISOString(),
-                seen: false
-              });
-              localStorage.setItem("trade_notifications", JSON.stringify(savedNotifs));
-              window.dispatchEvent(new Event("trade_notifications_change"));
-            } else if (newRow.status === "rejected" && oldRow?.status === "pending") {
-              if (isInitiator) {
-                ui.toast(`Sua solicitação de troca foi recusada. ❌`);
-                router.invalidate();
-              }
-            } else if (newRow.status === "cancelled" && oldRow?.status === "pending") {
-              if (isReceiver) {
-                ui.toast(`Uma solicitação de troca foi cancelada pelo iniciador. ❌`);
-                router.invalidate();
-              }
-            }
+        } else if (newRow.status === "cancelled" && oldRow?.status === "pending") {
+          if (isReceiver) {
+            ui.toast(`Uma solicitação de troca foi cancelada pelo iniciador. ❌`);
+            router.invalidate();
           }
         }
+      }
+    };
+
+    const channelInitiator = supabase
+      .channel(`trades-initiator-${data.profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trade_requests",
+          filter: `initiator_id=eq.${data.profile.id}`,
+        },
+        handlePayload,
+      )
+      .subscribe();
+
+    const channelReceiver = supabase
+      .channel(`trades-receiver-${data.profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "trade_requests",
+          filter: `receiver_id=eq.${data.profile.id}`,
+        },
+        handlePayload,
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(channelInitiator);
+      supabase.removeChannel(channelReceiver);
     };
   }, [data.profile?.id, router, ui]);
 

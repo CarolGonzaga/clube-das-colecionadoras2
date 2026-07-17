@@ -12,6 +12,7 @@ import {
   getPointsBalanceAction,
   exchangeForPointsAction,
   getResolvedTradesAction,
+  claimTradeRewardAction,
 } from "@/lib/actions";
 import Stamp from "./Stamp";
 import {
@@ -237,6 +238,33 @@ export default function TrocasClient({
       setRefreshing(false);
     }
   }, []);
+
+  const [claimLoading, setClaimLoading] = useState<Record<string, boolean>>({});
+
+  const handleClaimSticker = async (tradeId: string) => {
+    setClaimLoading((prev) => ({ ...prev, [tradeId]: true }));
+    const res = await claimTradeRewardAction(tradeId);
+    setClaimLoading((prev) => ({ ...prev, [tradeId]: false }));
+
+    if (res.success && res.data) {
+      router.invalidate();
+      ui.showReveals(
+        [
+          {
+            slug: `sticker-${res.data.sticker_number}`,
+            number: res.data.sticker_number,
+            wasNew: false,
+            isRare: res.data.is_rare,
+            repeat: false,
+            reward: null,
+          },
+        ],
+        "Troca Recebida!",
+      );
+    } else {
+      ui.toast(res.message || "Erro ao resgatar figurinha.");
+    }
+  };
 
   // ─── Computed duplicates ──────────────────────────────────────────────────
 
@@ -705,6 +733,24 @@ export default function TrocasClient({
                   </button>
                 </div>
               )}
+              {tr.status === "accepted" && (
+                <div className="trade-request-actions" style={{ marginTop: "8px" }}>
+                  {tr.initiator_claimed ? (
+                    <button className="btn sm soft" disabled style={{ width: "100%" }}>
+                      ✓ Resgatada
+                    </button>
+                  ) : (
+                    <button
+                      className="btn sm"
+                      style={{ width: "100%" }}
+                      onClick={() => handleClaimSticker(tr.id)}
+                      disabled={claimLoading[tr.id]}
+                    >
+                      {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha 🎁"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -721,6 +767,7 @@ export default function TrocasClient({
           {resolved.map((tr) => {
             const isMeInitiator = tr.initiator_id === profileId;
             const otherParty = isMeInitiator ? tr.receiver_nick : tr.initiator_nick;
+            const isClaimed = isMeInitiator ? tr.initiator_claimed : tr.receiver_claimed;
             return (
               <div key={tr.id} className="trade-request-card">
                 <div className="trade-request-header">
@@ -746,6 +793,24 @@ export default function TrocasClient({
                     <span style={{ fontSize: 11 }}>{tr.receiver_sticker_name}</span>
                   </div>
                 </div>
+                {tr.status === "accepted" && (
+                  <div className="trade-request-actions" style={{ marginTop: "8px" }}>
+                    {isClaimed ? (
+                      <button className="btn sm soft" disabled style={{ width: "100%" }}>
+                        ✓ Resgatada
+                      </button>
+                    ) : (
+                      <button
+                        className="btn sm"
+                        style={{ width: "100%" }}
+                        onClick={() => handleClaimSticker(tr.id)}
+                        disabled={claimLoading[tr.id]}
+                      >
+                        {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha 🎁"}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

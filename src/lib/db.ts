@@ -601,6 +601,14 @@ export const dbService = {
     return (data || []) as TradeRequest[];
   },
 
+  async claimTradeReward(tradeId: string) {
+    const { data, error } = await supabase.rpc("claim_trade_reward", {
+      trade_id_param: tradeId,
+    });
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
   async validateAndUpdateNick(nick: string) {
     const { data, error } = await supabase.rpc("validate_and_update_nick", {
       new_nick_param: nick,

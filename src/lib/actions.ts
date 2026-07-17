@@ -291,6 +291,15 @@ export async function getResolvedTradesAction() {
   }
 }
 
+export async function claimTradeRewardAction(tradeId: string) {
+  try {
+    const data = await dbService.claimTradeReward(tradeId);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 export async function validateAndUpdateNickAction(nick: string) {
   try {
     const data = await dbService.validateAndUpdateNick(nick);

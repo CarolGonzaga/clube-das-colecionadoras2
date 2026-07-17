@@ -68,6 +68,8 @@ export interface TradeRequest {
   created_at: string;
   expires_at: string;
   resolved_at?: string | null;
+  initiator_claimed?: boolean;
+  receiver_claimed?: boolean;
   initiator_sticker_name?: string;
   receiver_sticker_name?: string;
 }
