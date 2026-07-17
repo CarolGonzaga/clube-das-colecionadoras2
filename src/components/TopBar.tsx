@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { Bell, Crown, LogOut, Settings } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
@@ -12,6 +12,27 @@ interface TopBarProps {
 
 export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   const ui = useUI();
+  const [hasUnseenNotifs, setHasUnseenNotifs] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const checkNotifs = () => {
+      const stored = localStorage.getItem("trade_notifications");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setHasUnseenNotifs(parsed.some((n: any) => !n.seen));
+      } else {
+        setHasUnseenNotifs(false);
+      }
+    };
+    checkNotifs();
+    window.addEventListener("trade_notifications_change", checkNotifs);
+    window.addEventListener("storage", checkNotifs);
+    return () => {
+      window.removeEventListener("trade_notifications_change", checkNotifs);
+      window.removeEventListener("storage", checkNotifs);
+    };
+  }, []);
 
   const handleLogout = async () => {
     const res = await logoutAction();
@@ -24,7 +45,84 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   };
 
   const handleNotifications = () => {
-    ui.toast("Nenhuma notificacao nova.");
+    const stored = localStorage.getItem("trade_notifications");
+    const notifications = stored ? JSON.parse(stored) : [];
+
+    // Mark all as seen
+    const updated = notifications.map((n: any) => ({ ...n, seen: true }));
+    localStorage.setItem("trade_notifications", JSON.stringify(updated));
+    setHasUnseenNotifs(false);
+    window.dispatchEvent(new Event("trade_notifications_change"));
+
+    ui.openModal(
+      <div style={{ textAlign: "center", padding: "8px 0" }}>
+        <h2
+          style={{
+            marginBottom: "16px",
+            color: "var(--wine)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            fontSize: "17px",
+            fontWeight: "800",
+          }}
+        >
+          <Bell className="w-5 h-5 text-[#C2185B]" /> Notificações de Troca
+        </h2>
+        {notifications.length === 0 ? (
+          <p style={{ fontSize: "13px", opacity: 0.7, padding: "20px 0" }}>
+            Nenhuma notificação no momento.
+          </p>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              maxHeight: "260px",
+              overflowY: "auto",
+              paddingRight: "4px",
+            }}
+          >
+            {notifications.map((n: any) => (
+              <div
+                key={n.id}
+                style={{
+                  border: "1px solid rgba(194, 24, 91, 0.12)",
+                  background: "#fff0f7",
+                  borderRadius: "12px",
+                  padding: "10px 12px",
+                  textAlign: "left",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    margin: 0,
+                    color: "#9e1b4a",
+                    lineHeight: "1.4",
+                  }}
+                >
+                  {n.message}
+                </p>
+                <div style={{ fontSize: "9px", opacity: 0.5, marginTop: "4px" }}>
+                  {new Date(n.date).toLocaleString("pt-BR")}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <button
+          className="btn soft"
+          style={{ marginTop: "20px", width: "100%" }}
+          onClick={() => ui.closeModal()}
+        >
+          Fechar
+        </button>
+      </div>,
+    );
   };
 
   return (
@@ -43,10 +141,16 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
         <button
           type="button"
           onClick={handleNotifications}
-          className="topbar-icon-btn"
+          className="topbar-icon-btn relative"
           aria-label="Notificacoes"
         >
           <Bell size={18} strokeWidth={2.5} />
+          {hasUnseenNotifs && (
+            <span
+              className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"
+              style={{ boxShadow: "0 0 6px #ef4444" }}
+            />
+          )}
         </button>
         <Link to="/clubedascolecionadoras/mural" className="topbar-icon-btn" aria-label="Mural">
           <Crown size={18} strokeWidth={2.5} />

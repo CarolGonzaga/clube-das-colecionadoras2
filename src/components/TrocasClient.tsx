@@ -11,6 +11,7 @@ import {
   cancelTradeAction,
   getPointsBalanceAction,
   exchangeForPointsAction,
+  getResolvedTradesAction,
 } from "@/lib/actions";
 import Stamp from "./Stamp";
 import {
@@ -40,11 +41,12 @@ interface TrocasClientProps {
   profileNick: string;
   initialIncoming: TradeRequest[];
   initialOutgoing: TradeRequest[];
+  initialResolved: TradeRequest[];
   initialPointsBalance: number;
 }
 
 type MainTab = "free" | "shop" | "requests";
-type RequestsSubTab = "incoming" | "outgoing";
+type RequestsSubTab = "incoming" | "outgoing" | "history";
 type TradeFlowStep = "idle" | "enter-nick" | "confirm-user" | "select-sticker" | "confirm-trade";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -169,6 +171,7 @@ export default function TrocasClient({
   profileNick,
   initialIncoming,
   initialOutgoing,
+  initialResolved,
   initialPointsBalance,
 }: TrocasClientProps) {
   const ui = useUI();
@@ -180,6 +183,7 @@ export default function TrocasClient({
   const [userStickers, setUserStickers] = useState<UserSticker[]>(initialUserStickers);
   const [incoming, setIncoming] = useState<TradeRequest[]>(initialIncoming);
   const [outgoing, setOutgoing] = useState<TradeRequest[]>(initialOutgoing);
+  const [resolved, setResolved] = useState<TradeRequest[]>(initialResolved);
   const [pointsBalance, setPointsBalance] = useState(initialPointsBalance);
   const [exchangeLoading, setExchangeLoading] = useState<Record<number, boolean>>({});
   const [respondLoading, setRespondLoading] = useState<Record<string, boolean>>({});
@@ -208,20 +212,26 @@ export default function TrocasClient({
   }, [initialOutgoing]);
 
   useEffect(() => {
+    setResolved(initialResolved);
+  }, [initialResolved]);
+
+  useEffect(() => {
     setPointsBalance(initialPointsBalance);
   }, [initialPointsBalance]);
 
-  // Refresh incoming/outgoing trades
+  // Refresh incoming/outgoing/resolved trades
   const refreshTrades = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [inc, out, bal] = await Promise.all([
+      const [inc, out, res, bal] = await Promise.all([
         getIncomingTradesAction(),
         getOutgoingTradesAction(),
+        getResolvedTradesAction(),
         getPointsBalanceAction(),
       ]);
       if (inc.success && inc.data) setIncoming(inc.data);
       if (out.success && out.data) setOutgoing(out.data);
+      if (res.success && res.data) setResolved(res.data);
       if (bal.success) setPointsBalance(bal.balance);
     } finally {
       setRefreshing(false);
@@ -702,6 +712,48 @@ export default function TrocasClient({
     </div>
   );
 
+  const renderHistory = () => (
+    <div>
+      {resolved.length === 0 ? (
+        <div className="trade-empty"><p>Nenhuma troca concluída no histórico.</p></div>
+      ) : (
+        <div className="trade-requests-list">
+          {resolved.map((tr) => {
+            const isMeInitiator = tr.initiator_id === profileId;
+            const otherParty = isMeInitiator ? tr.receiver_nick : tr.initiator_nick;
+            return (
+              <div key={tr.id} className="trade-request-card">
+                <div className="trade-request-header">
+                  {avatarDisplay(null, null, otherParty || "")}
+                  <div className="trade-request-meta">
+                    <b>@{otherParty}</b>
+                    <span className="note">
+                      Resolvido em: {tr.resolved_at ? new Date(tr.resolved_at).toLocaleDateString("pt-BR") : "-"}
+                    </span>
+                  </div>
+                  {statusBadge(tr.status)}
+                </div>
+                <div className="trade-request-stickers">
+                  <div className="trade-req-sticker">
+                    <span className="note">Iniciador dá</span>
+                    <b>#{String(tr.initiator_sticker).padStart(3, "0")}</b>
+                    <span style={{ fontSize: 11 }}>{tr.initiator_sticker_name}</span>
+                  </div>
+                  <ArrowLeftRight className="w-4 h-4 text-pink-400 mx-1 mt-3 flex-shrink-0" />
+                  <div className="trade-req-sticker">
+                    <span className="note">Receptor dá</span>
+                    <b>#{String(tr.receiver_sticker).padStart(3, "0")}</b>
+                    <span style={{ fontSize: 11 }}>{tr.receiver_sticker_name}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   // ─── Main render ──────────────────────────────────────────────────────────
 
   if (flowStep !== "idle") {
@@ -796,8 +848,14 @@ export default function TrocasClient({
                   <span className="trade-tab-count">{outgoing.filter((t) => t.status === "pending").length}</span>
                 )}
               </button>
+              <button className={`trade-sub-tab ${requestsSubTab === "history" ? "active" : ""}`} onClick={() => setRequestsSubTab("history")}>
+                <Clock className="w-3.5 h-3.5" />
+                Histórico
+              </button>
             </div>
-            {requestsSubTab === "incoming" ? renderIncoming() : renderOutgoing()}
+            {requestsSubTab === "incoming" && renderIncoming()}
+            {requestsSubTab === "outgoing" && renderOutgoing()}
+            {requestsSubTab === "history" && renderHistory()}
           </div>
         )}
       </div>

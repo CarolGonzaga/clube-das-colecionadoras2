@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { dbService } from "../../lib/db";
-import { UIProvider } from "../../components/UIProvider";
+import { dbService, supabase } from "../../lib/db";
+import { UIProvider, useUI } from "../../components/UIProvider";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import TopBar from "../../components/TopBar";
 import Navigation from "../../components/Navigation";
@@ -96,9 +96,9 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
   component: DashboardLayout,
 });
 
-function DashboardLayout() {
-  const data = Route.useLoaderData();
+function DashboardInner({ data, ownedCount, pct, statusText }: any) {
   const router = useRouter();
+  const ui = useUI();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -107,6 +107,83 @@ function DashboardLayout() {
     }, 180000); // 3 minutes
     return () => clearInterval(interval);
   }, [router]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !data.profile?.id) return;
+
+    const channel = supabase
+      .channel("realtime-trades")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trade_requests" },
+        async (payload) => {
+          const newRow = payload.new as any;
+          const oldRow = payload.old as any;
+          const isReceiver = newRow?.receiver_id === data.profile.id;
+          const isInitiator = newRow?.initiator_id === data.profile.id;
+
+          if (!isReceiver && !isInitiator) return;
+
+          if (payload.eventType === "INSERT" && isReceiver) {
+            ui.toast(`Você recebeu uma nova solicitação de troca! 🔄`);
+            router.invalidate();
+          }
+
+          if (payload.eventType === "UPDATE") {
+            if (newRow.status === "accepted" && oldRow?.status === "pending") {
+              const gainedSticker = isInitiator ? newRow.receiver_sticker : newRow.initiator_sticker;
+              const formattedNumber = String(gainedSticker).padStart(3, "0");
+              
+              ui.toast(`Troca realizada! Você recebeu a figurinha #${formattedNumber} 🎉`);
+              
+              if (ui.triggerHearts) ui.triggerHearts();
+              router.invalidate();
+
+              const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
+              savedNotifs.unshift({
+                id: newRow.id,
+                message: `Troca realizada! Você recebeu a figurinha #${formattedNumber}`,
+                date: new Date().toISOString(),
+                seen: false
+              });
+              localStorage.setItem("trade_notifications", JSON.stringify(savedNotifs));
+              window.dispatchEvent(new Event("trade_notifications_change"));
+            } else if (newRow.status === "rejected" && oldRow?.status === "pending") {
+              if (isInitiator) {
+                ui.toast(`Sua solicitação de troca foi recusada. ❌`);
+                router.invalidate();
+              }
+            } else if (newRow.status === "cancelled" && oldRow?.status === "pending") {
+              if (isReceiver) {
+                ui.toast(`Uma solicitação de troca foi cancelada pelo iniciador. ❌`);
+                router.invalidate();
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [data.profile?.id, router, ui]);
+
+  return (
+    <div className="club-dashboard-shell mx-auto max-w-[460px] h-screen overflow-hidden bg-background text-foreground relative">
+      <Navigation pendingTradesCount={data.pendingTradesCount} />
+      <div className="club-dashboard-main flex min-w-0 flex-col">
+        <TopBar ownedCount={ownedCount} pct={pct} statusText={statusText} />
+        <div className="club-dashboard-scroll flex-1 overflow-y-auto pb-[106px] min-h-0">
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardLayout() {
+  const data = Route.useLoaderData();
 
   // Calculate active styles for ThemeProvider
   const initialStyles = data.userStyles.filter((s) => s.enabled).map((s) => s.style_id);
@@ -135,16 +212,14 @@ function DashboardLayout() {
   return (
     <ThemeProvider initialStyles={initialStyles}>
       <UIProvider>
-        <div className="club-dashboard-shell mx-auto max-w-[460px] h-screen overflow-hidden bg-background text-foreground relative">
-          <Navigation pendingTradesCount={data.pendingTradesCount} />
-          <div className="club-dashboard-main flex min-w-0 flex-col">
-            <TopBar ownedCount={ownedCount} pct={pct} statusText={statusText} />
-            <div className="club-dashboard-scroll flex-1 overflow-y-auto pb-[106px] min-h-0">
-              <Outlet />
-            </div>
-          </div>
-        </div>
+        <DashboardInner
+          data={data}
+          ownedCount={ownedCount}
+          pct={pct}
+          statusText={statusText}
+        />
       </UIProvider>
     </ThemeProvider>
   );
 }
+

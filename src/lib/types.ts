@@ -67,6 +67,7 @@ export interface TradeRequest {
   status: "pending" | "accepted" | "rejected" | "cancelled" | "expired";
   created_at: string;
   expires_at: string;
+  resolved_at?: string | null;
   initiator_sticker_name?: string;
   receiver_sticker_name?: string;
 }

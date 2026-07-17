@@ -282,6 +282,15 @@ export async function exchangeForPointsAction(stickerNumber: number) {
   }
 }
 
+export async function getResolvedTradesAction() {
+  try {
+    const data = await dbService.getResolvedTrades();
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 export async function validateAndUpdateNickAction(nick: string) {
   try {
     const data = await dbService.validateAndUpdateNick(nick);

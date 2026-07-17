@@ -595,6 +595,12 @@ export const dbService = {
     return (data as number) || 0;
   },
 
+  async getResolvedTrades(): Promise<TradeRequest[]> {
+    const { data, error } = await supabase.rpc("get_resolved_trades");
+    if (error) throw new Error(error.message);
+    return (data || []) as TradeRequest[];
+  },
+
   async validateAndUpdateNick(nick: string) {
     const { data, error } = await supabase.rpc("validate_and_update_nick", {
       new_nick_param: nick,
