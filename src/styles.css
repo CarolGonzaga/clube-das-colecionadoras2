@@ -6134,11 +6134,57 @@ html.theme-lilac .text-\[#5c0d2b\] {
 }
 .trade-flow-search-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+.trade-flow-search-row input {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding: 0 16px;
+  border: 1.5px solid #f2cfdf;
+  border-radius: 9999px;
+  font-size: 14px;
+  color: #5c0d2b;
+  background-color: #fff;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+.trade-flow-search-row input:focus {
+  outline: none;
+  border-color: #bf2a5e;
+  box-shadow: 0 0 0 3px rgba(191, 42, 94, 0.15);
 }
 .trade-flow-search-btn {
-  padding: 0 14px !important;
+  height: 46px;
+  width: 46px;
+  border-radius: 50%;
+  background: var(--gradient-berry);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(191, 42, 94, 0.2);
+  transition: all 0.2s ease;
+  padding: 0 !important;
+}
+.trade-flow-search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(191, 42, 94, 0.3);
+}
+.trade-flow-search-btn:active {
+  transform: translateY(0);
+}
+.trade-flow-search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 .trade-flow-user-header {
   display: flex;

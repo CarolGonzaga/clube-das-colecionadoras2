@@ -486,7 +486,7 @@ export default function TrocasClient({
                 autoFocus
               />
               <button
-                className="btn trade-flow-search-btn"
+                className="trade-flow-search-btn"
                 onClick={handleNickLookup}
                 disabled={flowNickLoading || !flowNickInput.trim()}
               >
