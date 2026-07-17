@@ -124,20 +124,19 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
 
       if (payload.eventType === "UPDATE") {
         if (newRow.status === "accepted" && oldRow?.status === "pending") {
-          const gainedSticker = isInitiator ? newRow.receiver_sticker : newRow.initiator_sticker;
-          const formattedNumber = String(gainedSticker).padStart(3, "0");
-          
-          ui.toast(`Troca realizada! Você tem uma nova figurinha para receber 🎁`);
+          ui.toast(`Troca realizada! Abra o histórico de trocas para resgatar sua figurinha. 🎁`);
           router.invalidate();
 
           const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
-          savedNotifs.unshift({
+          const filtered = savedNotifs.filter((n: any) => n.id !== newRow.id);
+          filtered.unshift({
             id: newRow.id,
-            message: `Troca concluída! Nova figurinha #${formattedNumber} pronta para resgate`,
+            type: "trade_claim",
+            message: "Troca realizada! Abra o histórico de trocas para resgatar sua figurinha.",
             date: new Date().toISOString(),
             seen: false
           });
-          localStorage.setItem("trade_notifications", JSON.stringify(savedNotifs));
+          localStorage.setItem("trade_notifications", JSON.stringify(filtered));
           window.dispatchEvent(new Event("trade_notifications_change"));
         } else if (newRow.status === "rejected" && oldRow?.status === "pending") {
           if (isInitiator) {
@@ -152,6 +151,53 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
         }
       }
     };
+
+    // Client-side synchronization to local storage notifications
+    const syncPendingClaims = async () => {
+      try {
+        const resolved = await dbService.getResolvedTrades().catch(() => []);
+        if (!resolved || resolved.length === 0) return;
+
+        let hasNew = false;
+        const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
+        
+        for (const tr of resolved) {
+          if (tr.status === "accepted") {
+            const isMeInitiator = tr.initiator_id === data.profile.id;
+            const isClaimed = isMeInitiator ? tr.initiator_claimed : tr.receiver_claimed;
+            
+            if (!isClaimed) {
+              const exists = savedNotifs.some((n: any) => n.id === tr.id);
+              if (!exists) {
+                savedNotifs.unshift({
+                  id: tr.id,
+                  type: "trade_claim",
+                  message: "Troca realizada! Abra o histórico de trocas para resgatar sua figurinha.",
+                  date: tr.resolved_at || new Date().toISOString(),
+                  seen: false
+                });
+                hasNew = true;
+              }
+            } else {
+              const notifIndex = savedNotifs.findIndex((n: any) => n.id === tr.id);
+              if (notifIndex !== -1 && !savedNotifs[notifIndex].seen) {
+                savedNotifs[notifIndex].seen = true;
+                hasNew = true;
+              }
+            }
+          }
+        }
+
+        if (hasNew) {
+          localStorage.setItem("trade_notifications", JSON.stringify(savedNotifs));
+          window.dispatchEvent(new Event("trade_notifications_change"));
+        }
+      } catch (err) {
+        console.error("Error syncing pending claims:", err);
+      }
+    };
+
+    syncPendingClaims();
 
     const channelInitiator = supabase
       .channel(`trades-initiator-${data.profile.id}`)

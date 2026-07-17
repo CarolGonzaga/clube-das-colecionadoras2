@@ -44,6 +44,7 @@ interface TrocasClientProps {
   initialOutgoing: TradeRequest[];
   initialResolved: TradeRequest[];
   initialPointsBalance: number;
+  initialTab?: string;
 }
 
 type MainTab = "free" | "shop" | "requests";
@@ -174,13 +175,18 @@ export default function TrocasClient({
   initialOutgoing,
   initialResolved,
   initialPointsBalance,
+  initialTab,
 }: TrocasClientProps) {
   const ui = useUI();
   const router = useRouter();
 
   // State
-  const [mainTab, setMainTab] = useState<MainTab>("free");
-  const [requestsSubTab, setRequestsSubTab] = useState<RequestsSubTab>("incoming");
+  const [mainTab, setMainTab] = useState<MainTab>(
+    initialTab === "history" || initialTab === "requests" ? "requests" : "free"
+  );
+  const [requestsSubTab, setRequestsSubTab] = useState<RequestsSubTab>(
+    initialTab === "history" ? "history" : "incoming"
+  );
   const [userStickers, setUserStickers] = useState<UserSticker[]>(initialUserStickers);
   const [incoming, setIncoming] = useState<TradeRequest[]>(initialIncoming);
   const [outgoing, setOutgoing] = useState<TradeRequest[]>(initialOutgoing);
@@ -219,6 +225,16 @@ export default function TrocasClient({
   useEffect(() => {
     setPointsBalance(initialPointsBalance);
   }, [initialPointsBalance]);
+
+  useEffect(() => {
+    if (initialTab === "history") {
+      setMainTab("requests");
+      setRequestsSubTab("history");
+    } else if (initialTab === "requests") {
+      setMainTab("requests");
+      setRequestsSubTab("incoming");
+    }
+  }, [initialTab]);
 
   // Refresh incoming/outgoing/resolved trades
   const refreshTrades = useCallback(async () => {

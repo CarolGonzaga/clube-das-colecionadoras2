@@ -2,8 +2,14 @@ import { createFileRoute, useLoaderData } from "@tanstack/react-router";
 import { dbService } from "../../../lib/db";
 import TrocasClient from "../../../components/TrocasClient";
 import type { TradeRequest } from "../../../lib/types";
+import { z } from "zod";
+
+const searchSchema = z.object({
+  tab: z.string().optional(),
+});
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/trocas")({
+  validateSearch: searchSchema,
   loader: async (): Promise<{
     incomingTrades: TradeRequest[];
     outgoingTrades: TradeRequest[];
@@ -27,6 +33,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/trocas"
 function DashboardTrocas() {
   const parentData = useLoaderData({ from: "/clubedascolecionadoras/_dashboard" });
   const localData = Route.useLoaderData();
+  const search = Route.useSearch();
 
   return (
     <TrocasClient
@@ -38,6 +45,7 @@ function DashboardTrocas() {
       initialOutgoing={localData?.outgoingTrades ?? []}
       initialResolved={localData?.resolvedTrades ?? []}
       initialPointsBalance={localData?.pointsBalance ?? 0}
+      initialTab={search.tab}
     />
   );
 }

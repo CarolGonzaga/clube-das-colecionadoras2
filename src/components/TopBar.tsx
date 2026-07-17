@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Bell, Crown, LogOut, Settings } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
 import { useUI } from "@/components/UIProvider";
@@ -12,6 +12,7 @@ interface TopBarProps {
 
 export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   const ui = useUI();
+  const router = useRouter();
   const [hasUnseenNotifs, setHasUnseenNotifs] = useState(false);
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
             fontWeight: "800",
           }}
         >
-          <Bell className="w-5 h-5 text-[#C2185B]" /> Notificações de Troca
+          <Bell className="w-5 h-5 text-[#C2185B]" /> Notificações
         </h2>
         {notifications.length === 0 ? (
           <p style={{ fontSize: "13px", opacity: 0.7, padding: "20px 0" }}>
@@ -85,33 +86,52 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
               paddingRight: "4px",
             }}
           >
-            {notifications.map((n: any) => (
-              <div
-                key={n.id}
-                style={{
-                  border: "1px solid rgba(194, 24, 91, 0.12)",
-                  background: "#fff0f7",
-                  borderRadius: "12px",
-                  padding: "10px 12px",
-                  textAlign: "left",
-                }}
-              >
-                <p
+            {notifications.map((n: any) => {
+              const isClickable = n.type === "trade_claim";
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => {
+                    if (isClickable) {
+                      ui.closeModal();
+                      router.navigate({
+                        to: "/clubedascolecionadoras/trocas",
+                        search: { tab: "history" }
+                      });
+                    }
+                  }}
                   style={{
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    margin: 0,
-                    color: "#9e1b4a",
-                    lineHeight: "1.4",
+                    border: "1px solid rgba(194, 24, 91, 0.12)",
+                    background: isClickable ? "#fff0f7" : "#fafafa",
+                    borderRadius: "12px",
+                    padding: "10px 12px",
+                    textAlign: "left",
+                    cursor: isClickable ? "pointer" : "default",
+                    transition: "transform 0.1s ease",
                   }}
                 >
-                  {n.message}
-                </p>
-                <div style={{ fontSize: "9px", opacity: 0.5, marginTop: "4px" }}>
-                  {new Date(n.date).toLocaleString("pt-BR")}
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      margin: 0,
+                      color: isClickable ? "#9e1b4a" : "#444",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    {n.message}
+                  </p>
+                  <div style={{ fontSize: "9px", opacity: 0.5, marginTop: "4px" }}>
+                    {new Date(n.date).toLocaleString("pt-BR")}
+                  </div>
+                  {isClickable && (
+                    <span style={{ fontSize: "10px", color: "#C2185B", fontWeight: "bold", display: "block", marginTop: "4px" }}>
+                      Clique para resgatar ➔
+                    </span>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <button
