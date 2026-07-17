@@ -281,7 +281,7 @@ export default function HomeClient({
   const [claimedStyleId, setClaimedStyleId] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [completedMissions, setCompletedMissions] = useState<string[]>(completedMissionIds);
-  const [missionProgress, setMissionProgress] = useState<Record<string, number>>({});
+  const [activeCountdown, setActiveCountdown] = useState<{ id: string; label: string; url: string; count: number } | null>(null);
   const [showPoster, setShowPoster] = useState(false);
   const [posterMode, setPosterMode] = useState<"final" | "progress">("progress");
 
@@ -458,9 +458,8 @@ export default function HomeClient({
     }
   };
 
-  const doMission = async (id: string, url: string | null) => {
+  const doMission = async (id: string, url: string | null, label: string) => {
     if (completedMissions.includes(id)) return;
-    if (missionProgress[id] !== undefined) return;
 
     const persistMissionPack = (reveals: RevealItem[]) => {
       if (!reveals || reveals.length === 0) return;
@@ -502,61 +501,55 @@ export default function HomeClient({
       if (url) {
         window.open(url, "_blank");
       }
-
-      setMissionProgress((prev) => ({ ...prev, [id]: 10 }));
-      let missionReward: RevealItem[] | null = null;
-
-      try {
-        const res = await completeMissionAction(id);
-        if (res.success && res.data) {
-          missionReward = res.data.reveals || [];
-          persistMissionPack(missionReward);
-        } else {
-          setMissionProgress((p) => {
-            const copy = { ...p };
-            delete copy[id];
-            return copy;
-          });
-          ui.toast(res.message || "Erro ao concluir missão.");
-          return;
-        }
-      } catch (e) {
-        setMissionProgress((p) => {
-          const copy = { ...p };
-          delete copy[id];
-          return copy;
-        });
-        ui.toast("Erro ao concluir missão.");
-        return;
-      }
-
-      const interval = setInterval(() => {
-        setMissionProgress((prev) => {
-          const currentVal = prev[id];
-          if (currentVal === undefined) {
-            clearInterval(interval);
-            return prev;
-          }
-          if (currentVal <= 1) {
-            clearInterval(interval);
-            if (missionReward && missionReward.length > 0) {
-              setTimeout(() => {
-                setCompletedMissions((p) => (p.includes(id) ? p : [...p, id]));
-                ui.triggerPendingPack();
-              }, 300);
-            }
-            setMissionProgress((p) => {
-              const copy = { ...p };
-              delete copy[id];
-              return copy;
-            });
-            return { ...prev, [id]: 0 };
-          }
-          return { ...prev, [id]: currentVal - 1 };
-        });
-      }, 1000);
+      setActiveCountdown({ id, label, url: url || "", count: 10 });
     }
   };
+
+  useEffect(() => {
+    if (!activeCountdown) return;
+
+    if (activeCountdown.count <= 0) {
+      const finishMission = async () => {
+        try {
+          const res = await completeMissionAction(activeCountdown.id);
+          if (res.success && res.data) {
+            const reveals = res.data.reveals || [];
+            if (reveals.length > 0) {
+              const pendingObj = {
+                reveals,
+                title: "Missão concluída! ✦",
+                flippedCards: [],
+                isOpened: false,
+              };
+              localStorage.setItem("pending_pack", JSON.stringify(pendingObj));
+              await dbService.syncPendingPack(pendingObj).catch(() => undefined);
+              window.dispatchEvent(new Event("pending_pack_change"));
+
+              ui.triggerPendingPack();
+            }
+            setCompletedMissions((prev) =>
+              prev.includes(activeCountdown.id) ? prev : [...prev, activeCountdown.id],
+            );
+          } else {
+            ui.toast(res.message || "Erro ao concluir missão.");
+          }
+        } catch (e) {
+          ui.toast("Erro ao concluir missão.");
+        } finally {
+          setActiveCountdown(null);
+        }
+      };
+
+      finishMission();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setActiveCountdown((prev) => (prev ? { ...prev, count: prev.count - 1 } : null));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [activeCountdown, ui]);
 
   const getProgressShareTexts = () => {
     const publicAlbumUrl = getPublicAlbumUrl(profile.id);
@@ -1506,7 +1499,7 @@ export default function HomeClient({
                     <button
                       className="px-5 py-1.5 rounded-full text-[11px] font-bold text-white flex-shrink-0 shadow-sm cursor-pointer transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ background: "var(--gradient-berry)" }}
-                      disabled={missionProgress[m.id] !== undefined}
+                      disabled={activeCountdown !== null}
                       onClick={() => {
                         if (isCompleted && isCopyLink) {
                           const shareUrl = getPublicAlbumUrl(profile.id);
@@ -1519,14 +1512,14 @@ export default function HomeClient({
                               ui.toast("Erro ao copiar o link.");
                             });
                         } else {
-                          doMission(m.id, m.url);
+                          doMission(m.id, m.url, m.label);
                         }
                       }}
                     >
                       {isCompleted && isCopyLink
                         ? "Compartilhar Link"
-                        : missionProgress[m.id] !== undefined
-                          ? `Aguardando (${missionProgress[m.id]}s)`
+                        : activeCountdown && activeCountdown.id === m.id
+                          ? `Aguardando (${activeCountdown.count}s)`
                           : "Fazer"}
                     </button>
                   </div>
@@ -1741,6 +1734,43 @@ export default function HomeClient({
           premiumLayout={!!isStoryPremiumEnabled}
           onClose={() => setShowPoster(false)}
         />
+      )}
+
+      {/* Full-screen Click Mission Countdown Overlay */}
+      {activeCountdown && (
+        <div className="fixed inset-0 bg-[#5c0d2b]/80 backdrop-blur-md flex flex-col items-center justify-center z-[9999] p-6 text-center animate-fade-in">
+          <div className="bg-white rounded-3xl p-8 max-w-[340px] w-full shadow-2xl border border-pink-100 flex flex-col items-center gap-4 animate-scale-in">
+            <div className="w-16 h-16 rounded-full bg-[#fce4ec] flex items-center justify-center animate-bounce">
+              <Gift className="w-8 h-8 text-[#C2185B]" />
+            </div>
+            
+            <h3 className="text-sm font-extrabold text-[#5c0d2b] uppercase tracking-wider">
+              Missão Ativa
+            </h3>
+            
+            <p className="text-xs text-[#bf2a5e] font-semibold leading-snug">
+              {activeCountdown.label}
+            </p>
+            
+            <div className="relative w-24 h-24 flex items-center justify-center my-2">
+              {/* Circular count */}
+              <div className="text-4xl font-black text-[#C2185B] animate-pulse">
+                {activeCountdown.count}s
+              </div>
+            </div>
+
+            <p className="text-[11px] text-[#bf2a5e]/80 leading-normal">
+              Aguarde a validação da visita para receber seu pacote de figurinhas!
+            </p>
+
+            <div className="w-full bg-pink-100 h-1.5 rounded-full overflow-hidden mt-1">
+              <div 
+                className="bg-[#C2185B] h-full transition-all duration-1000 ease-linear"
+                style={{ width: `${(activeCountdown.count / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
