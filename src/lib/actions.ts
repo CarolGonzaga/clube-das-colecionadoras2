@@ -28,12 +28,40 @@ export async function verifyResetCodeAction(email: string, token: string) {
 
 export async function signupAction(nick: string, email: string, pin: string, muralOptIn: boolean) {
   try {
+    const trimmedNick = nick.trim();
+    if (trimmedNick.length < 3) {
+      return { success: false, message: "O apelido deve ter pelo menos 3 caracteres." };
+    }
+    if (trimmedNick.length > 20) {
+      return { success: false, message: "O apelido deve ter no máximo 20 caracteres." };
+    }
+    const formatRegex = /^[a-z0-9]+$/;
+    if (!formatRegex.test(trimmedNick)) {
+      return { 
+        success: false, 
+        message: "O apelido deve conter apenas letras minúsculas e números (sem espaços, acentos ou caracteres especiais)." 
+      };
+    }
+
     const validationError = validatePasswordOrPin(pin);
     if (validationError) return { success: false, message: validationError };
-    const res = await dbService.signup(nick, email, pin, muralOptIn);
+    const res = await dbService.signup(trimmedNick, email, pin, muralOptIn);
     return { success: true, data: res };
   } catch (err: any) {
-    return { success: false, message: err.message };
+    const msg = err.message || "";
+    if (msg.includes("profiles_nick_format")) {
+      return { 
+        success: false, 
+        message: "O apelido deve conter apenas letras minúsculas e números." 
+      };
+    }
+    if (msg.includes("profiles_nick_unique") || msg.includes("duplicate key")) {
+      return { 
+        success: false, 
+        message: "Este apelido já está em uso por outra colecionadora. Escolha outro!" 
+      };
+    }
+    return { success: false, message: msg };
   }
 }
 
@@ -122,10 +150,41 @@ export async function claimDailyElementAction() {
 
 export async function updateNicknameAction(nick: string) {
   try {
-    await dbService.updateNickname(nick);
+    const trimmed = nick.trim();
+    if (!trimmed) {
+      return { success: false, message: "O apelido não pode estar em branco." };
+    }
+    if (trimmed.length < 3) {
+      return { success: false, message: "O apelido deve ter pelo menos 3 caracteres." };
+    }
+    if (trimmed.length > 20) {
+      return { success: false, message: "O apelido deve ter no máximo 20 caracteres." };
+    }
+    const formatRegex = /^[a-z0-9]+$/;
+    if (!formatRegex.test(trimmed)) {
+      return { 
+        success: false, 
+        message: "O apelido deve conter apenas letras minúsculas e números (sem espaços, acentos ou caracteres especiais)." 
+      };
+    }
+
+    await dbService.updateNickname(trimmed);
     return { success: true };
   } catch (err: any) {
-    return { success: false, message: err.message };
+    const msg = err.message || "";
+    if (msg.includes("profiles_nick_format")) {
+      return { 
+        success: false, 
+        message: "O apelido deve conter apenas letras minúsculas e números." 
+      };
+    }
+    if (msg.includes("profiles_nick_unique") || msg.includes("duplicate key")) {
+      return { 
+        success: false, 
+        message: "Este apelido já está em uso por outra colecionadora. Escolha outro!" 
+      };
+    }
+    return { success: false, message: msg };
   }
 }
 
