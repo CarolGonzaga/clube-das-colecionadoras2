@@ -6042,6 +6042,17 @@ html.theme-lilac .text-\[#5c0d2b\] {
   font-size: 13px;
   color: #5c0d2b;
 }
+.trade-time-note {
+  font-size: 11px;
+  color: #c98ab0;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  text-align: left;
+  line-height: 1.2;
+  margin-top: 0;
+}
 .trade-request-stickers {
   display: flex;
   align-items: flex-start;

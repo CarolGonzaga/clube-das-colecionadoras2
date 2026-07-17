@@ -658,8 +658,8 @@ export default function TrocasClient({
                 {avatarDisplay(tr.initiator_avatar_url, tr.initiator_avatar_emoji, tr.initiator_nick || "")}
                 <div className="trade-request-meta">
                   <b>@{tr.initiator_nick}</b>
-                  <span className="note">
-                    <Clock className="w-3 h-3 inline mr-0.5" />
+                  <span className="trade-time-note">
+                    <Clock className="w-3 h-3 flex-shrink-0" />
                     {timeLeft(tr.expires_at)}
                   </span>
                 </div>
@@ -705,10 +705,12 @@ export default function TrocasClient({
                 {avatarDisplay(null, null, tr.receiver_nick || "")}
                 <div className="trade-request-meta">
                   <b>@{tr.receiver_nick}</b>
-                  <span className="note">
+                  <span className="trade-time-note">
                     {tr.status === "pending" ? (
-                      <><Clock className="w-3 h-3 inline mr-0.5" />{timeLeft(tr.expires_at)}</>
-                    ) : tr.status}
+                      <><Clock className="w-3 h-3 flex-shrink-0" />{timeLeft(tr.expires_at)}</>
+                    ) : (
+                      tr.status
+                    )}
                   </span>
                 </div>
                 {statusBadge(tr.status)}
@@ -774,7 +776,7 @@ export default function TrocasClient({
                   {avatarDisplay(null, null, otherParty || "")}
                   <div className="trade-request-meta">
                     <b>@{otherParty}</b>
-                    <span className="note">
+                    <span className="trade-time-note">
                       Resolvido em: {tr.resolved_at ? new Date(tr.resolved_at).toLocaleDateString("pt-BR") : "-"}
                     </span>
                   </div>
