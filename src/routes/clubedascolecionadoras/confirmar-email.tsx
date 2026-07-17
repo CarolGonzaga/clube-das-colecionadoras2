@@ -42,7 +42,11 @@ function ConfirmarEmailPage() {
       } else {
         setSuccess(true);
         setTimeout(() => {
-          window.location.href = "/clubedascolecionadoras";
+          if (type === "recovery") {
+            window.location.href = "/clubedascolecionadoras/login?step=forgot_reset";
+          } else {
+            window.location.href = "/clubedascolecionadoras";
+          }
         }, 3000);
       }
     } catch (err: any) {
