@@ -334,25 +334,34 @@ export const dbService = {
   async getOutgoingDonations(userId: string): Promise<Donation[]> {
     const { data, error } = await supabase
       .from("donations")
-      .select(`
-        code,
-        sticker_number,
-        status,
-        created_at,
-        expires_at,
-        profiles!donations_to_user_fkey(nick)
-      `)
+      .select("code, sticker_number, status, created_at, expires_at, to_user")
       .eq("from_user", userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
-    const mapped = (data || []).map((d: any) => ({
+    const donations = (data || []) as any[];
+    const toUserIds = donations.map((d) => d.to_user).filter(Boolean);
+
+    const nickMap: Record<string, string> = {};
+    if (toUserIds.length > 0) {
+      const { data: profiles, error: pError } = await supabase
+        .from("profiles")
+        .select("id, nick")
+        .in("id", toUserIds);
+      if (!pError && profiles) {
+        profiles.forEach((p) => {
+          nickMap[p.id] = p.nick;
+        });
+      }
+    }
+
+    const mapped = donations.map((d) => ({
       code: d.code,
       sticker_number: d.sticker_number,
       status: d.status,
       created_at: d.created_at,
       expires_at: d.expires_at,
-      receiver_nick: d.profiles?.nick || null,
+      receiver_nick: d.to_user ? (nickMap[d.to_user] || null) : null,
     }));
     return mapped as Donation[];
   },
