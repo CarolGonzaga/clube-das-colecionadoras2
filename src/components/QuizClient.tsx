@@ -324,7 +324,8 @@ export default function QuizClient({
   // LANDING PAGE SCREEN
   if (!activeSession || questions.length === 0) {
     const isCompleted = perguntasRespondidasCorretasCount >= 20;
-    const isTodayBlocked = tentativasHojeCount >= 4 || questions.length === 0;
+    const isTodayBlocked = tentativasHojeCount >= 4;
+    const hasNoPendingQuestions = questions.length === 0 && !isCompleted;
 
     return (
       <div className="screen px-4 pb-8 max-w-md mx-auto">
@@ -408,6 +409,15 @@ export default function QuizClient({
                 Você acertou todas as 20 perguntas do quiz! Compartilhe o seu feito com outras
                 colecionadoras usando o poster exclusivo que acaba de ser desbloqueado para você na
                 página inicial! 🌸✨
+              </p>
+            </div>
+          ) : hasNoPendingQuestions ? (
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 rounded-3xl p-5 text-center shadow-sm">
+              <p className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-1.5 font-sans">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Nenhuma pergunta pendente
+              </p>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-1.5 leading-relaxed font-sans">
+                Todas as perguntas disponíveis para o seu álbum já foram respondidas ou desbloqueadas.
               </p>
             </div>
           ) : isTodayBlocked ? (
