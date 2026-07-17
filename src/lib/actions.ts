@@ -172,6 +172,17 @@ export async function redeemDonationAction(codeRaw: string) {
   }
 }
 
+export async function getOutgoingDonationsAction() {
+  try {
+    const user = await dbService.getCurrentUser();
+    if (!user) throw new Error("Não autenticado");
+    const donations = await dbService.getOutgoingDonations(user.id);
+    return { success: true, data: donations };
+  } catch (err: any) {
+    return { success: false, message: translateError(err) };
+  }
+}
+
 export async function completeMissionAction(missionId: string) {
   try {
     const res = await dbService.completeMission(missionId);

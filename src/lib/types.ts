@@ -51,6 +51,7 @@ export interface Donation {
   status: "active" | "used" | "expired";
   created_at: string;
   expires_at: string;
+  receiver_nick?: string;
 }
 
 export interface TradeRequest {
@@ -61,6 +62,8 @@ export interface TradeRequest {
   receiver_nick?: string;
   initiator_avatar_emoji?: string | null;
   initiator_avatar_url?: string | null;
+  receiver_avatar_emoji?: string | null;
+  receiver_avatar_url?: string | null;
   initiator_sticker: number;
   receiver_sticker: number;
   sticker_category: "free" | "shop";

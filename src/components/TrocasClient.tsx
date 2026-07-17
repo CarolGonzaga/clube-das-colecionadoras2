@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Sticker, UserSticker, TradeRequest, TradeUserLookup } from "@/lib/types";
+import { Sticker, UserSticker, TradeRequest, TradeUserLookup, Donation } from "@/lib/types";
 import { useUI } from "@/components/UIProvider";
 import { useRouter } from "@tanstack/react-router";
 import {
@@ -13,6 +13,9 @@ import {
   exchangeForPointsAction,
   getResolvedTradesAction,
   claimTradeRewardAction,
+  generateDonationAction,
+  redeemDonationAction,
+  getOutgoingDonationsAction,
 } from "@/lib/actions";
 import Stamp from "./Stamp";
 import {
@@ -31,6 +34,7 @@ import {
   Bell,
   Send,
   Inbox,
+  Gift,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -44,6 +48,7 @@ interface TrocasClientProps {
   initialOutgoing: TradeRequest[];
   initialResolved: TradeRequest[];
   initialPointsBalance: number;
+  initialDonations: Donation[];
   initialTab?: string;
 }
 
@@ -111,6 +116,8 @@ interface StickerDupeCardProps {
   onExchange?: () => void;
   exchangeLoading?: boolean;
   category: "free" | "shop";
+  onDonate?: () => void;
+  donateLoading?: boolean;
 }
 
 function StickerDupeCard({
@@ -122,6 +129,8 @@ function StickerDupeCard({
   onExchange,
   exchangeLoading,
   category,
+  onDonate,
+  donateLoading,
 }: StickerDupeCardProps) {
   const qty = copies - 1;
   return (
@@ -146,6 +155,18 @@ function StickerDupeCard({
           <button className="btn sm trade-btn-trade" onClick={onTrade} title="Trocar com outra usuária">
             <ArrowLeftRight className="w-3.5 h-3.5" />
             <span>Trocar</span>
+          </button>
+        )}
+        {category === "free" && onDonate && (
+          <button
+            className="btn sm soft trade-btn-donate"
+            onClick={onDonate}
+            disabled={donateLoading}
+            title="Doar figurinha e gerar código"
+            style={{ display: "flex", gap: "4px", alignItems: "center" }}
+          >
+            <Gift className="w-3.5 h-3.5" />
+            <span>Doar</span>
           </button>
         )}
         {onExchange && (
@@ -175,6 +196,7 @@ export default function TrocasClient({
   initialOutgoing,
   initialResolved,
   initialPointsBalance,
+  initialDonations,
   initialTab,
 }: TrocasClientProps) {
   const ui = useUI();
@@ -184,7 +206,7 @@ export default function TrocasClient({
   const [mainTab, setMainTab] = useState<MainTab>(
     initialTab === "history" || initialTab === "requests" ? "requests" : "free"
   );
-  const [requestsSubTab, setRequestsSubTab] = useState<RequestsSubTab>(
+  const [requestsSubTab, setRequestsSubTab] = useState<RequestsSubTab | "donations">(
     initialTab === "history" ? "history" : "incoming"
   );
   const [userStickers, setUserStickers] = useState<UserSticker[]>(initialUserStickers);
@@ -192,9 +214,15 @@ export default function TrocasClient({
   const [outgoing, setOutgoing] = useState<TradeRequest[]>(initialOutgoing);
   const [resolved, setResolved] = useState<TradeRequest[]>(initialResolved);
   const [pointsBalance, setPointsBalance] = useState(initialPointsBalance);
+  const [donations, setDonations] = useState<Donation[]>(initialDonations);
   const [exchangeLoading, setExchangeLoading] = useState<Record<number, boolean>>({});
   const [respondLoading, setRespondLoading] = useState<Record<string, boolean>>({});
   const [refreshing, setRefreshing] = useState(false);
+
+  // Donation state
+  const [redeemCodeInput, setRedeemCodeInput] = useState("");
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [donateLoading, setDonateLoading] = useState<Record<number, boolean>>({});
 
   // Trade flow state
   const [flowStep, setFlowStep] = useState<TradeFlowStep>("idle");
@@ -227,6 +255,10 @@ export default function TrocasClient({
   }, [initialPointsBalance]);
 
   useEffect(() => {
+    setDonations(initialDonations);
+  }, [initialDonations]);
+
+  useEffect(() => {
     if (initialTab === "history") {
       setMainTab("requests");
       setRequestsSubTab("history");
@@ -240,20 +272,171 @@ export default function TrocasClient({
   const refreshTrades = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [inc, out, res, bal] = await Promise.all([
+      const [inc, out, res, bal, don] = await Promise.all([
         getIncomingTradesAction(),
         getOutgoingTradesAction(),
         getResolvedTradesAction(),
         getPointsBalanceAction(),
+        getOutgoingDonationsAction(),
       ]);
       if (inc.success && inc.data) setIncoming(inc.data);
       if (out.success && out.data) setOutgoing(out.data);
       if (res.success && res.data) setResolved(res.data);
       if (bal.success) setPointsBalance(bal.balance);
+      if (don.success && don.data) setDonations(don.data);
     } finally {
       setRefreshing(false);
     }
   }, []);
+
+  // Tutorial pop-up trigger
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hideTutorial = localStorage.getItem("hide_trade_tutorial");
+    if (!hideTutorial) {
+      const showTutorial = () => {
+        let dontShowAgain = false;
+        ui.openModal(
+          <div style={{ padding: "8px 4px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ textAlign: "center" }}>
+              <HeartHandshake className="w-12 h-12 text-[#C2185B] mx-auto mb-2 animate-bounce" />
+              <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Como funcionam as Trocas? 🔄</h2>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left", fontSize: "12px", color: "#5c0d2b" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px" }}>1️⃣</span>
+                <p style={{ margin: 0 }}><b>Escolha uma figurinha repetida:</b> Clique em "Trocar" na figurinha que você deseja oferecer.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px" }}>2️⃣</span>
+                <p style={{ margin: 0 }}><b>Busque a outra colecionadora:</b> Insira o apelido (nick) da pessoa com quem deseja negociar.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px" }}>3️⃣</span>
+                <p style={{ margin: 0 }}><b>Escolha o que receber:</b> Selecione qual figurinha repetida dela você quer em troca.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px" }}>4️⃣</span>
+                <p style={{ margin: 0 }}><b>Confirme e resgate:</b> Assim que ela aceitar, a figurinha estará pronta no seu Histórico para você abrir e colar! 🎁</p>
+              </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid #fecdd3", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#7a0c3b", fontWeight: "bold", cursor: "pointer", justifyContent: "center" }}>
+                <input 
+                  type="checkbox" 
+                  onChange={(e) => {
+                    dontShowAgain = e.target.checked;
+                  }}
+                  style={{ accentColor: "#C2185B", width: "14px", height: "14px" }}
+                />
+                Não mostrar este tutorial novamente
+              </label>
+
+              <button 
+                className="btn" 
+                onClick={() => {
+                  if (dontShowAgain) {
+                    localStorage.setItem("hide_trade_tutorial", "true");
+                  }
+                  ui.closeModal();
+                }}
+                style={{ width: "100%" }}
+              >
+                Entendi!
+              </button>
+            </div>
+          </div>
+        );
+      };
+      
+      const timer = setTimeout(showTutorial, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [ui]);
+
+  const handleRedeemDonation = async () => {
+    if (!redeemCodeInput.trim()) return;
+    setRedeemLoading(true);
+    try {
+      const res = await redeemDonationAction(redeemCodeInput.trim());
+      if (res.success && res.data) {
+        const reveals = res.data.reveals || [];
+        if (reveals.length > 0) {
+          const pendingObj = {
+            reveals,
+            title: "Figurinha recebida por doação! 🎁",
+            flippedCards: [],
+            isOpened: false,
+          };
+          localStorage.setItem("pending_pack", JSON.stringify(pendingObj));
+          ui.triggerPendingPack();
+        } else {
+          ui.toast("Figurinha resgatada com sucesso! 🎉");
+        }
+        setRedeemCodeInput("");
+        router.invalidate();
+        refreshTrades();
+      } else {
+        ui.toast(res.message || "Erro ao resgatar código.");
+      }
+    } catch (e: any) {
+      ui.toast("Erro ao resgatar código.");
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
+
+  const handleDonateSticker = async (stickerNumber: number, stickerName: string) => {
+    setDonateLoading((prev) => ({ ...prev, [stickerNumber]: true }));
+    try {
+      const res = await generateDonationAction(stickerNumber);
+      if (res.success && res.code) {
+        ui.toast(`Código de doação gerado com sucesso! Copie-o abaixo. 🎁`);
+        
+        ui.openModal(
+          <div style={{ textAlign: "center", padding: "8px 0" }}>
+            <Gift className="w-12 h-12 text-[#C2185B] mx-auto mb-2 animate-bounce" />
+            <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Código de Doação Gerado! 🎁</h2>
+            <p style={{ fontSize: "12px", color: "#bf2a5e", margin: "8px 0 16px" }}>
+              Envie este código para uma amiga. Ela poderá resgatar a figurinha <b>#{String(stickerNumber).padStart(3, "0")} · {stickerName}</b> imediatamente!
+            </p>
+            
+            <div style={{ background: "#fff0f7", border: "1.5px dashed #fecdd3", borderRadius: "12px", padding: "12px", fontSize: "16px", fontWeight: "bold", color: "#9e1b4a", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "16px" }}>
+              <span>{res.code}</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(res.code || "");
+                  ui.toast("Código copiado! 📋");
+                }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#bf2a5e" }}
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="note" style={{ margin: "0 0 16px" }}>
+              Este código é válido por 24 horas. Se não for resgatado nesse período, a figurinha retornará automaticamente para o seu deck!
+            </p>
+
+            <button className="btn" onClick={() => ui.closeModal()} style={{ width: "100%" }}>
+              Fechar
+            </button>
+          </div>
+        );
+
+        router.invalidate();
+        refreshTrades();
+      } else {
+        ui.toast(res.message || "Erro ao doar figurinha.");
+      }
+    } catch (e) {
+      ui.toast("Erro ao doar figurinha.");
+    } finally {
+      setDonateLoading((prev) => ({ ...prev, [stickerNumber]: false }));
+    }
+  };
 
   const [claimLoading, setClaimLoading] = useState<Record<string, boolean>>({});
 
@@ -622,6 +805,8 @@ export default function TrocasClient({
               isRare={isRare}
               category="free"
               onTrade={() => startTradeFlow(sticker.number, "free")}
+              onDonate={() => handleDonateSticker(sticker.number, sticker.name)}
+              donateLoading={donateLoading[sticker.number]}
             />
           ))}
         </div>
@@ -718,14 +903,14 @@ export default function TrocasClient({
           {outgoing.map((tr) => (
             <div key={tr.id} className="trade-request-card">
               <div className="trade-request-header">
-                {avatarDisplay(null, null, tr.receiver_nick || "")}
+                {avatarDisplay(tr.receiver_avatar_url, tr.receiver_avatar_emoji, tr.receiver_nick || "")}
                 <div className="trade-request-meta">
                   <b>@{tr.receiver_nick}</b>
                   <span className="trade-time-note">
                     {tr.status === "pending" ? (
                       <><Clock className="w-3 h-3 flex-shrink-0" />{timeLeft(tr.expires_at)}</>
                     ) : (
-                      tr.status
+                      tr.status === "accepted" ? "Aceita ✓" : tr.status === "rejected" ? "Recusada ❌" : tr.status === "cancelled" ? "Cancelada ❌" : tr.status
                     )}
                   </span>
                 </div>
@@ -786,10 +971,12 @@ export default function TrocasClient({
             const isMeInitiator = tr.initiator_id === profileId;
             const otherParty = isMeInitiator ? tr.receiver_nick : tr.initiator_nick;
             const isClaimed = isMeInitiator ? tr.initiator_claimed : tr.receiver_claimed;
+            const avatarUrl = isMeInitiator ? tr.receiver_avatar_url : tr.initiator_avatar_url;
+            const avatarEmoji = isMeInitiator ? tr.receiver_avatar_emoji : tr.initiator_avatar_emoji;
             return (
               <div key={tr.id} className="trade-request-card">
                 <div className="trade-request-header">
-                  {avatarDisplay(null, null, otherParty || "")}
+                  {avatarDisplay(avatarUrl, avatarEmoji, otherParty || "")}
                   <div className="trade-request-meta">
                     <b>@{otherParty}</b>
                     <span className="trade-time-note">
@@ -837,6 +1024,84 @@ export default function TrocasClient({
     </div>
   );
 
+  const renderDonationsTab = () => {
+    return (
+      <div>
+        {donations.length === 0 ? (
+          <div className="trade-empty">
+            <Gift className="w-8 h-8 text-pink-300 mx-auto mb-2" />
+            <p>Você ainda não gerou nenhum código de doação.</p>
+          </div>
+        ) : (
+          <div className="trade-requests-list">
+            {donations.map((d) => {
+              const sticker = stickers.find((s) => s.number === d.sticker_number);
+              const isExpired = d.status === "expired" || (d.status === "active" && new Date() > new Date(d.expires_at));
+              const currentStatus = isExpired ? "expired" : d.status;
+              
+              let statusLabel = "Ativo (Aguardando)";
+              let statusCls = "badge-pending";
+              if (currentStatus === "used") {
+                statusLabel = d.receiver_nick ? `Resgatado por @${d.receiver_nick}` : "Resgatado";
+                statusCls = "badge-accepted";
+              } else if (currentStatus === "expired") {
+                statusLabel = "Expirado (Devolvido)";
+                statusCls = "badge-expired";
+              }
+
+              return (
+                <div key={d.code} className="trade-request-card">
+                  <div className="trade-request-header">
+                    <div className="w-9 h-9 rounded-full bg-pink-100 border-2 border-pink-200 flex items-center justify-center text-lg">
+                      🎁
+                    </div>
+                    <div className="trade-request-meta">
+                      <b>Doação: {d.code}</b>
+                      <span className="trade-time-note">
+                        {currentStatus === "active" ? (
+                          <>
+                            <Clock className="w-3 h-3 flex-shrink-0" />
+                            Expira em: {new Date(d.expires_at).toLocaleString("pt-BR")}
+                          </>
+                        ) : (
+                          <>Criado em: {new Date(d.created_at).toLocaleDateString("pt-BR")}</>
+                        )}
+                      </span>
+                    </div>
+                    <span className={`trade-status-badge ${statusCls}`}>{statusLabel}</span>
+                  </div>
+
+                  <div className="trade-request-stickers" style={{ padding: "8px 12px", background: "#fdf2f7" }}>
+                    <div className="trade-req-sticker" style={{ flex: 1, textAlign: "left" }}>
+                      <span className="note" style={{ margin: 0 }}>Figurinha doada:</span>
+                      <b>#{String(d.sticker_number).padStart(3, "0")}</b>
+                      <span style={{ fontSize: 11 }}>{sticker?.name || `Figurinha ${d.sticker_number}`}</span>
+                    </div>
+                  </div>
+
+                  {currentStatus === "active" && (
+                    <div className="trade-request-actions" style={{ marginTop: "4px" }}>
+                      <button
+                        className="btn sm"
+                        style={{ width: "100%" }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(d.code);
+                          ui.toast("Código copiado! 📋");
+                        }}
+                      >
+                        <Copy className="w-3.5 h-3.5" /> Copiar Código novamente
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // ─── Main render ──────────────────────────────────────────────────────────
 
   if (flowStep !== "idle") {
@@ -852,45 +1117,72 @@ export default function TrocasClient({
   return (
     <main className="screen trade-screen">
       <h1 className="section-title">Trocas</h1>
-      <p className="section-sub">
-        troque figurinhas repetidas com outras colecionadoras{" "}
-        <ArrowLeftRight className="w-3.5 h-3.5 inline-block align-text-top text-[#C2185B] ml-1" />
-      </p>
 
-      {/* My nick chip */}
-      <div className="trade-my-nick-bar">
-        <span className="note">Seu usuário:</span>
-        <span className="trade-my-nick-chip">@{profileNick}</span>
-        <button
-          className="trade-copy-btn"
-          title="Copiar nome de usuário"
-          onClick={async () => {
-            if (navigator.clipboard) {
-              await navigator.clipboard.writeText(profileNick);
-              ui.toast("Nome copiado! 💝");
-            }
-          }}
-        >
-          <Copy className="w-3.5 h-3.5" />
-        </button>
-        <span className="note" style={{ fontSize: 10, marginLeft: 4 }}>
-          compartilhe para receber trocas
-        </span>
+      {/* Header Row: User Info & Points Wallet */}
+      <div className="trade-header-row flex flex-col sm:flex-row gap-3 w-full mb-3">
+        {/* My nick chip */}
+        <div className="trade-my-nick-bar flex-1" style={{ margin: 0 }}>
+          <span className="note">Seu usuário:</span>
+          <span className="trade-my-nick-chip">@{profileNick}</span>
+          <button
+            className="trade-copy-btn"
+            title="Copiar nome de usuário"
+            onClick={async () => {
+              if (navigator.clipboard) {
+                await navigator.clipboard.writeText(profileNick);
+                ui.toast("Nome copiado! 💝");
+              }
+            }}
+          >
+            <Copy className="w-3.5 h-3.5" />
+          </button>
+          <span className="note" style={{ fontSize: 10, marginLeft: 4 }}>
+            compartilhe para receber trocas
+          </span>
+        </div>
+
+        {/* Points wallet */}
+        <div className="trade-wallet-bar flex-1" style={{ margin: 0 }}>
+          <Wallet className="w-4 h-4 text-amber-600" />
+          <span className="trade-wallet-label">Carteira de Pontos:</span>
+          <span className="trade-wallet-balance">{pointsBalance.toLocaleString("pt-BR")} pts</span>
+          <button
+            className="trade-refresh-btn"
+            onClick={refreshTrades}
+            disabled={refreshing}
+            title="Atualizar"
+          >
+            <Repeat className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
-      {/* Points wallet */}
-      <div className="trade-wallet-bar">
-        <Wallet className="w-4 h-4 text-amber-600" />
-        <span className="trade-wallet-label">Carteira de Pontos:</span>
-        <span className="trade-wallet-balance">{pointsBalance.toLocaleString("pt-BR")} pts</span>
-        <button
-          className="trade-refresh-btn"
-          onClick={refreshTrades}
-          disabled={refreshing}
-          title="Atualizar"
-        >
-          <Repeat className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-        </button>
+      {/* Donation Code Redemption Section */}
+      <div className="trade-redeem-section bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 mb-4">
+        <h3 className="text-xs font-bold text-[#5c0d2b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <Gift className="w-4 h-4 text-[#C2185B]" /> Resgatar Figurinha Doadora
+        </h3>
+        <p className="text-[11px] text-[#bf2a5e]/80 mb-3">
+          Recebeu um código de doação de uma amiga? Cole o código abaixo para receber a figurinha dela imediatamente!
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Cole o código de doação aqui (ex: DON-XXXXX)"
+            value={redeemCodeInput}
+            onChange={(e) => setRedeemCodeInput(e.target.value.toUpperCase().trim())}
+            style={{ height: "40px" }}
+            className="flex-1 min-w-0 px-3 border border-pink-200/60 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+          />
+          <button
+            onClick={handleRedeemDonation}
+            disabled={redeemLoading || !redeemCodeInput}
+            style={{ height: "40px" }}
+            className="px-4 py-2 bg-gradient-to-r from-[#c1426d] to-[#9b2361] text-white rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center cursor-pointer"
+          >
+            {redeemLoading ? "Verificando..." : "Resgatar"}
+          </button>
+        </div>
       </div>
 
       {/* Main tabs */}
@@ -907,7 +1199,7 @@ export default function TrocasClient({
         </button>
         <button className={`trade-main-tab ${mainTab === "requests" ? "active" : ""}`} onClick={() => setMainTab("requests")}>
           <Bell className="w-4 h-4" />
-          Pedidos
+          Trocas
           {incomingCount > 0 && <span className="trade-tab-badge">{incomingCount}</span>}
         </button>
       </div>
@@ -931,6 +1223,13 @@ export default function TrocasClient({
                   <span className="trade-tab-count">{outgoing.filter((t) => t.status === "pending").length}</span>
                 )}
               </button>
+              <button className={`trade-sub-tab ${requestsSubTab === "donations" ? "active" : ""}`} onClick={() => setRequestsSubTab("donations")}>
+                <Gift className="w-3.5 h-3.5" />
+                Doações
+                {donations.filter((d) => d.status === "active").length > 0 && (
+                  <span className="trade-tab-count">{donations.filter((d) => d.status === "active").length}</span>
+                )}
+              </button>
               <button className={`trade-sub-tab ${requestsSubTab === "history" ? "active" : ""}`} onClick={() => setRequestsSubTab("history")}>
                 <Clock className="w-3.5 h-3.5" />
                 Histórico
@@ -938,6 +1237,7 @@ export default function TrocasClient({
             </div>
             {requestsSubTab === "incoming" && renderIncoming()}
             {requestsSubTab === "outgoing" && renderOutgoing()}
+            {requestsSubTab === "donations" && renderDonationsTab()}
             {requestsSubTab === "history" && renderHistory()}
           </div>
         )}

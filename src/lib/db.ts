@@ -334,12 +334,27 @@ export const dbService = {
   async getOutgoingDonations(userId: string): Promise<Donation[]> {
     const { data, error } = await supabase
       .from("donations")
-      .select("code, sticker_number, status, created_at, expires_at")
+      .select(`
+        code,
+        sticker_number,
+        status,
+        created_at,
+        expires_at,
+        profiles!donations_to_user_fkey(nick)
+      `)
       .eq("from_user", userId)
-      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return (data || []) as Donation[];
+
+    const mapped = (data || []).map((d: any) => ({
+      code: d.code,
+      sticker_number: d.sticker_number,
+      status: d.status,
+      created_at: d.created_at,
+      expires_at: d.expires_at,
+      receiver_nick: d.profiles?.nick || null,
+    }));
+    return mapped as Donation[];
   },
 
   async redeemDonation(code: string) {

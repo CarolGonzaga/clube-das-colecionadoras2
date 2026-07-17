@@ -4566,7 +4566,7 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   font-weight: 800;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 900px) {
   .topbar-status {
     display: flex;
     align-items: center;
@@ -6284,4 +6284,23 @@ html.theme-lilac .text-\[#5c0d2b\] {
   font-size: 22px;
   color: #9e1b4a;
   font-weight: 900;
+}
+
+/* ── Trade Header Row (Side by side) ── */
+.trade-header-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+.trade-header-row .trade-my-nick-bar,
+.trade-header-row .trade-wallet-bar {
+  flex: 1;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+@media (max-width: 600px) {
+  .trade-header-row {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
