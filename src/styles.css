@@ -5754,29 +5754,34 @@ html.theme-lilac .text-\[#5c0d2b\] {
 .trade-my-nick-bar {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
   background: linear-gradient(135deg, #fff0f7 0%, #fce4ec 100%);
   border: 1px solid rgba(194, 24, 91, 0.15);
   border-radius: 14px;
-  padding: 12px;
+  padding: 14px 12px;
   margin: 10px 0 8px;
+  text-align: center;
 }
 .trade-my-nick-left {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 4px;
+  width: 100%;
 }
 .trade-my-nick-user-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 .trade-share-note {
   font-size: 10px;
   color: #bf2a5e;
   opacity: 0.7;
+  text-align: center;
 }
 .trade-my-nick-chip {
   font-weight: 800;
@@ -5803,12 +5808,17 @@ html.theme-lilac .text-\[#5c0d2b\] {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 10px 16px;
+    text-align: left;
   }
   .trade-my-nick-left {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .trade-share-note {
+    text-align: right;
+    font-size: 9px;
+    opacity: 0.6;
   }
 }
 
@@ -5816,22 +5826,26 @@ html.theme-lilac .text-\[#5c0d2b\] {
 .trade-wallet-bar {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
   background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%);
   border: 1px solid rgba(245, 167, 0, 0.25);
   border-radius: 14px;
-  padding: 12px;
+  padding: 14px 12px;
   margin-bottom: 14px;
+  text-align: center;
 }
 .trade-wallet-info {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 .trade-wallet-value-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 .trade-wallet-label {
@@ -5840,7 +5854,7 @@ html.theme-lilac .text-\[#5c0d2b\] {
   color: #7a5800;
 }
 .trade-wallet-balance {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   color: #b45309;
   margin-left: 2px;
@@ -5863,7 +5877,14 @@ html.theme-lilac .text-\[#5c0d2b\] {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 10px 16px;
+    text-align: left;
+  }
+  .trade-wallet-info {
+    justify-content: flex-start;
+  }
+  .trade-wallet-value-row {
+    justify-content: flex-end;
   }
 }
 

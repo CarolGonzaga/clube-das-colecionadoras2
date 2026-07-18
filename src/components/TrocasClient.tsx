@@ -1131,7 +1131,7 @@ export default function TrocasClient({
         {/* My nick chip */}
         <div className="trade-my-nick-bar flex-1" style={{ margin: 0 }}>
           <div className="trade-my-nick-left">
-            <span className="note">Seu usuário:</span>
+            <span className="note" style={{ fontSize: 10, opacity: 0.8 }}>Seu usuário:</span>
             <div className="trade-my-nick-user-row">
               <span className="trade-my-nick-chip">@{profileNick}</span>
               <button

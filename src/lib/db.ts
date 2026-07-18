@@ -332,32 +332,12 @@ export const dbService = {
   },
 
   async getOutgoingDonations(userId: string): Promise<Donation[]> {
-    const { data, error } = await supabase
-      .from("donations")
-      .select("code, sticker_number, status, created_at, expires_at, to_user, from_user")
-      .or(`from_user.eq.${userId},to_user.eq.${userId}`)
-      .order("created_at", { ascending: false });
+    // Use a security definer RPC to safely read donations for the current user
+    // (both sent and received) regardless of RLS SELECT policies.
+    const { data, error } = await supabase.rpc("get_my_donations");
     if (error) throw new Error(error.message);
 
-    const donations = (data || []) as any[];
-    const userIds = Array.from(
-      new Set([...donations.map((d) => d.to_user), ...donations.map((d) => d.from_user)])
-    ).filter(Boolean);
-
-    const nickMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: profiles, error: pError } = await supabase
-        .from("profiles")
-        .select("id, nick")
-        .in("id", userIds);
-      if (!pError && profiles) {
-        profiles.forEach((p) => {
-          nickMap[p.id] = p.nick;
-        });
-      }
-    }
-
-    const mapped = donations.map((d) => ({
+    return ((data || []) as any[]).map((d) => ({
       code: d.code,
       sticker_number: d.sticker_number,
       status: d.status,
@@ -365,10 +345,9 @@ export const dbService = {
       expires_at: d.expires_at,
       from_user: d.from_user,
       to_user: d.to_user,
-      receiver_nick: d.to_user ? (nickMap[d.to_user] || null) : null,
-      donor_nick: d.from_user ? (nickMap[d.from_user] || null) : null,
-    }));
-    return mapped as Donation[];
+      donor_nick: d.donor_nick ?? null,
+      receiver_nick: d.receiver_nick ?? null,
+    })) as Donation[];
   },
 
   async redeemDonation(code: string) {
