@@ -223,6 +223,7 @@ export default function TrocasClient({
   const [redeemCodeInput, setRedeemCodeInput] = useState("");
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [donateLoading, setDonateLoading] = useState<Record<number, boolean>>({});
+  const [tutorialShown, setTutorialShown] = useState(false);
 
   // Trade flow state
   const [flowStep, setFlowStep] = useState<TradeFlowStep>("idle");
@@ -291,35 +292,32 @@ export default function TrocasClient({
 
   // Tutorial pop-up trigger
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || tutorialShown) return;
     const hideTutorial = localStorage.getItem("hide_trade_tutorial");
     if (!hideTutorial) {
+      setTutorialShown(true);
       const showTutorial = () => {
         let dontShowAgain = false;
         ui.openModal(
           <div style={{ padding: "8px 4px", display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ textAlign: "center" }}>
               <HeartHandshake className="w-12 h-12 text-[#C2185B] mx-auto mb-2 animate-bounce" />
-              <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Como funcionam as Trocas? 🔄</h2>
+              <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Como funcionam as Trocas?</h2>
             </div>
             
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left", fontSize: "12px", color: "#5c0d2b" }}>
-              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                <span style={{ fontSize: "14px" }}>1️⃣</span>
-                <p style={{ margin: 0 }}><b>Escolha uma figurinha repetida:</b> Clique em "Trocar" na figurinha que você deseja oferecer.</p>
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                <span style={{ fontSize: "14px" }}>2️⃣</span>
-                <p style={{ margin: 0 }}><b>Busque a outra colecionadora:</b> Insira o apelido (nick) da pessoa com quem deseja negociar.</p>
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                <span style={{ fontSize: "14px" }}>3️⃣</span>
-                <p style={{ margin: 0 }}><b>Escolha o que receber:</b> Selecione qual figurinha repetida dela você quer em troca.</p>
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                <span style={{ fontSize: "14px" }}>4️⃣</span>
-                <p style={{ margin: 0 }}><b>Confirme e resgate:</b> Assim que ela aceitar, a figurinha estará pronta no seu Histórico para você abrir e colar! 🎁</p>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left", fontSize: "12px", color: "#5c0d2b", lineHeight: "1.4" }}>
+              <p style={{ margin: 0 }}>
+                <b>Regras de Compatibilidade:</b> Figurinhas Gratuitas podem ser trocadas apenas por outras Gratuitas, e figurinhas Pagas (Loja) podem ser trocadas por outras Pagas.
+              </p>
+              <p style={{ margin: 0 }}>
+                <b>Troca por Pontos:</b> Além de trocar com outras colecionadoras, você também pode trocar suas figurinhas repetidas da Loja por pontos, que podem ser acumulados e usados para adquirir novos pacotes de figurinhas.
+              </p>
+              <p style={{ margin: 0 }}>
+                <b>Como Iniciar uma Troca:</b> Basta escolher a figurinha que deseja trocar, informar o nome de usuário (nick) da outra colecionadora e selecionar a figurinha dela que deseja receber.
+              </p>
+              <p style={{ margin: 0 }}>
+                <b>Resgatar:</b> Quando a usuária aceitar a proposta, a nova figurinha ficará disponível para resgate na sua aba de Histórico.
+              </p>
             </div>
 
             <div style={{ borderTop: "1px solid #fecdd3", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
