@@ -163,7 +163,6 @@ function StickerDupeCard({
             onClick={onDonate}
             disabled={donateLoading}
             title="Doar figurinha e gerar código"
-            style={{ display: "flex", gap: "4px", alignItems: "center" }}
           >
             <Gift className="w-3.5 h-3.5" />
             <span>Doar</span>
@@ -845,7 +844,7 @@ export default function TrocasClient({
         </div>
       )}
       <p className="note" style={{ marginTop: 12 }}>
-        Figurinhas 201–360 (Loja) podem ser trocadas por pontos (45 pts) ou com outra usuária.
+        Figurinhas 201–360 (Loja) podem ser trocadas por pontos ou com outra usuária.
       </p>
     </div>
   );

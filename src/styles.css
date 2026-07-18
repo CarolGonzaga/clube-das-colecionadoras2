@@ -6058,13 +6058,17 @@ html.theme-lilac .text-\[#5c0d2b\] {
   flex-shrink: 0;
 }
 .trade-btn-trade,
-.trade-btn-points {
+.trade-btn-points,
+.trade-btn-donate {
   display: flex;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px !important;
   font-size: 11px !important;
   padding: 5px 8px !important;
   white-space: nowrap;
+  width: 76px !important;
+  box-sizing: border-box;
 }
 
 /* ── Empty states ────────────────────────────────────────────── */
