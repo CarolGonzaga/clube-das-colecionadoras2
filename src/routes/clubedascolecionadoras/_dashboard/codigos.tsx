@@ -147,8 +147,7 @@ function DashboardCodigos() {
             <Gift className="w-5 h-5 text-berry" /> Resgatar Figurinha Doada
           </h3>
           <p className="text-xs text-berry/70 mb-4">
-            Recebeu um código de doação de outra colecionadora? Cole o código de 8 caracteres abaixo
-            para resgatar.
+            Recebeu um código de doação de outra colecionadora? Cole o código de 8 caracteres abaixo para resgatar.
           </p>
 
           {donationError && (

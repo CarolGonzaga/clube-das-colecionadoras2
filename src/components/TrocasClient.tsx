@@ -201,6 +201,7 @@ export default function TrocasClient({
 }: TrocasClientProps) {
   const ui = useUI();
   const router = useRouter();
+  const hasShownTutorialRef = React.useRef(false);
 
   // State
   const [mainTab, setMainTab] = useState<MainTab>(
@@ -223,7 +224,6 @@ export default function TrocasClient({
   const [redeemCodeInput, setRedeemCodeInput] = useState("");
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [donateLoading, setDonateLoading] = useState<Record<number, boolean>>({});
-  const [tutorialShown, setTutorialShown] = useState(false);
 
   // Trade flow state
   const [flowStep, setFlowStep] = useState<TradeFlowStep>("idle");
@@ -292,11 +292,12 @@ export default function TrocasClient({
 
   // Tutorial pop-up trigger
   useEffect(() => {
-    if (typeof window === "undefined" || tutorialShown) return;
+    if (typeof window === "undefined") return;
+    if (hasShownTutorialRef.current) return;
     const hideTutorial = localStorage.getItem("hide_trade_tutorial");
     if (!hideTutorial) {
-      setTutorialShown(true);
       const showTutorial = () => {
+        hasShownTutorialRef.current = true;
         let dontShowAgain = false;
         ui.openModal(
           <div style={{ padding: "8px 4px", display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -305,19 +306,23 @@ export default function TrocasClient({
               <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Como funcionam as Trocas?</h2>
             </div>
             
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left", fontSize: "12px", color: "#5c0d2b", lineHeight: "1.4" }}>
-              <p style={{ margin: 0 }}>
-                <b>Regras de Compatibilidade:</b> Figurinhas Gratuitas podem ser trocadas apenas por outras Gratuitas, e figurinhas Pagas (Loja) podem ser trocadas por outras Pagas.
-              </p>
-              <p style={{ margin: 0 }}>
-                <b>Troca por Pontos:</b> Além de trocar com outras colecionadoras, você também pode trocar suas figurinhas repetidas da Loja por pontos, que podem ser acumulados e usados para adquirir novos pacotes de figurinhas.
-              </p>
-              <p style={{ margin: 0 }}>
-                <b>Como Iniciar uma Troca:</b> Basta escolher a figurinha que deseja trocar, informar o nome de usuário (nick) da outra colecionadora e selecionar a figurinha dela que deseja receber.
-              </p>
-              <p style={{ margin: 0 }}>
-                <b>Resgatar:</b> Quando a usuária aceitar a proposta, a nova figurinha ficará disponível para resgate na sua aba de Histórico.
-              </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left", fontSize: "12px", color: "#5c0d2b" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold" }}>1.</span>
+                <p style={{ margin: 0 }}><b>Troca por Pontos na Loja:</b> O usuário pode trocar figurinhas compradas por pontos que podem ser usados para adquirir novas.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold" }}>2.</span>
+                <p style={{ margin: 0 }}><b>Regras de Troca:</b> Figurinhas Gratuitas podem ser trocadas por Gratuitas, e Pagas podem ser trocadas por Pagas.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold" }}>3.</span>
+                <p style={{ margin: 0 }}><b>Como Trocar:</b> Basta escolher a figurinha que deseja trocar, informar o nick do usuário e selecionar a figurinha dele que deseja receber.</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold" }}>4.</span>
+                <p style={{ margin: 0 }}><b>Resgate:</b> Quando o usuário aceitar a troca, a nova figurinha ficará disponível para resgate.</p>
+              </div>
             </div>
 
             <div style={{ borderTop: "1px solid #fecdd3", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -1117,41 +1122,49 @@ export default function TrocasClient({
       <h1 className="section-title">Trocas</h1>
 
       {/* Header Row: User Info & Points Wallet */}
-      <div className="trade-header-row flex flex-col sm:flex-row gap-3 w-full mb-3">
+      <div className="trade-header-row flex flex-row gap-3 w-full mb-3">
         {/* My nick chip */}
         <div className="trade-my-nick-bar flex-1" style={{ margin: 0 }}>
-          <span className="note">Seu usuário:</span>
-          <span className="trade-my-nick-chip">@{profileNick}</span>
-          <button
-            className="trade-copy-btn"
-            title="Copiar nome de usuário"
-            onClick={async () => {
-              if (navigator.clipboard) {
-                await navigator.clipboard.writeText(profileNick);
-                ui.toast("Nome copiado! 💝");
-              }
-            }}
-          >
-            <Copy className="w-3.5 h-3.5" />
-          </button>
-          <span className="note" style={{ fontSize: 10, marginLeft: 4 }}>
+          <div className="trade-my-nick-left">
+            <span className="note">Seu usuário:</span>
+            <div className="trade-my-nick-user-row">
+              <span className="trade-my-nick-chip">@{profileNick}</span>
+              <button
+                className="trade-copy-btn"
+                title="Copiar nome de usuário"
+                onClick={async () => {
+                  if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(profileNick);
+                    ui.toast("Nome copiado! 💝");
+                  }
+                }}
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          <span className="note trade-share-note">
             compartilhe para receber trocas
           </span>
         </div>
 
         {/* Points wallet */}
         <div className="trade-wallet-bar flex-1" style={{ margin: 0 }}>
-          <Wallet className="w-4 h-4 text-amber-600" />
-          <span className="trade-wallet-label">Carteira de Pontos:</span>
-          <span className="trade-wallet-balance">{pointsBalance.toLocaleString("pt-BR")} pts</span>
-          <button
-            className="trade-refresh-btn"
-            onClick={refreshTrades}
-            disabled={refreshing}
-            title="Atualizar"
-          >
-            <Repeat className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-          </button>
+          <div className="trade-wallet-info">
+            <Wallet className="w-4 h-4 text-amber-600" />
+            <span className="trade-wallet-label">Carteira de Pontos:</span>
+          </div>
+          <div className="trade-wallet-value-row">
+            <span className="trade-wallet-balance">{pointsBalance.toLocaleString("pt-BR")} pts</span>
+            <button
+              className="trade-refresh-btn"
+              onClick={refreshTrades}
+              disabled={refreshing}
+              title="Atualizar"
+            >
+              <Repeat className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          </div>
         </div>
       </div>
 
