@@ -2,7 +2,6 @@
 
 import React from "react";
 import { SEED_STICKERS } from "../lib/seeds";
-import { getClubAssetUrl } from "../lib/urls";
 
 interface StampProps {
   number: number;
@@ -164,7 +163,7 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
           />
           {/* Cover image embedded */}
           <image
-            href={getClubAssetUrl(`/covers/${coverFilename}`)}
+            href={`/covers/${coverFilename}`}
             x="14"
             y="14"
             width="172"
@@ -185,15 +184,37 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
             />
           )}
           {auto && getAutograph(number) && (
-            <image
-              href={getClubAssetUrl(`/autographs/${getAutograph(number)}`)}
-              x="20"
-              y="160"
-              width="160"
-              height="80"
-              preserveAspectRatio="xMidYMid meet"
-              style={{ pointerEvents: "none", filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.4))" }}
-            />
+            <g transform="translate(105, 175)">
+              <image
+                href="/badge.png"
+                x="0"
+                y="0"
+                width="95"
+                height="95"
+                preserveAspectRatio="xMidYMid meet"
+                style={{ filter: "drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" }}
+              />
+              <text
+                x="47.5"
+                y="34"
+                textAnchor="middle"
+                fontFamily="var(--font-dancing), 'Dancing Script', cursive"
+                fontSize="12"
+                fill="#5a2030"
+                fontWeight="600"
+              >
+                com carinho,
+              </text>
+              <image
+                href={`/autographs/${getAutograph(number)}`}
+                x="15"
+                y="38"
+                width="65"
+                height="45"
+                preserveAspectRatio="xMidYMid meet"
+                style={{ filter: "brightness(0)" }}
+              />
+            </g>
           )}
           <rect
             x="8"
