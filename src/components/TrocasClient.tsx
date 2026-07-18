@@ -419,8 +419,8 @@ export default function TrocasClient({
               </button>
             </div>
 
-            <p className="note" style={{ margin: "0 0 16px" }}>
-              Este código é válido por 24 horas. Se não for resgatado nesse período, a figurinha retornará automaticamente para o seu deck!
+            <p className="note" style={{ fontSize: "10px", margin: "0 0 16px" }}>
+              Válido por 24h. Se não resgatado, a figurinha volta para seu deck.
             </p>
 
             <button className="btn" onClick={() => ui.closeModal()} style={{ width: "100%" }}>
@@ -1033,7 +1033,7 @@ export default function TrocasClient({
         {donations.length === 0 ? (
           <div className="trade-empty">
             <Gift className="w-8 h-8 text-pink-300 mx-auto mb-2" />
-            <p>Você ainda não gerou nenhum código de doação.</p>
+            <p>Nenhuma doação enviada ou recebida ainda.</p>
           </div>
         ) : (
           <div className="trade-requests-list">
@@ -1042,13 +1042,18 @@ export default function TrocasClient({
               const isExpired = d.status === "expired" || (d.status === "active" && new Date() > new Date(d.expires_at));
               const currentStatus = isExpired ? "expired" : d.status;
               
+              const isOutgoing = d.from_user === profileId;
               let statusLabel = "Ativo (Aguardando)";
               let statusCls = "badge-pending";
               if (currentStatus === "used") {
-                statusLabel = d.receiver_nick ? `Resgatado por @${d.receiver_nick}` : "Resgatado";
+                if (isOutgoing) {
+                  statusLabel = d.receiver_nick ? `Resgatado por @${d.receiver_nick}` : "Resgatado";
+                } else {
+                  statusLabel = d.donor_nick ? `Doado por @${d.donor_nick}` : "Recebido";
+                }
                 statusCls = "badge-accepted";
               } else if (currentStatus === "expired") {
-                statusLabel = "Expirado (Devolvido)";
+                statusLabel = isOutgoing ? "Expirado (Devolvido)" : "Expirado";
                 statusCls = "badge-expired";
               }
 
@@ -1059,7 +1064,7 @@ export default function TrocasClient({
                       🎁
                     </div>
                     <div className="trade-request-meta">
-                      <b>Doação: {d.code}</b>
+                      <b>Doação: {d.code} {isOutgoing ? "(Enviada)" : "(Resgatada)"}</b>
                       <span className="trade-time-note">
                         {currentStatus === "active" ? (
                           <>
@@ -1171,10 +1176,10 @@ export default function TrocasClient({
       {/* Donation Code Redemption Section */}
       <div className="trade-redeem-section bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 mb-4">
         <h3 className="text-xs font-bold text-[#5c0d2b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Gift className="w-4 h-4 text-[#C2185B]" /> Resgatar Figurinha Doadora
+          <Gift className="w-4 h-4 text-[#C2185B]" /> Resgatar Figurinha Doada
         </h3>
         <p className="text-[11px] text-[#bf2a5e]/80 mb-3">
-          Recebeu um código de doação de uma amiga? Cole o código abaixo para receber a figurinha dela imediatamente!
+          Recebeu um código de doação de outra colecionadora? Cole o código de 8 caracteres abaixo para resgatar.
         </p>
         <div className="flex gap-2">
           <input

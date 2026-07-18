@@ -52,6 +52,8 @@ export interface Donation {
   created_at: string;
   expires_at: string;
   receiver_nick?: string;
+  donor_nick?: string;
+  from_user?: string;
 }
 
 export interface TradeRequest {

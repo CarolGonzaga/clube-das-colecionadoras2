@@ -334,20 +334,22 @@ export const dbService = {
   async getOutgoingDonations(userId: string): Promise<Donation[]> {
     const { data, error } = await supabase
       .from("donations")
-      .select("code, sticker_number, status, created_at, expires_at, to_user")
-      .eq("from_user", userId)
+      .select("code, sticker_number, status, created_at, expires_at, to_user, from_user")
+      .or(`from_user.eq.${userId},to_user.eq.${userId}`)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
     const donations = (data || []) as any[];
-    const toUserIds = donations.map((d) => d.to_user).filter(Boolean);
+    const userIds = Array.from(
+      new Set([...donations.map((d) => d.to_user), ...donations.map((d) => d.from_user)])
+    ).filter(Boolean);
 
     const nickMap: Record<string, string> = {};
-    if (toUserIds.length > 0) {
+    if (userIds.length > 0) {
       const { data: profiles, error: pError } = await supabase
         .from("profiles")
         .select("id, nick")
-        .in("id", toUserIds);
+        .in("id", userIds);
       if (!pError && profiles) {
         profiles.forEach((p) => {
           nickMap[p.id] = p.nick;
@@ -361,7 +363,10 @@ export const dbService = {
       status: d.status,
       created_at: d.created_at,
       expires_at: d.expires_at,
+      from_user: d.from_user,
+      to_user: d.to_user,
       receiver_nick: d.to_user ? (nickMap[d.to_user] || null) : null,
+      donor_nick: d.from_user ? (nickMap[d.from_user] || null) : null,
     }));
     return mapped as Donation[];
   },
