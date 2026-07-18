@@ -55,6 +55,37 @@ function getCoverFilename(number: number): string | null {
   return sticker ? sticker.cover_url : null;
 }
 
+function getAutograph(number: number): string | null {
+  const sticker = SEED_STICKERS.find((s) => s.number === number);
+  if (!sticker || !sticker.author) return null;
+
+  const AUTHOR_AUTOGRAPHS: Record<string, string> = {
+    "G.B. Baldassari": "baldassari.png",
+    "Clara Alves": "clara-alves.png",
+    "Bia Crespo": "bia-crespo.png",
+    "Englantine": "englantine.png",
+    "Fernanda V.": "fernanda-v.png",
+    "Giu Domingues": "giu-domingues.png",
+    "Helena Nolasco": "helena-nolasco.png",
+    "Ju Mesquita": "ju-mesquita.png",
+    "Karoline Mandu": "karoline-mandu.png",
+    "Line Cunha": "line-cunha.png",
+    "Mariana Rosa": "mariana-rosa.png",
+    "Marina Basso": "marina-basso.png",
+    "Sarah Oliveira": "sarah-oliveira.png",
+    "V.S. Vilela": "v-s-vilela.png",
+    "Victoria Mendes": "victoria-mendes.png",
+    "Victoria Moon": "victoria-moon.png",
+    "Yasmim Mahmud Kader": "yasmim-m-kader.png",
+    "Zey Shelsea": "zey-shelsea.png",
+    "D. Barreto": "d-barreto.png",
+    "Camilla Giordanno": "camilla-giordanno.png",
+    "Ana Flávia": "ana-flavia.png",
+  };
+
+  return AUTHOR_AUTOGRAPHS[sticker.author] || null;
+}
+
 export default function Stamp({ number, owned = false, auto = false, cover = null }: StampProps) {
   const pal = auto
     ? { edge: "#ffffff", panel: "#fff7e6", line: "#dcae4e", num: "#cf9a1e", txt: "#cf9a1e" }
@@ -150,6 +181,17 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
               fill={`url(#goldSheen-${id})`}
               clipPath={`url(#c-${id})`}
               style={{ mixBlendMode: "color-dodge", pointerEvents: "none" }}
+            />
+          )}
+          {auto && getAutograph(number) && (
+            <image
+              href={`/autographs/${getAutograph(number)}`}
+              x="20"
+              y="160"
+              width="160"
+              height="80"
+              preserveAspectRatio="xMidYMid meet"
+              style={{ pointerEvents: "none", filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.4))" }}
             />
           )}
           <rect
