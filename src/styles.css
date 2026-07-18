@@ -5954,24 +5954,33 @@ html.theme-lilac .text-\[#5c0d2b\] {
 /* ── Sub tabs ────────────────────────────────────────────────── */
 .trade-sub-tabs {
   display: flex;
-  gap: 4px;
+  gap: 0;
   margin-bottom: 12px;
   border-bottom: 2px solid #fce4ec;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+.trade-sub-tabs::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari */
 }
 .trade-sub-tab {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 7px 10px;
   border: none;
   background: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #bf2a5e99;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
   transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .trade-sub-tab.active {
   color: #9e1b4a;
