@@ -672,9 +672,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
           }}
         >
           <Stamp number={sticker.number} owned={true} auto={isRare} cover={sticker.slug} />
-          {isRare && (
-            <AutographSeal author={sticker.author} onZoom={() => openZoomedAutograph(sticker)} />
-          )}
         </div>
         <h2
           style={{

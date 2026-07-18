@@ -2,6 +2,7 @@
 
 import React from "react";
 import { SEED_STICKERS } from "../lib/seeds";
+import { getClubAssetUrl } from "../lib/urls";
 
 interface StampProps {
   number: number;
@@ -163,7 +164,7 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
           />
           {/* Cover image embedded */}
           <image
-            href={`/covers/${coverFilename}`}
+            href={getClubAssetUrl(`/covers/${coverFilename}`)}
             x="14"
             y="14"
             width="172"
@@ -185,7 +186,7 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
           )}
           {auto && getAutograph(number) && (
             <image
-              href={`/autographs/${getAutograph(number)}`}
+              href={getClubAssetUrl(`/autographs/${getAutograph(number)}`)}
               x="20"
               y="160"
               width="160"
