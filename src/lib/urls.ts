@@ -1,6 +1,6 @@
 export const CLUB_PATH = "/clubedascolecionadoras";
 
-const DEFAULT_PUBLIC_ORIGIN = "https://clube-das-colecionadoras.vercel.app";
+const DEFAULT_PUBLIC_ORIGIN = "https://clube-das-colecionadoras2.vercel.app";
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
