@@ -99,6 +99,8 @@ export interface PointTransaction {
 export interface RevealItem {
   slug: string;
   number: number;
+  name?: string;
+  author?: string | null;
   wasNew: boolean;
   isRare: boolean;
   repeat: boolean;

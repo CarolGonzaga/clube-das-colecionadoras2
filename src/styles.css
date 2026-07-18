@@ -973,6 +973,15 @@ button {
   border-color: var(--gold);
   box-shadow: 0 0 0 2px var(--gold) inset;
 }
+.album:not(.album-list) .cell.foil {
+  overflow: visible;
+}
+.album.album-list .autograph-seal-container {
+  width: 42px;
+  right: auto;
+  left: 49px;
+  bottom: 2px;
+}
 @keyframes shine {
   0% {
     background-position: 0% 0%;
@@ -3110,6 +3119,9 @@ canvas {
   background: #fff;
   z-index: 1;
 }
+.card-3d-front.rare-autographed {
+  overflow: visible;
+}
 
 /* Glow and hologram styles for rare cards */
 .card-rare-holo {
@@ -4052,6 +4064,25 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   font-weight: 900;
 }
 
+.registry-sticker-number.rare-thumb {
+  width: 52px;
+  height: 72px;
+  border-radius: 10px;
+  background: #fff8db;
+  overflow: visible;
+  position: relative;
+}
+
+.registry-sticker-number.rare-thumb .autograph-seal-container {
+  width: 42px;
+  right: -17px;
+  bottom: -13px;
+}
+
+.registry-sticker-number.rare-thumb .autograph-seal-container span {
+  font-size: 8px !important;
+}
+
 .registry-sticker-row small,
 .shop-card-media small {
   border-radius: 999px;
@@ -4188,6 +4219,11 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 
 .rare-store-card .shop-card-media {
   background: linear-gradient(135deg, #fff8db, #fff, #e3e8ef);
+  overflow: visible;
+}
+
+.rare-store-card {
+  overflow: visible;
 }
 
 .rare-store-card .shop-card-media small {
@@ -4196,6 +4232,23 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   gap: 4px;
   background: #fff3c4;
   color: #8a5d00;
+}
+
+.shop-rare-stamp {
+  width: 76px;
+  aspect-ratio: 200 / 280;
+  position: relative;
+  filter: drop-shadow(0 8px 12px rgba(122, 70, 0, 0.22));
+}
+
+.shop-rare-stamp .autograph-seal-container {
+  width: 52px;
+  right: -23px;
+  bottom: -20px;
+}
+
+.shop-rare-stamp .autograph-seal-container span {
+  font-size: 9px !important;
 }
 
 .shop-card {
@@ -6407,4 +6460,3 @@ html.theme-lilac .text-\[#5c0d2b\] {
     opacity: 1;
   }
 }
-

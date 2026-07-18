@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PackageOpen, ArrowRight, Check, Sparkles } from "lucide-react";
-import { RevealItem } from "@/lib/types";
+import { RevealItem, Sticker } from "@/lib/types";
 import Stamp from "./Stamp";
+import AutographSeal from "./AutographSeal";
 import { dbService } from "@/lib/db";
 
 interface PackOpenerProps {
@@ -160,6 +161,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
   const [isCardZoomed, setIsCardZoomed] = useState(false);
   const [fxParticles, setFxParticles] = useState<FxParticle[]>([]);
   const [showFlash, setShowFlash] = useState(false);
+  const [stickerLookup, setStickerLookup] = useState<Record<number, Sticker>>({});
 
   const fxParticleIdRef = useRef(0);
   const timersRef = useRef<any[]>([]);
@@ -189,6 +191,23 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
       notifyPendingPackChange();
     };
   }, []);
+
+  useEffect(() => {
+    if (!reveals.some((item) => item.isRare && !item.author)) return;
+    let cancelled = false;
+    dbService
+      .getStickers()
+      .then((items) => {
+        if (cancelled) return;
+        setStickerLookup(
+          Object.fromEntries(items.map((sticker) => [sticker.number, sticker])),
+        );
+      })
+      .catch((error) => console.warn("Could not load sticker metadata for autographs", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [reveals]);
 
   // Recovery of pending pack on mount
   useEffect(() => {
@@ -440,6 +459,8 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
   };
 
   const currentReveal = reveals[activeCardIndex];
+  const currentSticker = currentReveal ? stickerLookup[currentReveal.number] : undefined;
+  const currentAuthor = currentReveal?.author ?? currentSticker?.author ?? null;
   const isActiveFlipped = flippedCards.includes(activeCardIndex);
 
   const particlesRenderer = () => (
@@ -658,7 +679,11 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                 <div className="card-3d-back rounded-lg overflow-hidden border border-white/10">
                   <img src="/verso-card.webp" alt="Verso" className="w-full h-full object-cover" />
                 </div>
-                <div className="card-3d-front rounded-lg overflow-hidden border-2 border-white/20">
+                <div
+                  className={`card-3d-front rounded-lg border-2 border-white/20 ${
+                    currentReveal.isRare ? "rare-autographed" : ""
+                  }`}
+                >
                   {currentReveal.isRare && <div className="card-rare-holo" />}
                   <Stamp
                     number={currentReveal.number}
@@ -666,6 +691,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                     auto={currentReveal.isRare}
                     cover={currentReveal.slug}
                   />
+                  {currentReveal.isRare && <AutographSeal author={currentAuthor} />}
                   {currentReveal.isRare && <div className="card-rare-glow animate-pulse" />}
                 </div>
               </div>

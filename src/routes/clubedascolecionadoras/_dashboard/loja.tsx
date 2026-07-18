@@ -3,6 +3,8 @@ import { Minus, Plus, Search, ShoppingBag, Sparkles, Trash2, X } from "lucide-re
 import { useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { purchaseStorage, type SimPurchaseItem } from "@/lib/shopSimulation";
+import AutographSeal from "@/components/AutographSeal";
+import Stamp from "@/components/Stamp";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
   component: LojaPage,
@@ -16,6 +18,7 @@ type StoreItem = {
   image: string;
   tag: string;
   section: "pacotes" | "unitarias" | "raras";
+  stickerNumber?: number;
 };
 
 type CartLine = StoreItem & {
@@ -60,6 +63,7 @@ const RARE_ITEMS: StoreItem[] = Array.from({ length: 16 }, (_, index) => ({
   image: "/verso-card.png",
   tag: "rara",
   section: "raras",
+  stickerNumber: index + 1,
 }));
 
 function formatMoney(value: number) {
@@ -88,8 +92,10 @@ function LojaPage() {
     (item) => storeFilter === "todos" || item.section === storeFilter,
   );
   const rareItems = RARE_ITEMS.filter((item) => {
+    const sticker = parentData.stickers.find((entry) => entry.number === item.stickerNumber);
+    const searchText = `${item.name} ${sticker?.name || ""} ${sticker?.author || ""}`.toLowerCase();
     const matchesFilter = storeFilter === "todos" || storeFilter === "raras";
-    const matchesSearch = item.name.toLowerCase().includes(rareSearch.trim().toLowerCase());
+    const matchesSearch = searchText.includes(rareSearch.trim().toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -244,17 +250,31 @@ function LojaPage() {
           <div className="shop-grid rare-grid">
             {rareItems.map((item) => {
           const qty = getQty(item.id);
+          const sticker = parentData.stickers.find((entry) => entry.number === item.stickerNumber);
+          const displayName = sticker?.name || item.name;
 
           return (
             <article className="shop-card rare-store-card" key={item.id}>
               <div className="shop-card-media">
-                <img src={item.image} alt={item.name} />
+                {sticker ? (
+                  <div className="shop-rare-stamp">
+                    <Stamp
+                      number={sticker.number}
+                      owned={true}
+                      auto={true}
+                      cover={sticker.slug}
+                    />
+                    <AutographSeal author={sticker.author} />
+                  </div>
+                ) : (
+                  <img src={item.image} alt={item.name} />
+                )}
                 <small>
                   <Sparkles size={10} /> {item.tag}
                 </small>
               </div>
               <div className="shop-card-body">
-                <h2>{item.name}</h2>
+                <h2>{displayName}</h2>
                 <p>{item.description}</p>
                 <b>{formatMoney(item.price)}</b>
               </div>

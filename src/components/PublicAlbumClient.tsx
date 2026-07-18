@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Profile, Sticker, UserSticker } from "@/lib/types";
 import Stamp from "./Stamp";
+import AutographSeal from "./AutographSeal";
 import { Star, Sparkles } from "lucide-react";
 
 interface PublicAlbumClientProps {
@@ -244,6 +245,7 @@ export default function PublicAlbumClient({
                     auto={isRare}
                     cover={sticker.slug}
                   />
+                  {isRare && <AutographSeal author={sticker.author} />}
 
                   {isRare && (
                     <span className="auto-badge flex items-center justify-center">

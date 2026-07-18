@@ -29,6 +29,7 @@ export type SimPackRecord = {
 
 export type SimAcquiredSticker = {
   number: number;
+  slug: string;
   name: string;
   author: string | null;
   kind: "comum" | "rara" | "exclusiva";
@@ -60,6 +61,8 @@ function stickerToReveal(sticker: Sticker, userStickers: UserSticker[], isRare =
   return {
     slug: sticker.slug,
     number: sticker.number,
+    name: sticker.name,
+    author: sticker.author,
     wasNew: !owned,
     isRare,
     repeat: !!owned,
@@ -70,6 +73,7 @@ function stickerToReveal(sticker: Sticker, userStickers: UserSticker[], isRare =
 function stickerToAcquired(sticker: Sticker, date: string, source: string, kind: SimAcquiredSticker["kind"]) {
   return {
     number: sticker.number,
+    slug: sticker.slug,
     name: sticker.name,
     author: sticker.author,
     kind,

@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { purchaseStorage, type SimPurchaseRecord } from "@/lib/shopSimulation";
+import AutographSeal from "@/components/AutographSeal";
+import Stamp from "@/components/Stamp";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/registros")({
   component: RegistrosPage,
@@ -207,8 +209,15 @@ function RegistrosPage() {
             <div className="registry-sticker-grid">
               {latestStickers.map((sticker, index) => (
                 <article className="registry-sticker-row" key={`${sticker.number}-${index}`}>
-                  <div className="registry-sticker-number">
-                    {String(sticker.number).padStart(3, "0")}
+                  <div className={`registry-sticker-number ${sticker.kind === "rara" ? "rare-thumb" : ""}`}>
+                    {sticker.kind === "rara" ? (
+                      <>
+                        <Stamp number={sticker.number} owned={true} auto={true} cover={sticker.slug} />
+                        <AutographSeal author={sticker.author} />
+                      </>
+                    ) : (
+                      String(sticker.number).padStart(3, "0")
+                    )}
                   </div>
                   <div>
                     <b>{sticker.name}</b>
