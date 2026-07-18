@@ -55,36 +55,6 @@ function getCoverFilename(number: number): string | null {
   return sticker ? sticker.cover_url : null;
 }
 
-function getAutograph(number: number): string | null {
-  const sticker = SEED_STICKERS.find((s) => s.number === number);
-  if (!sticker || !sticker.author) return null;
-
-  const AUTHOR_AUTOGRAPHS: Record<string, string> = {
-    "G.B. Baldassari": "baldassari.png",
-    "Clara Alves": "clara-alves.png",
-    "Bia Crespo": "bia-crespo.png",
-    "Englantine": "englantine.png",
-    "Fernanda V.": "fernanda-v.png",
-    "Giu Domingues": "giu-domingues.png",
-    "Helena Nolasco": "helena-nolasco.png",
-    "Ju Mesquita": "ju-mesquita.png",
-    "Karoline Mandu": "karoline-mandu.png",
-    "Line Cunha": "line-cunha.png",
-    "Mariana Rosa": "mariana-rosa.png",
-    "Marina Basso": "marina-basso.png",
-    "Sarah Oliveira": "sarah-oliveira.png",
-    "V.S. Vilela": "v-s-vilela.png",
-    "Victoria Mendes": "victoria-mendes.png",
-    "Victoria Moon": "victoria-moon.png",
-    "Yasmim Mahmud Kader": "yasmim-m-kader.png",
-    "Zey Shelsea": "zey-shelsea.png",
-    "D. Barreto": "d-barreto.png",
-    "Camilla Giordanno": "camilla-giordanno.png",
-    "Ana Flávia": "ana-flavia.png",
-  };
-
-  return AUTHOR_AUTOGRAPHS[sticker.author] || null;
-}
 
 export default function Stamp({ number, owned = false, auto = false, cover = null }: StampProps) {
   const pal = auto
@@ -183,39 +153,7 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
               style={{ mixBlendMode: "color-dodge", pointerEvents: "none" }}
             />
           )}
-          {auto && getAutograph(number) && (
-            <g transform="translate(105, 175)">
-              <image
-                href="/badge.png"
-                x="0"
-                y="0"
-                width="95"
-                height="95"
-                preserveAspectRatio="xMidYMid meet"
-                style={{ filter: "drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" }}
-              />
-              <text
-                x="47.5"
-                y="34"
-                textAnchor="middle"
-                fontFamily="var(--font-dancing), 'Dancing Script', cursive"
-                fontSize="12"
-                fill="#5a2030"
-                fontWeight="600"
-              >
-                com carinho,
-              </text>
-              <image
-                href={`/autographs/${getAutograph(number)}`}
-                x="15"
-                y="38"
-                width="65"
-                height="45"
-                preserveAspectRatio="xMidYMid meet"
-                style={{ filter: "brightness(0)" }}
-              />
-            </g>
-          )}
+
           <rect
             x="8"
             y="8"
