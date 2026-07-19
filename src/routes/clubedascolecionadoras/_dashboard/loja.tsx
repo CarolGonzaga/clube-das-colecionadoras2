@@ -29,18 +29,18 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "pack-single",
     name: "Pacote com 5 figurinhas",
-    description: "Pacote sortido para abrir na tela de registros.",
+    description: "Pacote sortido para abrir na tela de pedidos.",
     price: 2.5,
-    image: "/verso-card.png",
+    image: "/frames/1.webp",
     tag: "pacote",
     section: "pacotes",
   },
   {
     id: "pack-combo",
     name: "Combo com 10 pacotes",
-    description: "Economia para completar o album mais rapido.",
+    description: "Economia para completar o álbum mais rápido.",
     price: 22.5,
-    image: "/verso-card.png",
+    image: "/frames/1.webp",
     tag: "combo",
     section: "pacotes",
   },
@@ -188,9 +188,29 @@ function LojaPage() {
 
               return (
                 <article className="shop-card" key={item.id}>
-                  <div className="shop-card-media">
+                  <div className="shop-card-media" style={{ position: "relative" }}>
                     <img src={item.image} alt={item.name} />
                     <small>{item.tag}</small>
+                    {/* "10x" badge for the combo pack */}
+                    {item.id === "pack-combo" && (
+                      <span style={{
+                        position: "absolute",
+                        bottom: 8,
+                        right: 10,
+                        background: "rgba(194, 24, 91, 0.92)",
+                        color: "#fff",
+                        fontFamily: "Baloo 2",
+                        fontWeight: 900,
+                        fontSize: "18px",
+                        lineHeight: 1,
+                        padding: "3px 8px",
+                        borderRadius: "10px",
+                        letterSpacing: "-0.5px",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                      }}>
+                        10×
+                      </span>
+                    )}
                   </div>
                   <div className="shop-card-body">
                     <h2>{item.name}</h2>
@@ -245,23 +265,40 @@ function LojaPage() {
                 };
 
                 return (
-                  <article className="shop-card" key={itemId} style={{ opacity: owned ? 0.55 : 1 }}>
-                    <div className="shop-card-media" style={{ position: "relative" }}>
-                      <img src={storeItem.image} alt={sticker.name} />
-                      <small style={{ background: "linear-gradient(135deg, #9c27b0, #e91e63)" }}>{storeItem.tag}</small>
+                  <article className="shop-card exclusive-shop-card" key={itemId} style={{ opacity: owned ? 0.65 : 1 }}>
+                    {/* Full-bleed cover image — Amazon ebook style */}
+                    <div style={{
+                      position: "relative",
+                      width: "100%",
+                      aspectRatio: "2/3",
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}>
+                      <img
+                        src={storeItem.image}
+                        alt={sticker.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          objectPosition: "center top",
+                          display: "block",
+                        }}
+                      />
                       {owned && (
                         <span style={{
-                          position: "absolute", top: 6, right: 6,
+                          position: "absolute", top: 8, right: 8,
                           background: "#22c55e", color: "#fff",
                           fontSize: "9px", fontWeight: 800,
-                          padding: "2px 6px", borderRadius: "6px",
+                          padding: "3px 7px", borderRadius: "6px",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
                         }}>
                           Já tenho
                         </span>
                       )}
                     </div>
                     <div className="shop-card-body">
-                      <h2>#{String(sticker.number).padStart(3, "0")} {sticker.name}</h2>
+                      <h2 style={{ fontSize: "13px" }}>#{String(sticker.number).padStart(3, "0")} {sticker.name}</h2>
                       <p>{storeItem.description}</p>
                       <b>{formatMoney(storeItem.price)}</b>
                     </div>

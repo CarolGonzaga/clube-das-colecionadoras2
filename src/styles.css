@@ -4277,15 +4277,15 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 
 .shop-card-media {
   position: relative;
-  height: 118px;
+  height: 148px;
   background: linear-gradient(135deg, #fff6fa, #ffdcea);
   display: grid;
   place-items: center;
 }
 
 .shop-card-media img {
-  max-width: 72px;
-  max-height: 92px;
+  max-width: 88px;
+  max-height: 136px;
   object-fit: contain;
   filter: drop-shadow(0 8px 12px rgba(126, 23, 70, 0.16));
 }
@@ -4294,6 +4294,16 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   position: absolute;
   left: 8px;
   top: 8px;
+}
+
+/* Exclusive sticker cards — Amazon ebook style, no background, full-bleed cover */
+.exclusive-shop-card {
+  min-height: unset;
+  overflow: visible;
+}
+
+.exclusive-shop-card .shop-card-body {
+  padding-top: 8px;
 }
 
 .shop-card-body {

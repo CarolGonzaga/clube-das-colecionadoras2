@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, PackageOpen, Coins, Gift } from "lucide-react";
+import { ChevronDown, ChevronUp, PackageOpen, Coins, Ticket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
@@ -124,11 +124,11 @@ function RegistrosPage() {
       </div>
 
       {/* Code Redemption Input */}
-      <section style={{ background: "#fff", padding: "16px", borderRadius: "16px", border: "1px solid var(--blush)", boxShadow: "0 4px 15px rgba(216, 27, 122, 0.03)", marginBottom: "20px" }}>
-        <h2 style={{ fontFamily: "Baloo 2", fontSize: "16px", color: "var(--wine)", margin: "0 0 4px", fontWeight: 800 }}>
-          Códigos do Lendo Sáficos
-        </h2>
-        <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "12px", lineHeight: 1.5 }}>
+      <div className="trade-redeem-section bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 mb-4">
+        <h3 className="text-xs font-bold text-[#5c0d2b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <Ticket className="w-4 h-4 text-[#C2185B]" /> Códigos do Lendo Sáficos
+        </h3>
+        <p className="text-[11px] text-[#bf2a5e]/80 mb-3">
           Os códigos são liberados pelo LS ao longo dos 5 dias do evento. Cada código pode ser usado uma única vez e tem o prazo de 24 horas para resgate. Fique de olho nas redes!
         </p>
         <form
@@ -153,38 +153,26 @@ function RegistrosPage() {
               ui.toast(res.message || "Erro ao resgatar código.");
             }
           }}
-          style={{ display: "flex", gap: "10px" }}
+          className="flex gap-2"
         >
           <input
             name="redeemCode"
             type="text"
-            placeholder="Digite seu código de resgate"
+            placeholder="Cole seu código aqui"
             disabled={redeemLoading}
-            style={{
-              flex: 1,
-              padding: "10px 14px",
-              borderRadius: "12px",
-              border: "1px solid var(--blush)",
-              fontSize: "14px",
-              outline: "none",
-              background: "#fafafa",
-              transition: "border-color 0.2s",
-            }}
+            style={{ height: "40px" }}
+            className="flex-1 min-w-0 px-3 border border-pink-200/60 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
           />
           <button
             type="submit"
             disabled={redeemLoading}
-            className="btn"
-            style={{
-              padding: "10px 20px",
-              fontSize: "14px",
-              margin: 0,
-            }}
+            style={{ height: "40px" }}
+            className="px-4 py-2 bg-gradient-to-r from-[#c1426d] to-[#9b2361] text-white rounded-xl text-xs font-bold hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center cursor-pointer"
           >
-            {redeemLoading ? "Processando..." : "Resgatar"}
+            {redeemLoading ? "Verificando..." : "Resgatar"}
           </button>
         </form>
-      </section>
+      </div>
 
       {/* Orders registry sections */}
       {purchases.length === 0 ? (
