@@ -13,8 +13,17 @@ export function isExclusiveSticker(stickerOrNumber: Sticker | number) {
   return getStickerCategory(stickerOrNumber) === "exclusiva";
 }
 
+export function canHaveRareVersion(stickerOrNumber: Sticker | number) {
+  const number = typeof stickerOrNumber === "number" ? stickerOrNumber : stickerOrNumber.number;
+  return number >= 1 && number <= 20;
+}
+
+export function isRareStickerVersion(stickerOrNumber: Sticker | number, info?: UserSticker | null) {
+  return !!info?.is_rare && canHaveRareVersion(stickerOrNumber);
+}
+
 export function getVisibleStickerTag(sticker: Sticker, info?: UserSticker | null) {
   if (isExclusiveSticker(sticker)) return "exclusiva";
-  if (info?.is_rare) return "rara";
+  if (isRareStickerVersion(sticker, info)) return "rara";
   return "comum";
 }

@@ -1,6 +1,7 @@
 import { createFileRoute, useLoaderData } from "@tanstack/react-router";
 import HomeClient from "../../../components/HomeClient";
 import { dbService } from "../../../lib/db";
+import { isRareStickerVersion } from "../../../lib/albumRules";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/")({
   loader: async () => ({
@@ -24,7 +25,7 @@ function DashboardIndex() {
     .filter(Boolean);
 
   const autoSlugs = ownedStickers
-    .filter((us) => us.is_rare)
+    .filter((us) => isRareStickerVersion(us.sticker_number, us))
     .map((us) => {
       const s = parentData.stickers.find((st) => st.number === us.sticker_number);
       return s ? s.slug : "";
@@ -38,7 +39,7 @@ function DashboardIndex() {
     return acc;
   }, 0);
 
-  const rareCount = parentData.userStickers.filter((us) => us.is_rare && us.copies > 0).length;
+  const rareCount = parentData.userStickers.filter((us) => us.copies > 0 && isRareStickerVersion(us.sticker_number, us)).length;
 
   return (
     <HomeClient

@@ -5,7 +5,7 @@ import { Profile, Sticker, UserSticker } from "@/lib/types";
 import Stamp from "./Stamp";
 import AutographSeal from "./AutographSeal";
 import { Star, Sparkles } from "lucide-react";
-import { isExclusiveSticker } from "@/lib/albumRules";
+import { isExclusiveSticker, isRareStickerVersion } from "@/lib/albumRules";
 
 interface PublicAlbumClientProps {
   profile: Profile;
@@ -231,7 +231,7 @@ export default function PublicAlbumClient({
           <div className="album">
             {paginatedStickers.map((sticker) => {
               const info = getOwnedInfo(sticker.number);
-              const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
+              const isRare = isRareStickerVersion(sticker, info);
               const isExclusive = isExclusiveSticker(sticker);
               const copies = getCopiesCount(sticker.number);
 

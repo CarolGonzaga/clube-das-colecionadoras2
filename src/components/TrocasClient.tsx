@@ -18,6 +18,7 @@ import {
   getOutgoingDonationsAction,
 } from "@/lib/actions";
 import Stamp from "./Stamp";
+import { isRareStickerVersion } from "@/lib/albumRules";
 import {
   ArrowLeftRight,
   Coins,
@@ -476,7 +477,7 @@ export default function TrocasClient({
             slug: `sticker-${res.data.sticker_number}`,
             number: res.data.sticker_number,
             wasNew: false,
-            isRare: res.data.is_rare,
+            isRare: isRareStickerVersion(res.data.sticker_number, { is_rare: res.data.is_rare } as UserSticker),
             repeat: false,
             reward: null,
           },
@@ -496,7 +497,7 @@ export default function TrocasClient({
       .map((s) => {
         const us = userStickers.find((u) => u.sticker_number === s.number);
         return us && us.copies > 1
-          ? { sticker: s, copies: us.copies, isRare: us.is_rare }
+          ? { sticker: s, copies: us.copies, isRare: isRareStickerVersion(s, us) }
           : null;
       })
       .filter(Boolean) as { sticker: Sticker; copies: number; isRare: boolean }[];
@@ -644,7 +645,7 @@ export default function TrocasClient({
                           slug: `sticker-${claimRes.data.sticker_number}`,
                           number: claimRes.data.sticker_number,
                           wasNew: false,
-                          isRare: claimRes.data.is_rare,
+                          isRare: isRareStickerVersion(claimRes.data.sticker_number, { is_rare: claimRes.data.is_rare } as UserSticker),
                           repeat: false,
                           reward: null,
                         },

@@ -5,7 +5,7 @@ import { useRouter } from "@tanstack/react-router";
 import { Profile, Sticker, UserSticker } from "@/lib/types";
 import { useUI } from "@/components/UIProvider";
 import { getClubAssetUrl } from "@/lib/urls";
-import { getVisibleStickerTag, isExclusiveSticker } from "@/lib/albumRules";
+import { getVisibleStickerTag, isExclusiveSticker, isRareStickerVersion } from "@/lib/albumRules";
 import { claimCollectionRewardAction } from "@/lib/actions";
 import { dbService } from "@/lib/db";
 import Stamp from "./Stamp";
@@ -261,7 +261,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   useEffect(() => {
     const filenames = new Set(
       userStickers
-        .filter((item) => item.is_rare && item.copies > 0)
+        .filter((item) => item.copies > 0 && isRareStickerVersion(item.sticker_number, item))
         .map((item) => stickers.find((sticker) => sticker.number === item.sticker_number))
         .map((sticker) => getAutographFilename(sticker?.author || null))
         .filter((filename): filename is string => Boolean(filename)),
@@ -285,9 +285,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
 
   const isRareVersion = (num: number) => {
     const info = getOwnedInfo(num);
-    const sticker = stickers.find((s) => s.number === num);
-    if (!sticker || sticker.type === "sorteio") return false;
-    return info?.is_rare || false;
+    return isRareStickerVersion(num, info);
   };
 
   const filteredStickers = stickers.filter((s) => {
@@ -529,7 +527,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
 
   const openSticker = (sticker: Sticker) => {
     const info = getOwnedInfo(sticker.number);
-    const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
+    const isRare = isRareStickerVersion(sticker, info);
     const affiliateTag = process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_TAG || "lendosaficos-20";
 
     const getUnlockHint = (st: Sticker) => {
@@ -1006,7 +1004,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                     {family.stickers.map((num) => {
                       const sticker = stickers.find((s) => s.number === num);
                       const info = getOwnedInfo(num);
-                      const isRare = info?.is_rare || false;
+                      const isRare = isRareStickerVersion(sticker, info);
                       return (
                         <div
                           key={num}
@@ -1122,7 +1120,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               >
                 {paginatedStickers.map((sticker) => {
                   const info = getOwnedInfo(sticker.number);
-                  const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
+                  const isRare = isRareStickerVersion(sticker, info);
                   const isExclusive = isExclusiveSticker(sticker);
                   const visibleTag = getVisibleStickerTag(sticker, info);
                   const stickerFamily = getStickerFamily(sticker.number);

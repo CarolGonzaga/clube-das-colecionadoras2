@@ -8,6 +8,7 @@ import { redeemCodeAction } from "@/lib/actions";
 import AutographSeal from "@/components/AutographSeal";
 import Stamp from "@/components/Stamp";
 import { dbService } from "@/lib/db";
+import { canHaveRareVersion } from "@/lib/albumRules";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/registros")({
   component: RegistrosPage,
@@ -228,7 +229,7 @@ function RegistrosPage() {
             ) : (
               <div className="registry-pack-grid">
                 {pendingPacks.map((pack) => {
-                  const rareCount = pack.reveals.filter((item) => item.isRare).length;
+                  const rareCount = pack.reveals.filter((item) => item.isRare && canHaveRareVersion(item.number)).length;
                   const commonCount = pack.reveals.length - rareCount;
                   return (
                     <article className="registry-pack-card" key={pack.id}>

@@ -7,6 +7,7 @@ import { RevealItem, Sticker } from "@/lib/types";
 import Stamp from "./Stamp";
 import AutographSeal from "./AutographSeal";
 import { dbService } from "@/lib/db";
+import { canHaveRareVersion } from "@/lib/albumRules";
 
 interface PackOpenerProps {
   reveals: RevealItem[];
@@ -193,7 +194,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
   }, []);
 
   useEffect(() => {
-    if (!reveals.some((item) => item.isRare && !item.author)) return;
+    if (!reveals.some((item) => item.isRare && canHaveRareVersion(item.number) && !item.author)) return;
     let cancelled = false;
     dbService
       .getStickers()
@@ -461,6 +462,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
   const currentReveal = reveals[activeCardIndex];
   const currentSticker = currentReveal ? stickerLookup[currentReveal.number] : undefined;
   const currentAuthor = currentReveal?.author ?? currentSticker?.author ?? null;
+  const currentIsRare = !!currentReveal?.isRare && canHaveRareVersion(currentReveal.number);
   const isActiveFlipped = flippedCards.includes(activeCardIndex);
 
   const particlesRenderer = () => (
@@ -545,7 +547,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
             <div
               className="absolute inset-0 pointer-events-none animate-pulse opacity-50"
               style={{
-                background: currentReveal?.isRare
+                background: currentIsRare
                   ? "radial-gradient(circle, rgba(231, 181, 59, 0.5) 0%, transparent 60%)"
                   : "radial-gradient(circle, rgba(194, 24, 91, 0.4) 0%, transparent 60%)",
               }}
@@ -586,7 +588,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                     : { y: { repeat: Infinity, duration: 3, ease: "easeInOut" } }
                 }
                 className="absolute z-30 cursor-pointer drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                onClick={() => handleCardClick(activeCardIndex, currentReveal.isRare)}
+                onClick={() => handleCardClick(activeCardIndex, currentIsRare)}
               >
                 <img
                   src="/verso-card.webp"
@@ -616,7 +618,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                     transition={{ duration: 0.3 }}
                   >
                     {isRevealed ? (
-                      <Stamp number={r.number} owned={true} auto={r.isRare} cover={r.slug} />
+                      <Stamp number={r.number} owned={true} auto={r.isRare && canHaveRareVersion(r.number)} cover={r.slug} />
                     ) : (
                       <img
                         src="/verso-card.webp"
@@ -644,7 +646,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
           )}
           {animState === "cards-ready" && currentReveal && (
             <button
-              onClick={() => handleCardClick(activeCardIndex, currentReveal.isRare)}
+              onClick={() => handleCardClick(activeCardIndex, currentIsRare)}
               className="btn font-bold py-3 px-8 text-sm text-white rounded-full border-2 border-white/20"
               style={{ background: "var(--gradient-berry)" }}
             >
@@ -681,18 +683,18 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                 </div>
                 <div
                   className={`card-3d-front rounded-lg border-2 border-white/20 ${
-                    currentReveal.isRare ? "rare-autographed" : ""
+                    currentIsRare ? "rare-autographed" : ""
                   }`}
                 >
-                  {currentReveal.isRare && <div className="card-rare-holo" />}
+                  {currentIsRare && <div className="card-rare-holo" />}
                   <Stamp
                     number={currentReveal.number}
                     owned={true}
-                    auto={currentReveal.isRare}
+                    auto={currentIsRare}
                     cover={currentReveal.slug}
                   />
-                  {currentReveal.isRare && <AutographSeal author={currentAuthor} />}
-                  {currentReveal.isRare && <div className="card-rare-glow animate-pulse" />}
+                  {currentIsRare && <AutographSeal author={currentAuthor} />}
+                  {currentIsRare && <div className="card-rare-glow animate-pulse" />}
                 </div>
               </div>
             </motion.div>

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { User2, BookOpen, Star, Trophy, Sparkles, Layers } from "lucide-react";
 import { Profile, Sticker, UserSticker } from "../lib/types";
 import { dbService } from "../lib/db";
+import { isRareStickerVersion } from "../lib/albumRules";
 
 interface PublicProfileClientProps {
   profile: Profile;
@@ -47,7 +48,7 @@ export default function PublicProfileClient({
     return s.copies > 1 ? acc + (s.copies - 1) : acc;
   }, 0);
 
-  const rareCount = userStickers.filter((us) => us.copies > 0 && us.is_rare).length;
+  const rareCount = userStickers.filter((us) => us.copies > 0 && isRareStickerVersion(us.sticker_number, us)).length;
 
   const quizStickersTotal = stickers.filter((s) => s.type === "quiz").length;
   const quizStickersOwned = userStickers.filter((us) => {

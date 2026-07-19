@@ -2,6 +2,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Sticker, Profile, UserSticker, Style, UserStyle, RevealItem, Donation, TradeRequest, TradeUserLookup } from "./types";
 import { getLoginUrl } from "./urls";
 import { SEED_STICKERS } from "./seeds";
+import { canHaveRareVersion } from "./albumRules";
 
 const TIMEZONE = "America/Sao_Paulo";
 
@@ -182,7 +183,7 @@ export const dbService = {
         user_id: userId,
         sticker_number: number,
         copies: (current?.copies || 0) + counts[number],
-        is_rare: current?.is_rare || false,
+        is_rare: canHaveRareVersion(number) ? current?.is_rare || false : false,
         first_unlocked_at: current?.first_unlocked_at || new Date().toISOString(),
       };
     });

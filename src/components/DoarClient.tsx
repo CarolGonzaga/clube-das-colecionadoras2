@@ -4,6 +4,7 @@ import { useUI } from "@/components/UIProvider";
 import { useRouter } from "@tanstack/react-router";
 import { generateDonationAction, triggerDonationExpirationAction } from "@/lib/actions";
 import Stamp from "./Stamp";
+import { isRareStickerVersion } from "@/lib/albumRules";
 import { HeartHandshake } from "lucide-react";
 
 interface DoarClientProps {
@@ -46,7 +47,7 @@ export default function DoarClient({ stickers, initialUserStickers, profileId }:
       return {
         sticker: s,
         copies: us.copies,
-        isRare: us.is_rare,
+        isRare: isRareStickerVersion(s, us),
       };
     });
 
