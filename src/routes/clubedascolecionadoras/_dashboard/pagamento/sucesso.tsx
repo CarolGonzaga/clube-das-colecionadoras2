@@ -68,6 +68,8 @@ function PaymentSuccessPage() {
         {!released && confirmationError && (
           <p className="payment-result-warning">
             Pagamento localizado, mas a liberação automática ainda não foi concluída. Tente atualizar em alguns segundos.
+            <br />
+            <small>Detalhe técnico: {confirmationError}</small>
           </p>
         )}
         <Link to="/clubedascolecionadoras/registros" className="btn">

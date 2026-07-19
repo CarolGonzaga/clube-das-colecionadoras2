@@ -31,10 +31,14 @@ function verifyMercadoPagoSignature({
   secret: string;
 }) {
   const { ts, v1 } = parseSignatureHeader(xSignature);
-  if (!ts || !v1 || !xRequestId || !dataId) return false;
+  if (!ts || !v1) return false;
 
   const normalizedDataId = /[a-zA-Z]/.test(dataId) ? dataId.toLowerCase() : dataId;
-  const manifest = `id:${normalizedDataId};request-id:${xRequestId};ts:${ts};`;
+  const manifest = [
+    normalizedDataId ? `id:${normalizedDataId};` : "",
+    xRequestId ? `request-id:${xRequestId};` : "",
+    `ts:${ts};`,
+  ].join("");
   const digest = createHmac("sha256", secret).update(manifest).digest("hex");
   const expected = Buffer.from(digest, "hex");
   const received = Buffer.from(v1, "hex");
@@ -70,7 +74,8 @@ export async function handleMercadoPagoWebhook(request: Request) {
   const url = new URL(request.url);
   const rawBody = await request.text();
   const payload = rawBody ? JSON.parse(rawBody) : {};
-  const dataId = url.searchParams.get("data.id") || payload?.data?.id || "";
+  const signatureDataId = url.searchParams.get("data.id") || url.searchParams.get("data_id") || "";
+  const paymentId = signatureDataId || payload?.data?.id || url.searchParams.get("id") || "";
   const xSignature = request.headers.get("x-signature");
   const xRequestId = request.headers.get("x-request-id");
 
@@ -78,7 +83,7 @@ export async function handleMercadoPagoWebhook(request: Request) {
     !verifyMercadoPagoSignature({
       xSignature,
       xRequestId,
-      dataId,
+      dataId: signatureDataId,
       secret: webhookSecret,
     })
   ) {
@@ -90,7 +95,7 @@ export async function handleMercadoPagoWebhook(request: Request) {
 
   const eventInsert = {
     provider_event_id: providerEventId,
-    provider_payment_id: dataId || null,
+    provider_payment_id: paymentId || null,
     x_request_id: xRequestId,
     x_signature: xSignature,
     action: payload?.action || null,
@@ -112,7 +117,11 @@ export async function handleMercadoPagoWebhook(request: Request) {
   }
 
   try {
-    const payment = await fetchMercadoPagoPayment(dataId);
+    if (!paymentId) {
+      throw new Error("Notificação sem ID de pagamento.");
+    }
+
+    const payment = await fetchMercadoPagoPayment(String(paymentId));
     const { data: result, error: processError } = await supabaseAdmin.rpc(
       "process_mercado_pago_payment",
       { payment_payload: payment },
@@ -125,7 +134,7 @@ export async function handleMercadoPagoWebhook(request: Request) {
       .match(
         providerEventId
           ? { provider_event_id: providerEventId }
-          : { x_request_id: xRequestId, provider_payment_id: dataId },
+          : { x_request_id: xRequestId, provider_payment_id: paymentId },
       );
 
     return jsonResponse({ ok: true, result });
@@ -136,7 +145,7 @@ export async function handleMercadoPagoWebhook(request: Request) {
       .match(
         providerEventId
           ? { provider_event_id: providerEventId }
-          : { x_request_id: xRequestId, provider_payment_id: dataId },
+          : { x_request_id: xRequestId, provider_payment_id: paymentId },
       );
     throw error;
   }
