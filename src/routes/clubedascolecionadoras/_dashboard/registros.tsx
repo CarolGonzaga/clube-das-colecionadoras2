@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, PackageOpen, Coins, Ticket } from "lucide-react";
+import { ChevronDown, ChevronUp, CircleHelp, PackageOpen, Coins, Ticket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
@@ -46,6 +46,26 @@ function RegistrosPage() {
   const parentData = useLoaderData({ from: "/clubedascolecionadoras/_dashboard" });
   const [purchases, setPurchases] = useState<SimPurchaseRecord[]>([]);
   const [redeemLoading, setRedeemLoading] = useState(false);
+
+  const openPointsHelp = () => {
+    ui.openModal(
+      <div className="points-help-modal">
+        <CircleHelp size={30} />
+        <h2>Como funcionam os pontos?</h2>
+        <p>
+          Pontos são créditos internos do Clube. Você pode ganhar pontos ao trocar figurinhas de
+          loja repetidas na página de Trocas.
+        </p>
+        <p>
+          Eles ficam salvos na sua conta e poderão ser usados em recursos da loja quando essa opção
+          estiver disponível.
+        </p>
+        <button type="button" className="btn" onClick={ui.closeModal}>
+          Entendi
+        </button>
+      </div>,
+    );
+  };
 
   const refreshPurchases = () => {
     setPurchases(purchaseStorage.list(parentData.profile.id));
@@ -129,6 +149,15 @@ function RegistrosPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--blush)", padding: "6px 12px", borderRadius: "12px", color: "var(--magenta)", fontWeight: 800, fontSize: "14px" }}>
           <Coins size={16} />
           <span>{parentData.pointsBalance.toLocaleString("pt-BR")} pts</span>
+          <button
+            type="button"
+            className="points-help-btn"
+            onClick={openPointsHelp}
+            aria-label="Como funcionam os pontos?"
+            title="Como funcionam os pontos?"
+          >
+            ?
+          </button>
         </div>
       </div>
 

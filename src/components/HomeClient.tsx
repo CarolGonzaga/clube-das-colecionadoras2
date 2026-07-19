@@ -239,7 +239,7 @@ const MISSIONS = [
     id: "instagram",
     Icon: Instagram,
     platform: "Instagram",
-    label: "Seguir no Instagram (@lendosaficos)",
+    label: "Seguir no Instagram (@olendosaficos)",
     url: "https://www.instagram.com/olendosaficos/",
   },
   {

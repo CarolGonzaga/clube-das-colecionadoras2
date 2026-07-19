@@ -29,6 +29,7 @@ function SignupComponent() {
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [muralOptIn, setMuralOptIn] = useState(true);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,10 @@ function SignupComponent() {
     e.preventDefault();
     if (!nick || !email || !pin) {
       setError("Por favor, preencha todos os campos obrigatórios.");
+      return;
+    }
+    if (!termsAccepted) {
+      setError("Para criar sua conta, você precisa ler e aceitar os termos de uso.");
       return;
     }
 
@@ -276,6 +281,30 @@ function SignupComponent() {
             >
               Quero participar do <b>Mural das Colecionadoras</b> (mostra seu progresso para outros
               usuários).
+            </label>
+          </div>
+
+          <div className="flex items-start gap-2.5 mt-1 rounded-xl border border-rose-soft bg-white/60 p-3">
+            <input
+              id="terms-accepted"
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-1 size-4 rounded text-primary focus:ring-primary accent-primary"
+              required
+            />
+            <label
+              htmlFor="terms-accepted"
+              className="text-xs text-berry/80 leading-normal font-medium cursor-pointer"
+            >
+              Li e aceito os{" "}
+              <Link
+                to="/clubedascolecionadoras/termos"
+                className="font-bold text-primary underline underline-offset-2"
+              >
+                termos de uso
+              </Link>
+              .
             </label>
           </div>
 

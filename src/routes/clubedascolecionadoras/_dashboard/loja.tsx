@@ -253,7 +253,7 @@ function LojaPage() {
           <section className="shop-section">
             <div className="shop-section-head">
               <h2><Sparkles size={16} style={{ display: "inline", verticalAlign: "middle" }} /> Exclusivas</h2>
-              <span>Uma unidade por exclusiva por usuário.</span>
+              <span>Somente uma unidade de cada por usuário.</span>
             </div>
             <div className="shop-grid featured exclusive-shop-grid">
               {exclusiveStickers.map((sticker) => {

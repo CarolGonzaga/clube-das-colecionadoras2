@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UIdRouteImport } from './routes/u.$id'
+import { Route as ClubedascolecionadorasTermosRouteImport } from './routes/clubedascolecionadoras/termos'
 import { Route as ClubedascolecionadorasSignupRouteImport } from './routes/clubedascolecionadoras/signup'
 import { Route as ClubedascolecionadorasLoginRouteImport } from './routes/clubedascolecionadoras/login'
 import { Route as ClubedascolecionadorasConfirmarEmailRouteImport } from './routes/clubedascolecionadoras/confirmar-email'
@@ -37,6 +38,12 @@ const UIdRoute = UIdRouteImport.update({
   path: '/u/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClubedascolecionadorasTermosRoute =
+  ClubedascolecionadorasTermosRouteImport.update({
+    id: '/clubedascolecionadoras/termos',
+    path: '/clubedascolecionadoras/termos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ClubedascolecionadorasSignupRoute =
   ClubedascolecionadorasSignupRouteImport.update({
     id: '/clubedascolecionadoras/signup',
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/clubedascolecionadoras/confirmar-email': typeof ClubedascolecionadorasConfirmarEmailRoute
   '/clubedascolecionadoras/login': typeof ClubedascolecionadorasLoginRoute
   '/clubedascolecionadoras/signup': typeof ClubedascolecionadorasSignupRoute
+  '/clubedascolecionadoras/termos': typeof ClubedascolecionadorasTermosRoute
   '/u/$id': typeof UIdRoute
   '/clubedascolecionadoras/album': typeof ClubedascolecionadorasDashboardAlbumRoute
   '/clubedascolecionadoras/codigos': typeof ClubedascolecionadorasDashboardCodigosRoute
@@ -152,6 +160,7 @@ export interface FileRoutesByTo {
   '/clubedascolecionadoras/confirmar-email': typeof ClubedascolecionadorasConfirmarEmailRoute
   '/clubedascolecionadoras/login': typeof ClubedascolecionadorasLoginRoute
   '/clubedascolecionadoras/signup': typeof ClubedascolecionadorasSignupRoute
+  '/clubedascolecionadoras/termos': typeof ClubedascolecionadorasTermosRoute
   '/u/$id': typeof UIdRoute
   '/clubedascolecionadoras/album': typeof ClubedascolecionadorasDashboardAlbumRoute
   '/clubedascolecionadoras/codigos': typeof ClubedascolecionadorasDashboardCodigosRoute
@@ -172,6 +181,7 @@ export interface FileRoutesById {
   '/clubedascolecionadoras/confirmar-email': typeof ClubedascolecionadorasConfirmarEmailRoute
   '/clubedascolecionadoras/login': typeof ClubedascolecionadorasLoginRoute
   '/clubedascolecionadoras/signup': typeof ClubedascolecionadorasSignupRoute
+  '/clubedascolecionadoras/termos': typeof ClubedascolecionadorasTermosRoute
   '/u/$id': typeof UIdRoute
   '/clubedascolecionadoras/_dashboard/album': typeof ClubedascolecionadorasDashboardAlbumRoute
   '/clubedascolecionadoras/_dashboard/codigos': typeof ClubedascolecionadorasDashboardCodigosRoute
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/confirmar-email'
     | '/clubedascolecionadoras/login'
     | '/clubedascolecionadoras/signup'
+    | '/clubedascolecionadoras/termos'
     | '/u/$id'
     | '/clubedascolecionadoras/album'
     | '/clubedascolecionadoras/codigos'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/confirmar-email'
     | '/clubedascolecionadoras/login'
     | '/clubedascolecionadoras/signup'
+    | '/clubedascolecionadoras/termos'
     | '/u/$id'
     | '/clubedascolecionadoras/album'
     | '/clubedascolecionadoras/codigos'
@@ -230,6 +242,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/confirmar-email'
     | '/clubedascolecionadoras/login'
     | '/clubedascolecionadoras/signup'
+    | '/clubedascolecionadoras/termos'
     | '/u/$id'
     | '/clubedascolecionadoras/_dashboard/album'
     | '/clubedascolecionadoras/_dashboard/codigos'
@@ -250,6 +263,7 @@ export interface RootRouteChildren {
   ClubedascolecionadorasConfirmarEmailRoute: typeof ClubedascolecionadorasConfirmarEmailRoute
   ClubedascolecionadorasLoginRoute: typeof ClubedascolecionadorasLoginRoute
   ClubedascolecionadorasSignupRoute: typeof ClubedascolecionadorasSignupRoute
+  ClubedascolecionadorasTermosRoute: typeof ClubedascolecionadorasTermosRoute
   UIdRoute: typeof UIdRoute
   ClubedascolecionadorasAlbumUIdRoute: typeof ClubedascolecionadorasAlbumUIdRoute
 }
@@ -268,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/u/$id'
       fullPath: '/u/$id'
       preLoaderRoute: typeof UIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubedascolecionadoras/termos': {
+      id: '/clubedascolecionadoras/termos'
+      path: '/clubedascolecionadoras/termos'
+      fullPath: '/clubedascolecionadoras/termos'
+      preLoaderRoute: typeof ClubedascolecionadorasTermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clubedascolecionadoras/signup': {
@@ -428,6 +449,7 @@ const rootRouteChildren: RootRouteChildren = {
     ClubedascolecionadorasConfirmarEmailRoute,
   ClubedascolecionadorasLoginRoute: ClubedascolecionadorasLoginRoute,
   ClubedascolecionadorasSignupRoute: ClubedascolecionadorasSignupRoute,
+  ClubedascolecionadorasTermosRoute: ClubedascolecionadorasTermosRoute,
   UIdRoute: UIdRoute,
   ClubedascolecionadorasAlbumUIdRoute: ClubedascolecionadorasAlbumUIdRoute,
 }

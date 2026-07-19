@@ -28,6 +28,7 @@ import {
   Copy,
   Search,
   Wallet,
+  CircleHelp,
   HeartHandshake,
   ShoppingBag,
   Repeat,
@@ -233,6 +234,26 @@ export default function TrocasClient({
   const [flowLookup, setFlowLookup] = useState<TradeUserLookup | null>(null);
   const [flowDesiredSticker, setFlowDesiredSticker] = useState<number | null>(null);
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
+
+  const openPointsHelp = () => {
+    ui.openModal(
+      <div className="points-help-modal">
+        <CircleHelp size={30} />
+        <h2>Como funcionam os pontos?</h2>
+        <p>
+          Pontos são créditos internos do Clube. Você pode ganhar pontos ao trocar figurinhas de
+          loja repetidas por créditos.
+        </p>
+        <p>
+          Eles ficam salvos na sua conta e poderão ser usados em recursos da loja quando essa opção
+          estiver disponível.
+        </p>
+        <button type="button" className="btn" onClick={ui.closeModal}>
+          Entendi
+        </button>
+      </div>,
+    );
+  };
 
   useEffect(() => {
     setUserStickers(initialUserStickers);
@@ -1183,6 +1204,14 @@ export default function TrocasClient({
           </div>
           <div className="trade-wallet-value-row">
             <span className="trade-wallet-balance">{pointsBalance.toLocaleString("pt-BR")} pts</span>
+            <button
+              className="points-help-btn"
+              onClick={openPointsHelp}
+              aria-label="Como funcionam os pontos?"
+              title="Como funcionam os pontos?"
+            >
+              ?
+            </button>
             <button
               className="trade-refresh-btn"
               onClick={refreshTrades}

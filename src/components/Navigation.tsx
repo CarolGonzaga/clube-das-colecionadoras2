@@ -31,7 +31,7 @@ export default function Navigation({ pendingTradesCount = 0 }: { pendingTradesCo
     <nav className="club-navigation fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[460px] bg-white border-t border-pink-100 shadow-[0_-4px_20px_rgba(158,27,74,0.06)] z-50">
       <div className="club-navigation-brand" aria-hidden="true">
         <img src="/logo_text.png" alt="" />
-        <span>seu clube de historias e colecoes</span>
+        <span>seu clube de histórias e coleções</span>
       </div>
 
       <div className="club-navigation-inner max-w-lg mx-auto flex items-center justify-around py-2 px-1">
@@ -63,7 +63,7 @@ export default function Navigation({ pendingTradesCount = 0 }: { pendingTradesCo
       </div>
       <div className="club-navigation-footer" aria-hidden="true">
         <span>*</span>
-        <p>Lendo Saficos</p>
+        <p>Lendo Sáficos</p>
       </div>
     </nav>
   );
