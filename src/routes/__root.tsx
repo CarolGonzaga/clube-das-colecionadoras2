@@ -93,7 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Clube das Colecionadoras - LS" },
-      { name: "description", content: "Colecione seus surtos literarios." },
+      { name: "description", content: "Colecione seus surtos literários." },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/logo-ls.png" },

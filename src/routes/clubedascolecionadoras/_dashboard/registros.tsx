@@ -389,7 +389,7 @@ function RegistrosPage() {
                     <div>
                       <b>{purchase.date}</b>
                       <span>
-                        {purchase.items.map((item) => `${item.qty}x ${item.name}`).join(" Â· ")}
+                        {purchase.items.map((item) => `${item.qty}x ${item.name}`).join(" · ")}
                       </span>
                     </div>
                     <strong style={{ color: "var(--wine)" }}>Aguardando</strong>

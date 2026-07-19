@@ -1213,7 +1213,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                   width: "100%",
                 }}
               >
-                <div className="album-page-size" aria-label="Quantidade de figurinhas por pagina">
+                <div className="album-page-size" aria-label="Quantidade de figurinhas por página">
                   {pageSizeOptions.map((option) => (
                     <button
                       key={option}

@@ -169,7 +169,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
           type="button"
           onClick={handleNotifications}
           className="topbar-icon-btn relative"
-          aria-label="Notificacoes"
+          aria-label="Notificações"
         >
           <Bell size={18} strokeWidth={2.5} />
           {hasUnseenNotifs && (
@@ -185,7 +185,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
         <Link
           to="/clubedascolecionadoras/config"
           className="topbar-icon-btn"
-          aria-label="Configuracoes"
+          aria-label="Configurações"
         >
           <Settings size={18} strokeWidth={2.5} />
         </Link>
