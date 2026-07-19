@@ -30,6 +30,10 @@ function formatStickerCount(count: number) {
   return count === 1 ? "1 figurinha" : `${count} figurinhas`;
 }
 
+function formatMoney(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 function AccordionSection({
   title,
   count,
@@ -70,12 +74,12 @@ function RegistrosPage() {
         <CircleHelp size={30} />
         <h2>Como funcionam os pontos?</h2>
         <p>
-          Pontos sÃ£o crÃ©ditos internos do Clube. VocÃª pode ganhar pontos ao trocar figurinhas de
-          loja repetidas na pÃ¡gina de Trocas.
+          Pontos são créditos internos do Clube. Você pode ganhar pontos ao trocar figurinhas de
+          loja repetidas na página de Trocas.
         </p>
         <p>
-          Eles ficam salvos na sua conta e poderÃ£o ser usados em recursos da loja quando essa opÃ§Ã£o
-          estiver disponÃ­vel.
+          Eles ficam salvos na sua conta e poderão ser usados em recursos da loja quando essa opção
+          estiver disponível.
         </p>
         <button type="button" className="btn" onClick={ui.closeModal}>
           Entendi
@@ -209,10 +213,10 @@ function RegistrosPage() {
       {/* Code Redemption Input */}
       <div className="trade-redeem-section bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 mb-4">
         <h3 className="text-xs font-bold text-[#5c0d2b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Ticket className="w-4 h-4 text-[#C2185B]" /> CÃ³digos do Lendo SÃ¡ficos
+          <Ticket className="w-4 h-4 text-[#C2185B]" /> Códigos do Lendo Sáficos
         </h3>
         <p className="text-[11px] text-[#bf2a5e]/80 mb-3">
-          Os cÃ³digos sÃ£o liberados pelo LS ao longo dos 5 dias do evento. Cada cÃ³digo pode ser usado uma Ãºnica vez e tem o prazo de 24 horas para resgate. Fique de olho nas redes!
+          Os códigos são liberados pelo LS ao longo dos 5 dias do evento. Cada código pode ser usado uma única vez e tem o prazo de 24 horas para resgate. Fique de olho nas redes!
         </p>
         <form
           onSubmit={async (e) => {
@@ -224,16 +228,16 @@ function RegistrosPage() {
             setRedeemLoading(false);
             if (res.success && res.data) {
               e.currentTarget.reset();
-              ui.toast("CÃ³digo resgatado com sucesso! ðŸŽ‰");
+              ui.toast("Código resgatado com sucesso!");
               if (Array.isArray(res.data) && res.data.length > 0) {
-                ui.showReveals(res.data, "Figurinhas do CÃ³digo");
+                ui.showReveals(res.data, "Figurinhas do Código");
               } else if (res.data.reveals && Array.isArray(res.data.reveals)) {
-                ui.showReveals(res.data.reveals, "Figurinhas do CÃ³digo");
+                ui.showReveals(res.data.reveals, "Figurinhas do Código");
               }
               refreshPurchases();
               router.invalidate();
             } else {
-              ui.toast(res.message || "Erro ao resgatar cÃ³digo.");
+              ui.toast(res.message || "Erro ao resgatar código.");
             }
           }}
           className="flex gap-2"
@@ -241,7 +245,7 @@ function RegistrosPage() {
           <input
             name="redeemCode"
             type="text"
-            placeholder="Cole seu cÃ³digo aqui"
+            placeholder="Cole seu código aqui"
             disabled={redeemLoading}
             style={{ height: "40px" }}
             className="flex-1 min-w-0 px-3 border border-pink-200/60 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
@@ -262,7 +266,7 @@ function RegistrosPage() {
         <section className="registry-empty-state" style={{ marginBottom: "24px" }}>
           <PackageOpen size={34} />
           <b>Nenhum pedido registrado ainda</b>
-          <p>Quando uma compra for finalizada na Loja, os pacotes e figurinhas aparecerÃ£o aqui.</p>
+          <p>Quando uma compra for finalizada na Loja, os pacotes e figurinhas aparecerão aqui.</p>
         </section>
       ) : (
         <>
@@ -313,6 +317,12 @@ function RegistrosPage() {
                       <span><b>Compra:</b> {order.date}</span>
                       <span><b>Pagamento confirmado:</b> {order.paymentConfirmedDate}</span>
                     </div>
+                    <div className="registry-order-payment">
+                      <span><b>Total:</b> {formatMoney(order.total || 0)}</span>
+                      <span><b>Pontos usados:</b> {(order.pointsUsed || 0).toLocaleString("pt-BR")} pts</span>
+                      <span><b>Desconto:</b> {formatMoney(order.pointsDiscount || 0)}</span>
+                      <span><b>Pago via Mercado Pago:</b> {formatMoney(order.amountPaid ?? order.total ?? 0)}</span>
+                    </div>
                     <div className="registry-order-items">
                       {order.items.map((item) => (
                         <div className="registry-order-item" key={item.id}>
@@ -338,7 +348,7 @@ function RegistrosPage() {
             defaultOpen={false}
           >
             {pendingPurchases.length === 0 ? (
-              <div className="empty">Nenhuma compra aguardando confirmaÃ§Ã£o de pagamento.</div>
+              <div className="empty">Nenhuma compra aguardando confirmação de pagamento.</div>
             ) : (
               <div className="registry-purchase-list">
                 {pendingPurchases.map((purchase) => (

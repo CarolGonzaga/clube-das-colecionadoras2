@@ -110,7 +110,7 @@ create table if not exists public.purchase_packs (
   order_item_id uuid references public.purchase_order_items(id) on delete set null,
   user_id uuid not null references public.profiles(id) on delete restrict,
   pack_number integer not null,
-  title text not null default '1x Pacote',
+  title text not null default 'Pacote',
   pack_type text not null default 'pack' check (pack_type in ('pack', 'single_random', 'exclusive')),
   status text not null default 'pending' check (status in ('pending', 'opening', 'opened', 'cancelled', 'refunded')),
   generated_at timestamptz not null default now(),
@@ -393,9 +393,9 @@ grant execute on function public.open_purchased_pack(uuid) to authenticated;
 insert into public.shop_products
   (id, name, description, product_type, pack_count, stickers_per_pack, price_cents, metadata)
 values
-  ('pack-1', '1x Pacote', 'Pacote com 5 figurinhas sortidas entre 194 e 319', 'pack', 1, 5, 250, '{"pool_start":194,"pool_end":319}'::jsonb),
-  ('pack-combo', '10x Pacotes', 'Pacote com 50 figurinhas sortidas entre 194 e 319', 'combo', 10, 5, 2250, '{"pool_start":194,"pool_end":319}'::jsonb),
-  ('single-random', '1x Figurinha unitaria sortida', '1x figurinha sortida entre 194 e 319', 'single_random', 1, 1, 100, '{"pool_start":194,"pool_end":319}'::jsonb)
+  ('pack-1', 'Pacote', 'Pacote com 5 figurinhas sortidas entre 194 e 319', 'pack', 1, 5, 250, '{"pool_start":194,"pool_end":319}'::jsonb),
+  ('pack-combo', 'Combo', 'Pacote com 50 figurinhas sortidas entre 194 e 319', 'combo', 10, 5, 2250, '{"pool_start":194,"pool_end":319}'::jsonb),
+  ('single-random', 'Figurinha unitária', '1x figurinha sortida entre 194 e 319', 'single_random', 1, 1, 100, '{"pool_start":194,"pool_end":319}'::jsonb)
 on conflict (id) do update set
   name = excluded.name,
   description = excluded.description,

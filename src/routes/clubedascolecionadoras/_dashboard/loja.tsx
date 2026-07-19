@@ -1,4 +1,4 @@
-import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
+﻿import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
 import { Minus, Plus, ShoppingBag, ShoppingCart, Sparkles, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
@@ -14,6 +14,7 @@ type StoreItem = {
   name: string;
   description: string;
   price: number;
+  pointsPrice: number;
   image: string;
   tag: string;
   section: "pacotes" | "unitarias" | "raras" | "exclusivas";
@@ -26,28 +27,31 @@ type CartLine = StoreItem & {
 
 const STORE_ITEMS: StoreItem[] = [
   {
-    id: "pack-single",
-    name: "1x Pacote",
+    id: "pack-1",
+    name: "Pacote",
     description: "Pacote com 5 figurinhas sortidas entre 194 e 319",
     price: 2.5,
+    pointsPrice: 250,
     image: "/frames/1.webp",
     tag: "pacote",
     section: "pacotes",
   },
   {
     id: "pack-combo",
-    name: "10x Pacotes",
+    name: "Combo",
     description: "Pacote com 50 figurinhas sortidas entre 194 e 319",
     price: 22.5,
+    pointsPrice: 2250,
     image: "/frames/1.webp",
     tag: "combo",
     section: "pacotes",
   },
   {
     id: "single-random",
-    name: "1x Figurinha unitária sortida",
+    name: "Figurinha unitária",
     description: "1x figurinha sortida entre 194 e 319",
     price: 1,
+    pointsPrice: 100,
     image: "/verso-card.png",
     tag: "unitaria",
     section: "unitarias",
@@ -58,6 +62,10 @@ function formatMoney(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function toCents(value: number) {
+  return Math.round(value * 100);
+}
+
 function LojaPage() {
   const ui = useUI();
   const router = useRouter();
@@ -66,13 +74,23 @@ function LojaPage() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "pending">("idle");
+  const [useWalletPoints, setUseWalletPoints] = useState(false);
   const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias" | "exclusivas">(
     "todos",
   );
 
-  const cartTotal = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const cartTotalCents = useMemo(() => {
+    return cart.reduce((sum, item) => sum + toCents(item.price) * item.qty, 0);
   }, [cart]);
+  const cartPointsTotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.pointsPrice * item.qty, 0);
+  }, [cart]);
+  const availablePoints = Math.max(0, parentData.pointsBalance || 0);
+  const appliedPoints = useWalletPoints ? Math.min(availablePoints, cartPointsTotal) : 0;
+  const pointsDiscountCents = appliedPoints;
+  const amountDueCents = Math.max(0, cartTotalCents - pointsDiscountCents);
+  const cartTotal = cartTotalCents / 100;
+  const amountDue = amountDueCents / 100;
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const featuredItems = STORE_ITEMS.filter(
@@ -126,11 +144,14 @@ function LojaPage() {
         name: item.name,
         qty: item.qty,
         price: item.price,
+        pointsPrice: item.pointsPrice,
         kind: item.section === "exclusivas" ? "exclusive" : item.id === "single-random" ? "single" : "pack",
       }));
       const purchase = purchaseStorage.createPurchase({
         userId: parentData.profile.id,
         items,
+        pointsUsed: appliedPoints,
+        amountPaid: amountDue,
         stickers: parentData.stickers,
         userStickers: parentData.userStickers,
       });
@@ -139,8 +160,11 @@ function LojaPage() {
         await dbService.addPurchasedStickers(parentData.profile.id, directStickerNumbers);
       }
       setCart([]);
+      setUseWalletPoints(false);
       setCartOpen(false);
-      ui.toast("Compra simulada aprovada. Itens adicionados em Pedidos.");
+      ui.toast(amountDueCents > 0
+        ? "Pedido registrado. A diferença em reais seguirá para pagamento."
+        : "Compra aprovada com pontos. Itens adicionados em Pedidos.");
       await router.invalidate();
       router.navigate({ to: "/clubedascolecionadoras/registros" });
     } catch (error: any) {
@@ -168,7 +192,7 @@ function LojaPage() {
           ["todos", "Todos"],
           ["pacotes", "Pacotes"],
           ["unitarias", "Unitárias"],
-          ["exclusivas", "Exclusivas ✨"],
+          ["exclusivas", "Exclusivas"],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -213,14 +237,14 @@ function LojaPage() {
                         letterSpacing: "-0.5px",
                         boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
                       }}>
-                        10×
+                        10x
                       </span>
                     )}
                   </div>
                   <div className="shop-card-body">
                     <h2>{item.name}</h2>
                     <p>{item.description}</p>
-                    <b>{formatMoney(item.price)}</b>
+                    <b>{formatMoney(item.price)} ou {item.pointsPrice.toLocaleString("pt-BR")} pts</b>
                   </div>
                   <div className="shop-card-actions">
                     <div className="qty-stepper">
@@ -264,6 +288,7 @@ function LojaPage() {
                   name: sticker.name,
                   description: sticker.author || "Autoria a definir",
                   price: 2.5,
+                  pointsPrice: 250,
                   image: sticker.cover_url ? `/covers/${sticker.cover_url}` : "/verso-card.png",
                   tag: "exclusiva",
                   section: "exclusivas",
@@ -295,7 +320,7 @@ function LojaPage() {
                         <span>{storeItem.description}</span>
                         {sticker.ilustrator && <span>arte: {sticker.ilustrator}</span>}
                       </p>
-                      <b>{formatMoney(storeItem.price)}</b>
+                      <b>{formatMoney(storeItem.price)} ou {storeItem.pointsPrice.toLocaleString("pt-BR")} pts</b>
                     </div>
                     <div className="shop-card-actions">
                       <button
@@ -328,7 +353,7 @@ function LojaPage() {
             {cart.length === 0 ? (
               <div className="shop-empty-cart">
                 <ShoppingBag size={30} />
-                <p>Seu carrinho esta vazio.</p>
+                <p>Seu carrinho está vazio.</p>
               </div>
             ) : (
               <div className="shop-cart-lines">
@@ -337,7 +362,7 @@ function LojaPage() {
                     <img src={item.image} alt="" />
                     <div>
                       <b>{item.name}</b>
-                      <span>{formatMoney(item.price)}</span>
+                      <span>{formatMoney(item.price)} ou {item.pointsPrice.toLocaleString("pt-BR")} pts</span>
                     </div>
                     <div className="qty-stepper compact">
                       <button type="button" onClick={() => updateCartQty(item.id, item.qty - 1)}>
@@ -361,10 +386,34 @@ function LojaPage() {
               <b>{formatMoney(cartTotal)}</b>
             </div>
 
+            {cart.length > 0 && (
+              <div className="shop-points-payment">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={useWalletPoints}
+                    onChange={(event) => setUseWalletPoints(event.target.checked)}
+                  />
+                  <span>Usar pontos da carteira</span>
+                </label>
+                <div className="shop-points-summary">
+                  <span>Saldo disponível</span>
+                  <b>{availablePoints.toLocaleString("pt-BR")} pts</b>
+                  <span>Usados neste pedido</span>
+                  <b>{appliedPoints.toLocaleString("pt-BR")} pts</b>
+                  <span>Desconto em pontos</span>
+                  <b>-{formatMoney(pointsDiscountCents / 100)}</b>
+                  <span>Diferença via Mercado Pago</span>
+                  <b>{formatMoney(amountDue)}</b>
+                </div>
+              </div>
+            )}
+
             {checkoutStatus === "pending" && (
               <p className="shop-checkout-note">
-                O Mercado Pago sera aberto para finalizar a compra. Se o pagamento nao for aprovado
-                na hora, a confirmacao chegara por email assim que o webhook liberar os itens.
+                {amountDueCents > 0
+                  ? "O Mercado Pago será aberto para pagar a diferença. Se o pagamento não for aprovado na hora, a confirmação chegará por email assim que o webhook liberar os itens."
+                  : "Este pedido será quitado com pontos da carteira e os itens serão liberados sem Mercado Pago."}
               </p>
             )}
 

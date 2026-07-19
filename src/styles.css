@@ -4059,6 +4059,7 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 
 .registry-order-head,
 .registry-order-dates,
+.registry-order-payment,
 .registry-order-total {
   display: flex;
   width: 100%;
@@ -4077,8 +4078,21 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 }
 
 .registry-order-dates,
+.registry-order-payment,
 .registry-order-total {
   flex-wrap: wrap;
+}
+
+.registry-order-payment {
+  border-radius: 11px;
+  background: rgba(255, 241, 247, 0.64);
+  padding: 8px 10px;
+}
+
+.registry-order-payment span {
+  color: rgba(126, 23, 70, 0.68);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .registry-order-items {
@@ -4787,6 +4801,49 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 .shop-cart-total b {
   color: var(--magenta);
   font-size: 18px;
+}
+
+.shop-points-payment {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 10px;
+  border: 1px solid rgba(194, 24, 91, 0.12);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fff7fb, #f8ecff);
+  padding: 11px;
+}
+
+.shop-points-payment label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wine);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.shop-points-payment input {
+  accent-color: var(--magenta);
+}
+
+.shop-points-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+}
+
+.shop-points-summary span {
+  color: rgba(126, 23, 70, 0.68);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.shop-points-summary b {
+  color: var(--wine);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
 }
 
 .shop-modal-actions {

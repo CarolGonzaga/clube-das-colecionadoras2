@@ -5,6 +5,7 @@ export type SimPurchaseItem = {
   name: string;
   qty: number;
   price: number;
+  pointsPrice: number;
   kind: "pack" | "single" | "exclusive";
 };
 
@@ -15,6 +16,9 @@ export type SimPurchaseRecord = {
   status: "approved" | "pending";
   items: SimPurchaseItem[];
   total: number;
+  pointsUsed?: number;
+  pointsDiscount?: number;
+  amountPaid?: number;
   packs: SimPackRecord[];
   acquired: SimAcquiredSticker[];
 };
@@ -211,11 +215,15 @@ export const purchaseStorage = {
   createPurchase({
     userId,
     items,
+    pointsUsed = 0,
+    amountPaid,
     stickers,
     userStickers,
   }: {
     userId: string;
     items: SimPurchaseItem[];
+    pointsUsed?: number;
+    amountPaid?: number;
     stickers: Sticker[];
     userStickers: UserSticker[];
   }) {
@@ -249,7 +257,7 @@ export const purchaseStorage = {
 
         packs.push({
           id: `${purchaseId}-pack-${packs.length + 1}`,
-          title: "1x Pacote",
+          title: "Pacote",
           date,
           status: "pending",
           sourcePurchaseId: purchaseId,
@@ -271,7 +279,7 @@ export const purchaseStorage = {
 
           packs.push({
             id: `${purchaseId}-single-${i + 1}`,
-            title: "1x Figurinha unitária sortida",
+            title: "Figurinha unitária",
             date,
             status: "pending",
             sourcePurchaseId: purchaseId,
@@ -291,13 +299,19 @@ export const purchaseStorage = {
       }
     });
 
+    const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const pointsDiscount = pointsUsed / 100;
+
     const purchase: SimPurchaseRecord = {
       id: purchaseId,
       date,
       paymentConfirmedDate: date,
       status: "approved",
       items,
-      total: items.reduce((sum, item) => sum + item.price * item.qty, 0),
+      total,
+      pointsUsed,
+      pointsDiscount,
+      amountPaid: amountPaid ?? Math.max(0, total - pointsDiscount),
       packs,
       acquired,
     };
