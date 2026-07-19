@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { Profile, Sticker, UserSticker } from "@/lib/types";
 import { useUI } from "@/components/UIProvider";
 import { getClubAssetUrl } from "@/lib/urls";
 import { getVisibleStickerTag, isExclusiveSticker } from "@/lib/albumRules";
+import { claimCollectionRewardAction } from "@/lib/actions";
+import { dbService } from "@/lib/db";
 import Stamp from "./Stamp";
 import StickerShareModal from "./StickerShareModal";
 import {
@@ -192,10 +195,65 @@ interface AlbumClientProps {
 
 export default function AlbumClient({ profile, stickers, userStickers }: AlbumClientProps) {
   const ui = useUI();
+  const router = useRouter();
   type AlbumFilter = "todas" | "faltam" | "coladas" | "repetidas" | "raras" | "exclusivas";
   const [filter, setFilter] = useState<AlbumFilter>("todas");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [itemsChoice, setItemsChoice] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<"album" | "colecoes">(() => {
+    if (typeof window !== "undefined") {
+      const search = window.location.search;
+      if (search.includes("tab=colecoes")) return "colecoes";
+    }
+    return "album";
+  });
+
+  const [completedTags, setCompletedTags] = useState<{ tag_name: string; claimed: boolean }[]>([]);
+  const [claimingTags, setClaimingTags] = useState<Record<string, boolean>>({});
+
+  const loadCompletedTags = async () => {
+    try {
+      const tags = await dbService.getCompletedTags();
+      setCompletedTags(tags);
+
+      // Auto-populate notification for unclaimed completed collections
+      tags.forEach((tag) => {
+        if (!tag.claimed) {
+          const stored = localStorage.getItem("trade_notifications");
+          const notifications = stored ? JSON.parse(stored) : [];
+          const notifId = `completed-tag-${tag.tag_name}`;
+          if (!notifications.some((n: any) => n.id === notifId)) {
+            const newNotif = {
+              id: notifId,
+              type: "collection_completed",
+              message: `Parabéns! Você completou a coleção ${tag.tag_name}! Você possui prêmios a serem resgatados.`,
+              seen: false,
+              date: new Date().toISOString(),
+            };
+            localStorage.setItem("trade_notifications", JSON.stringify([newNotif, ...notifications]));
+            window.dispatchEvent(new Event("trade_notifications_change"));
+          }
+        }
+      });
+    } catch (e) {
+      console.warn("Error loading completed tags:", e);
+    }
+  };
+
+  useEffect(() => {
+    loadCompletedTags();
+  }, [userStickers]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const search = window.location.search;
+      if (search.includes("tab=colecoes")) {
+        setActiveTab("colecoes");
+      } else if (search.includes("tab=album")) {
+        setActiveTab("album");
+      }
+    }
+  }, [router.state.location.search]);
 
   // Fetch the user's rare signatures as soon as the Album opens. They are
   // small files and will already be in the browser cache when a rare sticker
@@ -696,9 +754,29 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               marginTop: "2px",
               marginBottom: "8px",
               fontSize: "12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              flexWrap: "wrap",
             }}
           >
-            {sticker.author}
+            <span>{sticker.author}</span>
+            {sticker.ilustrator && (
+              <span
+                style={{
+                  background: "var(--blush)",
+                  color: "var(--wine)",
+                  fontSize: "10px",
+                  padding: "2px 6px",
+                  borderRadius: "6px",
+                  fontWeight: 600,
+                  border: "1px solid rgba(216, 27, 122, 0.15)",
+                }}
+              >
+                arte: {sticker.ilustrator}
+              </span>
+            )}
           </p>
         )}
         {isRare && (
@@ -828,200 +906,374 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   return (
     <div className="screen">
       <div className="album-title-row">
-        <div>
-          <div className="section-title">Meu álbum</div>
-          <div className="section-sub">desbloqueie · troque · colecione</div>
-        </div>
-        <div className="album-view-toggle" aria-label="Modo de visualizacao">
+        {/* Tabs to toggle between Album and Collections */}
+        <div className="album-tabs" style={{ display: "flex", gap: windowWidth < 360 ? "6px" : "12px", borderBottom: "2px solid var(--blush)", paddingBottom: "4px" }}>
           <button
-            type="button"
-            className={viewMode === "grid" ? "active" : ""}
-            onClick={() => setViewMode("grid")}
-            aria-label="Ver em grade"
+            className={`tab-btn ${activeTab === "album" ? "active" : ""}`}
+            onClick={() => setActiveTab("album")}
+            style={{
+              background: "none",
+              border: "none",
+              padding: windowWidth < 360 ? "8px 8px" : "8px 16px",
+              fontSize: "clamp(14px, 4.5vw, 18px)",
+              fontWeight: 800,
+              color: activeTab === "album" ? "var(--magenta)" : "var(--wine)",
+              borderBottom: activeTab === "album" ? "3px solid var(--magenta)" : "3px solid transparent",
+              cursor: "pointer",
+              fontFamily: "Baloo 2",
+            }}
           >
-            <Grid3X3 size={15} />
+            Álbum Completo
           </button>
           <button
-            type="button"
-            className={viewMode === "list" ? "active" : ""}
-            onClick={() => setViewMode("list")}
-            aria-label="Ver em lista"
+            className={`tab-btn ${activeTab === "colecoes" ? "active" : ""}`}
+            onClick={() => setActiveTab("colecoes")}
+            style={{
+              background: "none",
+              border: "none",
+              padding: windowWidth < 360 ? "8px 8px" : "8px 16px",
+              fontSize: "clamp(14px, 4.5vw, 18px)",
+              fontWeight: 800,
+              color: activeTab === "colecoes" ? "var(--magenta)" : "var(--wine)",
+              borderBottom: activeTab === "colecoes" ? "3px solid var(--magenta)" : "3px solid transparent",
+              cursor: "pointer",
+              fontFamily: "Baloo 2",
+            }}
           >
-            <List size={15} />
+            Coleções
           </button>
         </div>
-      </div>
 
-      {/* Filter Chips */}
-      <div className="filters">
-        {renderFilterChip("todas", "Todas")}
-        {renderFilterChip("faltam", "Faltam")}
-        {renderFilterChip("coladas", "Coladas")}
-        {renderFilterChip("repetidas", "Repetidas")}
-        {renderFilterChip("raras", "Raras")}
-        {renderFilterChip("exclusivas", "Exclusivas")}
-      </div>
-
-      {filter === "exclusivas" && (
-        <section className="exclusive-album-intro">
-          <div>
-            <Sparkles size={18} />
-            <b>Figurinhas exclusivas</b>
-          </div>
-          <p>
-            Uma área especial para destacar as figurinhas conquistadas em ações e eventos do clube.
-          </p>
-        </section>
-      )}
-
-      <div className="album-toolbar right">
-        <div className="album-page-size" aria-label="Quantidade de figurinhas por pagina">
-          {pageSizeOptions.map((option) => (
+        {activeTab === "album" && (
+          <div className="album-view-toggle" aria-label="Modo de visualizacao">
             <button
-              key={option}
               type="button"
-              className={itemsPerPage === option ? "active" : ""}
-              onClick={() => {
-                setItemsChoice(option);
-                setPage(1);
-              }}
+              className={viewMode === "grid" ? "active" : ""}
+              onClick={() => setViewMode("grid")}
+              aria-label="Ver em grade"
             >
-              {option}
+              <Grid3X3 size={15} />
             </button>
-          ))}
-        </div>
+            <button
+              type="button"
+              className={viewMode === "list" ? "active" : ""}
+              onClick={() => setViewMode("list")}
+              aria-label="Ver em lista"
+            >
+              <List size={15} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Album Grid */}
-      {filteredStickers.length === 0 ? (
-        <div className="empty">Nenhuma figurinha encontrada com este filtro.</div>
-      ) : (
-        <>
-          <div
-            className={`album ${viewMode === "list" ? "album-list" : ""}`}
-            id="album-grid"
-            style={{ gridTemplateColumns: gridColumns }}
-          >
-            {paginatedStickers.map((sticker) => {
-              const info = getOwnedInfo(sticker.number);
-              const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
-              const isExclusive = isExclusiveSticker(sticker);
-              const visibleTag = getVisibleStickerTag(sticker, info);
-              const stickerFamily = getStickerFamily(sticker.number);
-              const copies = getCopiesCount(sticker.number);
+      {activeTab === "colecoes" ? (
+        <div className="collections-container" style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}>
+          {families.map((family) => {
+            const ownedInFamilyCount = family.stickers.filter((num) => !!getOwnedInfo(num)).length;
+            const isCompleted = ownedInFamilyCount === family.stickers.length;
+            const completedTagInfo = completedTags.find((t) => t.tag_name === family.tag);
+            const isClaimed = completedTagInfo?.claimed || false;
+            const isClaiming = claimingTags[family.tag] || false;
 
-              return (
-                <div
-                  key={sticker.number}
-                  className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""} ${isExclusive ? "exclusive-cell" : ""}`}
-                  onClick={() => openSticker(sticker)}
-                >
-                  <Stamp
-                    number={sticker.number}
-                    owned={!!info}
-                    auto={isRare}
-                    cover={sticker.slug}
-                  />
+            const handleClaim = async () => {
+              setClaimingTags((prev) => ({ ...prev, [family.tag]: true }));
+              const res = await claimCollectionRewardAction(family.tag);
+              setClaimingTags((prev) => ({ ...prev, [family.tag]: false }));
+              if (res.success && res.data) {
+                ui.toast("Prêmio resgatado com sucesso! 🎉");
+                ui.showReveals(res.data, `Prêmio da Coleção ${family.tag}`);
+                await loadCompletedTags();
+                router.invalidate();
+              } else {
+                ui.toast(res.message || "Erro ao resgatar prêmio.");
+              }
+            };
 
-                  {isRare && (
-                    <span className="auto-badge">
-                      <Star size={10} fill="currentColor" />
+            return (
+              <div key={family.tag} className="collection-row">
+                {/* The Collection Card */}
+                <div className="collection-card">
+                  {/* Header */}
+                  <div className="collection-header">
+                    <span>{family.tag}</span>
+                    <span style={{ color: "var(--magenta)" }}>
+                      {ownedInFamilyCount}/{family.stickers.length}
                     </span>
-                  )}
-                  {isExclusive && (
-                    <span className="exclusive-badge">
-                      <Sparkles size={10} />
-                    </span>
-                  )}
-                  {copies > 1 && (
-                    <span
-                      className="qty"
-                      style={{
-                        position: "absolute",
-                        bottom: "3px",
-                        right: "3px",
-                        width: "18px",
-                        height: "18px",
-                        fontSize: "9px",
-                        minWidth: "18px",
-                        borderRadius: "50%",
-                      }}
-                    >
-                      +{copies - 1}
-                    </span>
-                  )}
-                  {viewMode === "list" && (
-                    <div className="album-list-info">
-                      <b>
-                        #{String(sticker.number).padStart(3, "0")} - {sticker.name}
-                      </b>
-                      <span>{visibleTag}</span>
-                      <small>{sticker.author || "Autoria a definir"}</small>
-                      {stickerFamily && (
-                        <em>
-                          {stickerFamily.tag}: {stickerFamily.stickers.length} itens (
-                          {stickerFamily.stickers
-                            .map((num) => {
-                              const owned = !!getOwnedInfo(num);
-                              const famSticker = stickers.find((item) => item.number === num);
-                              return owned ? `#${String(num).padStart(3, "0")} ${famSticker?.name || ""}` : `#${String(num).padStart(3, "0")}`;
-                            })
-                            .join(", ")}
-                          )
-                        </em>
+                  </div>
+
+                  {/* Reduced stickers grid */}
+                  <div className="collection-stamps-grid">
+                    {family.stickers.map((num) => {
+                      const sticker = stickers.find((s) => s.number === num);
+                      const info = getOwnedInfo(num);
+                      const isRare = info?.is_rare || false;
+                      return (
+                        <div
+                          key={num}
+                          className="collection-stamp-wrapper"
+                          onClick={() => sticker && openSticker(sticker)}
+                        >
+                          <Stamp
+                            number={num}
+                            owned={!!info}
+                            auto={isRare}
+                            cover={sticker?.slug}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Manual claim button when family is complete */}
+                  {isCompleted && (
+                    <div style={{ marginTop: "12px", borderTop: "1px dashed var(--blush)", paddingTop: "12px", display: "flex", justifyContent: "center" }}>
+                      {isClaimed ? (
+                        <span style={{ color: "#22c55e", fontWeight: "bold", fontSize: "13px", display: "flex", alignItems: "center", gap: "4px" }}>
+                          ✓ Prêmio Resgatado
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isClaiming}
+                          onClick={handleClaim}
+                          className="btn"
+                          style={{
+                            margin: 0,
+                            padding: "8px 16px",
+                            fontSize: "13px",
+                            background: "var(--gradient-berry)",
+                            borderRadius: "10px",
+                          }}
+                        >
+                          {isClaiming ? "Resgatando..." : "Resgatar Prêmio 🎁"}
+                        </button>
                       )}
                     </div>
                   )}
                 </div>
-              );
-            })}
+
+                {/* Seal Container */}
+                <div className={`collection-seal-container ${isCompleted ? "completed" : ""}`}>
+                  <img
+                    src={isCompleted ? "/icons/selo-super-fa.png" : "/icons/selo-super-fa-cinza.png"}
+                    alt={isCompleted ? "Selo Super Fã" : "Espaço Vago Selo Super Fã"}
+                    className="collection-seal-img"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <>
+          {/* Modern Filter Dropdown */}
+          <div className="filter-dropdown-container" style={{ margin: "14px 0", display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--wine)", fontFamily: "Baloo 2" }}>Filtrar por:</span>
+            <select
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value as AlbumFilter);
+                setPage(1);
+              }}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "12px",
+                border: "1px solid var(--blush)",
+                background: "#fff",
+                color: "var(--magenta)",
+                fontWeight: 800,
+                fontSize: "14px",
+                outline: "none",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(158, 27, 74, 0.04)",
+                fontFamily: "Baloo 2",
+              }}
+            >
+              <option value="todas">Todas as figurinhas</option>
+              <option value="faltam">Faltam (não coladas)</option>
+              <option value="coladas">Coladas (adquiridas)</option>
+              <option value="repetidas">Repetidas</option>
+              <option value="raras">Raras (assinadas)</option>
+              <option value="exclusivas">Exclusivas</option>
+            </select>
           </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="pager" style={{ marginTop: "24px" }}>
-              <button
-                className="pg-nav"
-                disabled={currentPage === 1}
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+          {filter === "exclusivas" && (
+            <section className="exclusive-album-intro">
+              <div>
+                <Sparkles size={18} />
+                <b>Figurinhas exclusivas</b>
+              </div>
+              <p>
+                Uma área especial para destacar as figurinhas conquistadas em ações e eventos do clube.
+              </p>
+            </section>
+          )}
+
+          {/* Album Grid */}
+          {filteredStickers.length === 0 ? (
+            <div className="empty">Nenhuma figurinha encontrada com este filtro.</div>
+          ) : (
+            <>
+              <div
+                className={`album ${viewMode === "list" ? "album-list" : ""}`}
+                id="album-grid"
+                style={{ gridTemplateColumns: gridColumns }}
               >
-                <ChevronLeft size={16} />
-              </button>
-              {getPageNumbers().map((p, i) => {
-                if (p === "...") {
+                {paginatedStickers.map((sticker) => {
+                  const info = getOwnedInfo(sticker.number);
+                  const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
+                  const isExclusive = isExclusiveSticker(sticker);
+                  const visibleTag = getVisibleStickerTag(sticker, info);
+                  const stickerFamily = getStickerFamily(sticker.number);
+                  const copies = getCopiesCount(sticker.number);
+
                   return (
-                    <span
-                      key={`ellipsis-${i}`}
-                      style={{
-                        color: "var(--wine)",
-                        fontWeight: 800,
-                        padding: "0 4px",
-                        fontSize: "14px",
-                        fontFamily: "'Baloo 2', sans-serif",
+                    <div
+                      key={sticker.number}
+                      className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""} ${isExclusive ? "exclusive-cell" : ""}`}
+                      onClick={() => openSticker(sticker)}
+                    >
+                      <Stamp
+                        number={sticker.number}
+                        owned={!!info}
+                        auto={isRare}
+                        cover={sticker.slug}
+                      />
+
+                      {isRare && (
+                        <span className="auto-badge">
+                          <Star size={10} fill="currentColor" />
+                        </span>
+                      )}
+                      {isExclusive && (
+                        <span className="exclusive-badge">
+                          <Sparkles size={10} />
+                        </span>
+                      )}
+                      {copies > 1 && (
+                        <span
+                          className="qty"
+                          style={{
+                            position: "absolute",
+                            bottom: "3px",
+                            right: "3px",
+                            width: "18px",
+                            height: "18px",
+                            fontSize: "9px",
+                            minWidth: "18px",
+                            borderRadius: "50%",
+                          }}
+                        >
+                          +{copies - 1}
+                        </span>
+                      )}
+                      {viewMode === "list" && (
+                        <div className="album-list-info">
+                          <b>
+                            #{String(sticker.number).padStart(3, "0")} - {sticker.name}
+                          </b>
+                          <span>{visibleTag}</span>
+                          <small>
+                            {sticker.author || "Autoria a definir"}
+                            {sticker.ilustrator && ` (arte: ${sticker.ilustrator})`}
+                          </small>
+                          {stickerFamily && (
+                            <em>
+                              {stickerFamily.tag}: {stickerFamily.stickers.length} itens (
+                              {stickerFamily.stickers
+                                .map((num) => {
+                                  const owned = !!getOwnedInfo(num);
+                                  const famSticker = stickers.find((item) => item.number === num);
+                                  return owned ? `#${String(num).padStart(3, "0")} ${famSticker?.name || ""}` : `#${String(num).padStart(3, "0")}`;
+                                })
+                                .join(", ")}
+                              )
+                            </em>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bottom Page size and pagination toolbar */}
+              <div
+                className="pager-toolbar"
+                style={{
+                  display: "flex",
+                  flexDirection: windowWidth < 380 ? "column" : "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginTop: "24px",
+                  width: "100%",
+                }}
+              >
+                <div className="album-page-size" aria-label="Quantidade de figurinhas por pagina">
+                  {pageSizeOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={itemsPerPage === option ? "active" : ""}
+                      onClick={() => {
+                        setItemsChoice(option);
+                        setPage(1);
                       }}
                     >
-                      ...
-                    </span>
-                  );
-                }
-                return (
-                  <button
-                    key={p}
-                    className={`pg-num ${currentPage === p ? "active" : ""}`}
-                    onClick={() => setPage(p as number)}
-                  >
-                    {p}
-                  </button>
-                );
-              })}
-              <button
-                className="pg-nav"
-                disabled={currentPage === totalPages}
-                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+                      {option}
+                    </button>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="pager" style={{ margin: 0 }}>
+                    <button
+                      className="pg-nav"
+                      disabled={currentPage === 1}
+                      onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    {getPageNumbers().map((p, i) => {
+                      if (p === "...") {
+                        return (
+                          <span
+                            key={`ellipsis-${i}`}
+                            style={{
+                              color: "var(--wine)",
+                              fontWeight: 800,
+                              padding: "0 4px",
+                              fontSize: "14px",
+                              fontFamily: "'Baloo 2', sans-serif",
+                            }}
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+                      return (
+                        <button
+                          key={p}
+                          className={`pg-num ${currentPage === p ? "active" : ""}`}
+                          onClick={() => setPage(p as number)}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                    <button
+                      className="pg-nav"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </>
       )}
