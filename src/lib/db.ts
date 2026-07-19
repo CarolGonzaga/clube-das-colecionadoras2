@@ -674,6 +674,46 @@ export const dbService = {
     return data as { points_used: number; new_balance: number };
   },
 
+  async getPurchaseOrders() {
+    const { data: orders, error: orderError } = await supabase
+      .from("purchase_orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (orderError) throw new Error(orderError.message);
+
+    const orderIds = (orders || []).map((order: any) => order.id);
+    if (orderIds.length === 0) return [];
+
+    const [{ data: items, error: itemsError }, { data: packs, error: packsError }, { data: packStickers, error: stickersError }, { data: payments, error: paymentsError }] =
+      await Promise.all([
+        supabase.from("purchase_order_items").select("*").in("order_id", orderIds),
+        supabase.from("purchase_packs").select("*").in("order_id", orderIds).order("pack_number", { ascending: true }),
+        supabase.from("purchase_pack_stickers").select("*, stickers(number, slug, name, author, ilustrator)").in("order_id", orderIds).order("position", { ascending: true }),
+        supabase.from("purchase_payments").select("*").in("order_id", orderIds).order("created_at", { ascending: false }),
+      ]);
+
+    if (itemsError) throw new Error(itemsError.message);
+    if (packsError) throw new Error(packsError.message);
+    if (stickersError) throw new Error(stickersError.message);
+    if (paymentsError) throw new Error(paymentsError.message);
+
+    return (orders || []).map((order: any) => ({
+      ...order,
+      items: (items || []).filter((item: any) => item.order_id === order.id),
+      packs: (packs || []).filter((pack: any) => pack.order_id === order.id),
+      packStickers: (packStickers || []).filter((sticker: any) => sticker.order_id === order.id),
+      payments: (payments || []).filter((payment: any) => payment.order_id === order.id),
+    }));
+  },
+
+  async openPurchasedPack(packId: string) {
+    const { data, error } = await supabase.rpc("open_purchased_pack", {
+      pack_id_param: packId,
+    });
+    if (error) throw new Error(error.message);
+    return data as RevealItem[];
+  },
+
   async countIncomingPendingTrades(): Promise<number> {
     const { data, error } = await supabase.rpc("count_incoming_pending_trades");
     if (error) return 0;

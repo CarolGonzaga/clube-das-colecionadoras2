@@ -1,9 +1,8 @@
-﻿import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, CircleHelp, PackageOpen, Coins, Ticket } from "lucide-react";
+import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
+import { ChevronDown, ChevronUp, CircleHelp, Coins, PackageOpen, Ticket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
-import { purchaseStorage, type SimPurchaseRecord } from "@/lib/shopSimulation";
 import { redeemCodeAction } from "@/lib/actions";
 import { dbService } from "@/lib/db";
 import { POINTS_BALANCE_CHANGED, readPointsBalanceFromEvent } from "@/lib/walletEvents";
@@ -12,27 +11,27 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/registr
   component: RegistrosPage,
 });
 
-function stickerTotalForPurchaseItem(item: SimPurchaseRecord["items"][number]) {
-  if (item.kind === "pack") return item.id === "pack-combo" ? item.qty * 50 : item.qty * 5;
-  return item.qty;
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function packCountForPurchaseItem(item: SimPurchaseRecord["items"][number]) {
-  if (item.kind === "pack") return item.id === "pack-combo" ? item.qty * 10 : item.qty;
-  if (item.kind === "single") return item.qty;
-  return 0;
-}
-
-function formatItemCount(count: number) {
-  return count === 1 ? "1 item" : `${count} itens`;
+function formatMoney(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function formatStickerCount(count: number) {
   return count === 1 ? "1 figurinha" : `${count} figurinhas`;
 }
 
-function formatMoney(value: number) {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function itemStickerTotal(item: any) {
+  return Math.max(1, item.pack_count || 0) * Math.max(1, item.stickers_per_pack || 1) * item.quantity;
 }
 
 function AccordionSection({
@@ -66,43 +65,22 @@ function RegistrosPage() {
   const ui = useUI();
   const router = useRouter();
   const parentData = useLoaderData({ from: "/clubedascolecionadoras/_dashboard" });
-  const [purchases, setPurchases] = useState<SimPurchaseRecord[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [walletPoints, setWalletPoints] = useState(parentData.pointsBalance || 0);
 
-  const openPointsHelp = () => {
-    ui.openModal(
-      <div className="points-help-modal">
-        <CircleHelp size={30} />
-        <h2>Como funcionam os pontos?</h2>
-        <p>
-          Pontos são créditos internos do Clube. Você pode ganhar pontos ao trocar figurinhas de
-          loja repetidas na página de Trocas.
-        </p>
-        <p>
-          Eles ficam salvos na sua conta e poderão ser usados em recursos da loja quando essa opção
-          estiver disponível.
-        </p>
-        <button type="button" className="btn" onClick={ui.closeModal}>
-          Entendi
-        </button>
-      </div>,
-    );
-  };
-
-  const refreshPurchases = () => {
-    setPurchases(purchaseStorage.list(parentData.profile.id));
+  const refreshOrders = () => {
+    dbService
+      .getPurchaseOrders()
+      .then(setOrders)
+      .catch((error) => ui.toast(error?.message || "Erro ao carregar pedidos."));
   };
 
   useEffect(() => {
-    refreshPurchases();
-    window.addEventListener("purchase_records_change", refreshPurchases);
-    window.addEventListener("storage", refreshPurchases);
-    return () => {
-      window.removeEventListener("purchase_records_change", refreshPurchases);
-      window.removeEventListener("storage", refreshPurchases);
-    };
-  }, [parentData.profile.id]);
+    refreshOrders();
+    window.addEventListener("focus", refreshOrders);
+    return () => window.removeEventListener("focus", refreshOrders);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -118,11 +96,8 @@ function RegistrosPage() {
 
     const handlePointsChange = (event: Event) => {
       const nextBalance = readPointsBalanceFromEvent(event);
-      if (typeof nextBalance === "number") {
-        setWalletPoints(nextBalance);
-      } else {
-        refreshWallet();
-      }
+      if (typeof nextBalance === "number") setWalletPoints(nextBalance);
+      else refreshWallet();
     };
 
     refreshWallet();
@@ -135,94 +110,59 @@ function RegistrosPage() {
     };
   }, []);
 
-  const pendingPacks = purchases.flatMap((purchase) =>
-    purchase.status === "approved" ? purchase.packs.filter((pack) => pack.status === "pending") : [],
+  const approvedOrders = orders.filter((order) => order.payment_status === "approved");
+  const pendingOrders = orders.filter((order) => ["unpaid", "pending"].includes(order.payment_status));
+  const pendingPacks = approvedOrders.flatMap((order) =>
+    (order.packs || []).filter((pack: any) => pack.status === "pending").map((pack: any) => ({ ...pack, order })),
   );
-  const approvedPurchases = purchases.filter((purchase) => purchase.status === "approved");
-  const pendingPurchases = purchases.filter((purchase) => purchase.status === "pending");
-  const acquiredStickers = purchases.flatMap((purchase) => purchase.acquired);
-  const commonTotal = acquiredStickers.filter((item) => item.kind === "comum").length;
-  const rareTotal = acquiredStickers.filter((item) => item.kind === "rara").length;
-  const exclusiveTotal = acquiredStickers.filter((item) => item.kind === "exclusiva").length;
-  const lastPurchaseDate = purchases[0]?.date || "-";
 
-  const purchaseStickerHistory = useMemo(() => {
-    return approvedPurchases
-      .map((purchase) => {
-        const openedPacksWithoutItem = purchase.packs.filter((pack) => pack.status === "opened" && !pack.sourceItemId);
-        let fallbackPackCursor = 0;
+  const openedStickerEntries = orders.flatMap((order) =>
+    (order.packStickers || []).map((entry: any) => ({ ...entry, order })),
+  );
 
-        const itemGroups = purchase.items
-          .map((item) => {
-            const openedPacksWithItem = purchase.packs.filter(
-              (pack) => pack.status === "opened" && pack.sourceItemId === item.id,
-            );
-            const fallbackCount = packCountForPurchaseItem(item);
-            const openedPacks = openedPacksWithItem.length > 0
-              ? openedPacksWithItem
-              : openedPacksWithoutItem.slice(fallbackPackCursor, fallbackPackCursor + fallbackCount);
-            fallbackPackCursor += openedPacksWithItem.length > 0 ? 0 : fallbackCount;
-            const directStickers =
-              item.kind === "exclusive"
-                ? purchase.acquired.filter((sticker) => sticker.number === Number(item.id.replace("exclusive-", "")))
-                : [];
+  const finishedOrders = useMemo(
+    () =>
+      approvedOrders.map((order) => {
+        const stickerTotal = (order.items || []).reduce(
+          (sum: number, item: any) => sum + itemStickerTotal(item),
+          0,
+        );
+        const itemTotal = (order.items || []).reduce((sum: number, item: any) => sum + item.quantity, 0);
+        return { ...order, stickerTotal, itemTotal };
+      }),
+    [approvedOrders],
+  );
 
-            return {
-              item,
-              openedPacks,
-              directStickers,
-              stickerTotal:
-                openedPacks.reduce((sum, pack) => sum + pack.reveals.length, 0) + directStickers.length,
-            };
-          })
-          .filter((group) => group.stickerTotal > 0);
-
-        const stickerTotal = itemGroups.reduce((sum, group) => sum + group.stickerTotal, 0);
-
-        return {
-          id: purchase.id,
-          date: purchase.date,
-          paymentConfirmedDate: purchase.paymentConfirmedDate || purchase.date,
-          itemGroups,
-          stickerTotal,
-        };
-      })
-      .filter((purchase) => purchase.stickerTotal > 0);
-  }, [approvedPurchases]);
-
-  const finishedOrders = useMemo(() => {
-    return approvedPurchases.map((purchase) => {
-      const itemTotal = purchase.items.reduce((sum, item) => sum + item.qty, 0);
-      const stickerTotal = purchase.items.reduce((sum, item) => sum + stickerTotalForPurchaseItem(item), 0);
-      return {
-        ...purchase,
-        itemTotal,
-        stickerTotal,
-        paymentConfirmedDate: purchase.paymentConfirmedDate || purchase.date,
-      };
-    });
-  }, [approvedPurchases]);
+  const openPointsHelp = () => {
+    ui.openModal(
+      <div className="points-help-modal">
+        <CircleHelp size={30} />
+        <h2>Como funcionam os pontos?</h2>
+        <p>
+          Pontos são créditos internos do Clube. Você pode ganhar pontos ao trocar figurinhas de
+          loja repetidas na página de Trocas.
+        </p>
+        <p>Na loja, 1 ponto equivale a R$ 0,01 de desconto no carrinho.</p>
+        <button type="button" className="btn" onClick={ui.closeModal}>
+          Entendi
+        </button>
+      </div>,
+    );
+  };
 
   const handleOpenPack = async (packId: string) => {
-    const pack = pendingPacks.find((item) => item.id === packId);
-    if (!pack) return;
     try {
-      await dbService.addPurchasedStickers(
-        parentData.profile.id,
-        pack.reveals.map((item) => item.number),
-      );
-      purchaseStorage.markPackOpened(parentData.profile.id, pack.id, parentData.stickers);
-      refreshPurchases();
-      ui.showReveals(pack.reveals, pack.title);
-      router.invalidate();
+      const reveals = await dbService.openPurchasedPack(packId);
+      refreshOrders();
+      ui.showReveals(reveals, "Pacote");
+      await router.invalidate();
     } catch (error: any) {
-      ui.toast(error?.message || "Erro ao registrar as figurinhas do pacote.");
+      ui.toast(error?.message || "Erro ao abrir pacote.");
     }
   };
 
   return (
     <main className="screen registry-screen">
-      {/* Title block with Points Balance on the right */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <div>
           <h1 className="section-title">Pedidos</h1>
@@ -231,19 +171,12 @@ function RegistrosPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--blush)", padding: "6px 12px", borderRadius: "12px", color: "var(--magenta)", fontWeight: 800, fontSize: "14px" }}>
           <Coins size={16} />
           <span>{walletPoints.toLocaleString("pt-BR")} pts</span>
-          <button
-            type="button"
-            className="points-help-btn"
-            onClick={openPointsHelp}
-            aria-label="Como funcionam os pontos?"
-            title="Como funcionam os pontos?"
-          >
+          <button type="button" className="points-help-btn" onClick={openPointsHelp} aria-label="Como funcionam os pontos?">
             ?
           </button>
         </div>
       </div>
 
-      {/* Code Redemption Input */}
       <div className="trade-redeem-section bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 mb-4">
         <h3 className="text-xs font-bold text-[#5c0d2b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <Ticket className="w-4 h-4 text-[#C2185B]" /> Códigos do Lendo Sáficos
@@ -262,12 +195,9 @@ function RegistrosPage() {
             if (res.success && res.data) {
               e.currentTarget.reset();
               ui.toast("Código resgatado com sucesso!");
-              if (Array.isArray(res.data) && res.data.length > 0) {
-                ui.showReveals(res.data, "Figurinhas do Código");
-              } else if (res.data.reveals && Array.isArray(res.data.reveals)) {
-                ui.showReveals(res.data.reveals, "Figurinhas do Código");
-              }
-              refreshPurchases();
+              if (Array.isArray(res.data) && res.data.length > 0) ui.showReveals(res.data, "Figurinhas do Código");
+              else if (res.data.reveals && Array.isArray(res.data.reveals)) ui.showReveals(res.data.reveals, "Figurinhas do Código");
+              refreshOrders();
               router.invalidate();
             } else {
               ui.toast(res.message || "Erro ao resgatar código.");
@@ -294,8 +224,7 @@ function RegistrosPage() {
         </form>
       </div>
 
-      {/* Orders registry sections */}
-      {purchases.length === 0 ? (
+      {orders.length === 0 ? (
         <section className="registry-empty-state" style={{ marginBottom: "24px" }}>
           <PackageOpen size={34} />
           <b>Nenhum pedido registrado ainda</b>
@@ -303,38 +232,30 @@ function RegistrosPage() {
         </section>
       ) : (
         <>
-          {/* 1. Pending packages to open */}
           <AccordionSection title="Pacotes para abrir" count={`${pendingPacks.length} pendentes`}>
             {pendingPacks.length === 0 ? (
               <div className="empty">Nenhum pacote pendente no momento.</div>
             ) : (
               <div className="registry-pack-grid">
-                {pendingPacks.map((pack) => {
-                  return (
-                    <article className="registry-pack-card" key={pack.id}>
-                      <div className="registry-pack-cover">
-                        <PackageOpen size={24} />
-                      </div>
-                      <div>
-                        <b>{pack.title}</b>
-                        <span>Data da compra: {pack.date}</span>
-                        <small>{formatStickerCount(pack.reveals.length)} aguardando abertura</small>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn registry-open-btn"
-                        onClick={() => handleOpenPack(pack.id)}
-                      >
-                        Abrir
-                      </button>
-                    </article>
-                  );
-                })}
+                {pendingPacks.map((pack) => (
+                  <article className="registry-pack-card" key={pack.id}>
+                    <div className="registry-pack-cover">
+                      <PackageOpen size={24} />
+                    </div>
+                    <div>
+                      <b>{pack.title}</b>
+                      <span>Pedido #{pack.order.order_code || pack.order.id.slice(0, 8)}</span>
+                      <small>Compra: {formatDate(pack.order.created_at)}</small>
+                    </div>
+                    <button type="button" className="btn registry-open-btn" onClick={() => handleOpenPack(pack.id)}>
+                      Abrir
+                    </button>
+                  </article>
+                ))}
               </div>
             )}
           </AccordionSection>
 
-          {/* 2. Finished orders (packs opened + direct singles) with purchase and redeem dates */}
           <AccordionSection title="Pedidos finalizados" count={`${finishedOrders.length} finalizados`}>
             {finishedOrders.length === 0 ? (
               <div className="empty">Nenhum pedido finalizado no momento.</div>
@@ -343,29 +264,29 @@ function RegistrosPage() {
                 {finishedOrders.map((order) => (
                   <article className="registry-purchase-card registry-order-card" key={order.id}>
                     <div className="registry-order-head">
-                      <b>Pedido #{order.id.replace("purchase-", "")}</b>
+                      <b>Pedido #{order.order_code || order.id.slice(0, 8)}</b>
                       <strong>{formatStickerCount(order.stickerTotal)}</strong>
                     </div>
                     <div className="registry-order-dates">
-                      <span><b>Compra:</b> {order.date}</span>
-                      <span><b>Pagamento confirmado:</b> {order.paymentConfirmedDate}</span>
+                      <span><b>Compra:</b> {formatDate(order.created_at)}</span>
+                      <span><b>Pagamento confirmado:</b> {formatDate(order.payment_approved_at)}</span>
                     </div>
                     <div className="registry-order-payment">
-                      <span><b>Total:</b> {formatMoney(order.total || 0)}</span>
-                      <span><b>Pontos usados:</b> {(order.pointsUsed || 0).toLocaleString("pt-BR")} pts</span>
-                      <span><b>Desconto:</b> {formatMoney(order.pointsDiscount || 0)}</span>
-                      <span><b>Pago via Mercado Pago:</b> {formatMoney(order.amountPaid ?? order.total ?? 0)}</span>
+                      <span><b>Total:</b> {formatMoney((order.subtotal_cents || order.total_cents || 0) / 100)}</span>
+                      <span><b>Pontos usados:</b> {(order.points_used || 0).toLocaleString("pt-BR")} pts</span>
+                      <span><b>Desconto:</b> {formatMoney((order.points_discount_cents || 0) / 100)}</span>
+                      <span><b>Pago via Mercado Pago:</b> {formatMoney((order.amount_due_cents || 0) / 100)}</span>
                     </div>
                     <div className="registry-order-items">
-                      {order.items.map((item) => (
+                      {(order.items || []).map((item: any) => (
                         <div className="registry-order-item" key={item.id}>
-                          <span>{item.qty}x {item.name}</span>
-                          <small>{formatStickerCount(stickerTotalForPurchaseItem(item))}</small>
+                          <span>{item.quantity}x {item.product_name}</span>
+                          <small>{formatStickerCount(itemStickerTotal(item))}</small>
                         </div>
                       ))}
                     </div>
                     <div className="registry-order-total">
-                      <span>Quantidade total adquirida: {formatItemCount(order.itemTotal)}</span>
+                      <span>Quantidade total adquirida: {order.itemTotal === 1 ? "1 item" : `${order.itemTotal} itens`}</span>
                       <span>Total de figurinhas adquiridas: {formatStickerCount(order.stickerTotal)}</span>
                     </div>
                   </article>
@@ -374,23 +295,16 @@ function RegistrosPage() {
             )}
           </AccordionSection>
 
-          {/* 3. Pending purchases (waiting payment confirmations) */}
-          <AccordionSection
-            title="Compras pendentes"
-            count={`${pendingPurchases.length} pendentes`}
-            defaultOpen={false}
-          >
-            {pendingPurchases.length === 0 ? (
+          <AccordionSection title="Compras pendentes" count={`${pendingOrders.length} pendentes`} defaultOpen={false}>
+            {pendingOrders.length === 0 ? (
               <div className="empty">Nenhuma compra aguardando confirmação de pagamento.</div>
             ) : (
               <div className="registry-purchase-list">
-                {pendingPurchases.map((purchase) => (
-                  <article className="registry-purchase-card" key={purchase.id}>
+                {pendingOrders.map((order) => (
+                  <article className="registry-purchase-card" key={order.id}>
                     <div>
-                      <b>{purchase.date}</b>
-                      <span>
-                        {purchase.items.map((item) => `${item.qty}x ${item.name}`).join(" · ")}
-                      </span>
+                      <b>Pedido #{order.order_code || order.id.slice(0, 8)}</b>
+                      <span>{(order.items || []).map((item: any) => `${item.quantity}x ${item.product_name}`).join(" · ")}</span>
                     </div>
                     <strong style={{ color: "var(--wine)" }}>Aguardando</strong>
                   </article>
@@ -399,65 +313,38 @@ function RegistrosPage() {
             )}
           </AccordionSection>
 
-          {/* 4. Latest stickers acquired */}
-          <AccordionSection
-            title="Últimas figurinhas adquiridas"
-            count={`${purchaseStickerHistory.reduce((sum, order) => sum + order.stickerTotal, 0)} itens`}
-            defaultOpen={false}
-          >
-            {purchaseStickerHistory.length === 0 ? (
+          <AccordionSection title="Últimas figurinhas adquiridas" count={`${openedStickerEntries.length} itens`} defaultOpen={false}>
+            {openedStickerEntries.length === 0 ? (
               <div className="empty">Nenhuma figurinha de compra foi recebida ainda.</div>
             ) : (
               <div className="registry-sticker-history">
-                {purchaseStickerHistory.map((order) => (
-                  <article className="registry-sticker-order" key={order.id}>
-                    <div className="registry-sticker-order-head">
-                      <b>Pedido #{order.id.replace("purchase-", "")}</b>
-                      <span>{formatStickerCount(order.stickerTotal)}</span>
-                    </div>
-                    <div className="registry-sticker-order-dates">
-                      <small>Compra: {order.date}</small>
-                      <small>Pagamento: {order.paymentConfirmedDate}</small>
-                    </div>
-
-                    {order.itemGroups.map((group) => (
-                      <div className="registry-sticker-item-group" key={group.item.id}>
-                        <div className="registry-sticker-item-head">
-                          <strong>{group.item.qty}x {group.item.name}</strong>
-                          <span>{formatStickerCount(group.stickerTotal)}</span>
-                        </div>
-
-                        {group.openedPacks.map((pack, packIndex) => (
-                          <div className="registry-pack-receipt" key={pack.id}>
-                            <div className="registry-pack-receipt-head">
-                              <b>{pack.title} #{packIndex + 1}</b>
-                              <small>Aberto em {pack.openedDate || pack.date}</small>
-                            </div>
-                            <ol className="registry-sticker-receipt-list">
-                              {pack.reveals.map((sticker, index) => (
-                                <li key={`${pack.id}-${sticker.number}-${index}`}>
-                                  <span>#{String(sticker.number).padStart(3, "0")} - {sticker.name || `Figurinha ${sticker.number}`}</span>
-                                  <small>{sticker.repeat ? "repetida" : "nova"}</small>
-                                </li>
-                              ))}
-                            </ol>
-                          </div>
-                        ))}
-
-                        {group.directStickers.length > 0 && (
-                          <ol className="registry-sticker-receipt-list registry-direct-sticker-list">
-                            {group.directStickers.map((sticker, index) => (
-                              <li key={`${order.id}-${sticker.number}-${index}`}>
-                                <span>#{String(sticker.number).padStart(3, "0")} - {sticker.name}</span>
-                                <small>{sticker.kind}</small>
-                              </li>
-                            ))}
-                          </ol>
-                        )}
+                {finishedOrders.map((order) => {
+                  const orderEntries = openedStickerEntries.filter((entry) => entry.order.id === order.id);
+                  if (orderEntries.length === 0) return null;
+                  return (
+                    <article className="registry-sticker-order" key={order.id}>
+                      <div className="registry-sticker-order-head">
+                        <b>Pedido #{order.order_code || order.id.slice(0, 8)}</b>
+                        <span>{formatStickerCount(orderEntries.length)}</span>
                       </div>
-                    ))}
-                  </article>
-                ))}
+                      <div className="registry-sticker-order-dates">
+                        <small>Compra: {formatDate(order.created_at)}</small>
+                        <small>Pagamento: {formatDate(order.payment_approved_at)}</small>
+                      </div>
+                      <ol className="registry-sticker-receipt-list registry-direct-sticker-list">
+                        {orderEntries.map((entry: any) => (
+                          <li key={entry.id}>
+                            <span>
+                              #{String(entry.sticker_number).padStart(3, "0")} -{" "}
+                              {entry.stickers?.name || `Figurinha ${entry.sticker_number}`}
+                            </span>
+                            <small>{entry.was_repeat_at_generation ? "repetida" : "nova"}</small>
+                          </li>
+                        ))}
+                      </ol>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </AccordionSection>
@@ -465,6 +352,7 @@ function RegistrosPage() {
       )}
 
       {exclusiveTotal > 0 && <span className="sr-only">{exclusiveTotal} exclusivas adquiridas</span>}
+      {commonTotal + rareTotal > 0 && <span className="sr-only">{commonTotal + rareTotal} figurinhas comuns e raras adquiridas</span>}
     </main>
   );
 }

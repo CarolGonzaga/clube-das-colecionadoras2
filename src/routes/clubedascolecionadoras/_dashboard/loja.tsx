@@ -2,9 +2,9 @@
 import { Minus, Plus, ShoppingBag, ShoppingCart, Sparkles, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
-import { purchaseStorage, type SimPurchaseItem } from "@/lib/shopSimulation";
 import { dbService } from "@/lib/db";
-import { POINTS_BALANCE_CHANGED, emitPointsBalanceChanged, readPointsBalanceFromEvent } from "@/lib/walletEvents";
+import { writeCheckoutCart } from "@/lib/cartStorage";
+import { POINTS_BALANCE_CHANGED, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
   component: LojaPage,
@@ -173,46 +173,18 @@ function LojaPage() {
     }
     setCheckoutStatus("pending");
     try {
-      const items: SimPurchaseItem[] = cart.map((item) => ({
-        id: item.id,
+      writeCheckoutCart(cart.map((item) => ({
+        productId: item.id,
         name: item.name,
-        qty: item.qty,
-        price: item.price,
-        pointsPrice: item.pointsPrice,
-        kind: item.section === "exclusivas" ? "exclusive" : item.id === "single-random" ? "single" : "pack",
-      }));
-      let finalPointsUsed = appliedPoints;
-      let finalAmountDue = amountDue;
-      if (appliedPoints > 0) {
-        const pointResult = await dbService.spendShopCheckoutPoints(appliedPoints, cartPointsTotal);
-        finalPointsUsed = Number(pointResult?.points_used || appliedPoints);
-        const newBalance = Number(pointResult?.new_balance ?? Math.max(0, availablePoints - finalPointsUsed));
-        setWalletPoints(newBalance);
-        emitPointsBalanceChanged(newBalance);
-        finalAmountDue = Math.max(0, (cartTotalCents - finalPointsUsed) / 100);
-      }
-      const purchase = purchaseStorage.createPurchase({
-        userId: parentData.profile.id,
-        items,
-        pointsUsed: finalPointsUsed,
-        amountPaid: finalAmountDue,
-        stickers: parentData.stickers,
-        userStickers: parentData.userStickers,
-      });
-      const directStickerNumbers = purchase.acquired.map((sticker) => sticker.number);
-      if (directStickerNumbers.length > 0) {
-        await dbService.addPurchasedStickers(parentData.profile.id, directStickerNumbers);
-      }
-      setCart([]);
-      setUseWalletPoints(false);
+        quantity: item.qty,
+        unitPriceCents: toCents(item.price),
+        unitPointPrice: item.pointsPrice,
+        image: item.image,
+      })));
       setCartOpen(false);
-      ui.toast(finalAmountDue > 0
-        ? "Pedido registrado. A diferença em reais seguirá para pagamento."
-        : "Compra aprovada com pontos. Itens adicionados em Pedidos.");
-      await router.invalidate();
-      router.navigate({ to: "/clubedascolecionadoras/registros" });
+      await router.navigate({ to: "/clubedascolecionadoras/carrinho" });
     } catch (error: any) {
-      ui.toast(error?.message || "Erro ao registrar a compra.");
+      ui.toast(error?.message || "Erro ao preparar o carrinho.");
     } finally {
       setCheckoutStatus("idle");
     }

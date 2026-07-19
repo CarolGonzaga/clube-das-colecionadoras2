@@ -25,8 +25,12 @@ import { Route as ClubedascolecionadorasDashboardLojaRouteImport } from './route
 import { Route as ClubedascolecionadorasDashboardDoarRouteImport } from './routes/clubedascolecionadoras/_dashboard/doar'
 import { Route as ClubedascolecionadorasDashboardConfigRouteImport } from './routes/clubedascolecionadoras/_dashboard/config'
 import { Route as ClubedascolecionadorasDashboardCodigosRouteImport } from './routes/clubedascolecionadoras/_dashboard/codigos'
+import { Route as ClubedascolecionadorasDashboardCarrinhoRouteImport } from './routes/clubedascolecionadoras/_dashboard/carrinho'
 import { Route as ClubedascolecionadorasDashboardAlbumRouteImport } from './routes/clubedascolecionadoras/_dashboard/album'
 import { Route as ClubedascolecionadorasAlbumUIdRouteImport } from './routes/clubedascolecionadoras/album.u.$id'
+import { Route as ClubedascolecionadorasDashboardPagamentoSucessoRouteImport } from './routes/clubedascolecionadoras/_dashboard/pagamento/sucesso'
+import { Route as ClubedascolecionadorasDashboardPagamentoPendenteRouteImport } from './routes/clubedascolecionadoras/_dashboard/pagamento/pendente'
+import { Route as ClubedascolecionadorasDashboardPagamentoFalhaRouteImport } from './routes/clubedascolecionadoras/_dashboard/pagamento/falha'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -122,6 +126,12 @@ const ClubedascolecionadorasDashboardCodigosRoute =
     path: '/codigos',
     getParentRoute: () => ClubedascolecionadorasDashboardRoute,
   } as any)
+const ClubedascolecionadorasDashboardCarrinhoRoute =
+  ClubedascolecionadorasDashboardCarrinhoRouteImport.update({
+    id: '/carrinho',
+    path: '/carrinho',
+    getParentRoute: () => ClubedascolecionadorasDashboardRoute,
+  } as any)
 const ClubedascolecionadorasDashboardAlbumRoute =
   ClubedascolecionadorasDashboardAlbumRouteImport.update({
     id: '/album',
@@ -134,6 +144,24 @@ const ClubedascolecionadorasAlbumUIdRoute =
     path: '/clubedascolecionadoras/album/u/$id',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ClubedascolecionadorasDashboardPagamentoSucessoRoute =
+  ClubedascolecionadorasDashboardPagamentoSucessoRouteImport.update({
+    id: '/pagamento/sucesso',
+    path: '/pagamento/sucesso',
+    getParentRoute: () => ClubedascolecionadorasDashboardRoute,
+  } as any)
+const ClubedascolecionadorasDashboardPagamentoPendenteRoute =
+  ClubedascolecionadorasDashboardPagamentoPendenteRouteImport.update({
+    id: '/pagamento/pendente',
+    path: '/pagamento/pendente',
+    getParentRoute: () => ClubedascolecionadorasDashboardRoute,
+  } as any)
+const ClubedascolecionadorasDashboardPagamentoFalhaRoute =
+  ClubedascolecionadorasDashboardPagamentoFalhaRouteImport.update({
+    id: '/pagamento/falha',
+    path: '/pagamento/falha',
+    getParentRoute: () => ClubedascolecionadorasDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -144,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/clubedascolecionadoras/termos': typeof ClubedascolecionadorasTermosRoute
   '/u/$id': typeof UIdRoute
   '/clubedascolecionadoras/album': typeof ClubedascolecionadorasDashboardAlbumRoute
+  '/clubedascolecionadoras/carrinho': typeof ClubedascolecionadorasDashboardCarrinhoRoute
   '/clubedascolecionadoras/codigos': typeof ClubedascolecionadorasDashboardCodigosRoute
   '/clubedascolecionadoras/config': typeof ClubedascolecionadorasDashboardConfigRoute
   '/clubedascolecionadoras/doar': typeof ClubedascolecionadorasDashboardDoarRoute
@@ -153,6 +182,9 @@ export interface FileRoutesByFullPath {
   '/clubedascolecionadoras/registros': typeof ClubedascolecionadorasDashboardRegistrosRoute
   '/clubedascolecionadoras/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras/': typeof ClubedascolecionadorasDashboardIndexRoute
+  '/clubedascolecionadoras/pagamento/falha': typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
+  '/clubedascolecionadoras/pagamento/pendente': typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
+  '/clubedascolecionadoras/pagamento/sucesso': typeof ClubedascolecionadorasDashboardPagamentoSucessoRoute
   '/clubedascolecionadoras/album/u/$id': typeof ClubedascolecionadorasAlbumUIdRoute
 }
 export interface FileRoutesByTo {
@@ -163,6 +195,7 @@ export interface FileRoutesByTo {
   '/clubedascolecionadoras/termos': typeof ClubedascolecionadorasTermosRoute
   '/u/$id': typeof UIdRoute
   '/clubedascolecionadoras/album': typeof ClubedascolecionadorasDashboardAlbumRoute
+  '/clubedascolecionadoras/carrinho': typeof ClubedascolecionadorasDashboardCarrinhoRoute
   '/clubedascolecionadoras/codigos': typeof ClubedascolecionadorasDashboardCodigosRoute
   '/clubedascolecionadoras/config': typeof ClubedascolecionadorasDashboardConfigRoute
   '/clubedascolecionadoras/doar': typeof ClubedascolecionadorasDashboardDoarRoute
@@ -172,6 +205,9 @@ export interface FileRoutesByTo {
   '/clubedascolecionadoras/registros': typeof ClubedascolecionadorasDashboardRegistrosRoute
   '/clubedascolecionadoras/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras': typeof ClubedascolecionadorasDashboardIndexRoute
+  '/clubedascolecionadoras/pagamento/falha': typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
+  '/clubedascolecionadoras/pagamento/pendente': typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
+  '/clubedascolecionadoras/pagamento/sucesso': typeof ClubedascolecionadorasDashboardPagamentoSucessoRoute
   '/clubedascolecionadoras/album/u/$id': typeof ClubedascolecionadorasAlbumUIdRoute
 }
 export interface FileRoutesById {
@@ -184,6 +220,7 @@ export interface FileRoutesById {
   '/clubedascolecionadoras/termos': typeof ClubedascolecionadorasTermosRoute
   '/u/$id': typeof UIdRoute
   '/clubedascolecionadoras/_dashboard/album': typeof ClubedascolecionadorasDashboardAlbumRoute
+  '/clubedascolecionadoras/_dashboard/carrinho': typeof ClubedascolecionadorasDashboardCarrinhoRoute
   '/clubedascolecionadoras/_dashboard/codigos': typeof ClubedascolecionadorasDashboardCodigosRoute
   '/clubedascolecionadoras/_dashboard/config': typeof ClubedascolecionadorasDashboardConfigRoute
   '/clubedascolecionadoras/_dashboard/doar': typeof ClubedascolecionadorasDashboardDoarRoute
@@ -193,6 +230,9 @@ export interface FileRoutesById {
   '/clubedascolecionadoras/_dashboard/registros': typeof ClubedascolecionadorasDashboardRegistrosRoute
   '/clubedascolecionadoras/_dashboard/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras/_dashboard/': typeof ClubedascolecionadorasDashboardIndexRoute
+  '/clubedascolecionadoras/_dashboard/pagamento/falha': typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
+  '/clubedascolecionadoras/_dashboard/pagamento/pendente': typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
+  '/clubedascolecionadoras/_dashboard/pagamento/sucesso': typeof ClubedascolecionadorasDashboardPagamentoSucessoRoute
   '/clubedascolecionadoras/album/u/$id': typeof ClubedascolecionadorasAlbumUIdRoute
 }
 export interface FileRouteTypes {
@@ -206,6 +246,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/termos'
     | '/u/$id'
     | '/clubedascolecionadoras/album'
+    | '/clubedascolecionadoras/carrinho'
     | '/clubedascolecionadoras/codigos'
     | '/clubedascolecionadoras/config'
     | '/clubedascolecionadoras/doar'
@@ -215,6 +256,9 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/registros'
     | '/clubedascolecionadoras/trocas'
     | '/clubedascolecionadoras/'
+    | '/clubedascolecionadoras/pagamento/falha'
+    | '/clubedascolecionadoras/pagamento/pendente'
+    | '/clubedascolecionadoras/pagamento/sucesso'
     | '/clubedascolecionadoras/album/u/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -225,6 +269,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/termos'
     | '/u/$id'
     | '/clubedascolecionadoras/album'
+    | '/clubedascolecionadoras/carrinho'
     | '/clubedascolecionadoras/codigos'
     | '/clubedascolecionadoras/config'
     | '/clubedascolecionadoras/doar'
@@ -234,6 +279,9 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/registros'
     | '/clubedascolecionadoras/trocas'
     | '/clubedascolecionadoras'
+    | '/clubedascolecionadoras/pagamento/falha'
+    | '/clubedascolecionadoras/pagamento/pendente'
+    | '/clubedascolecionadoras/pagamento/sucesso'
     | '/clubedascolecionadoras/album/u/$id'
   id:
     | '__root__'
@@ -245,6 +293,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/termos'
     | '/u/$id'
     | '/clubedascolecionadoras/_dashboard/album'
+    | '/clubedascolecionadoras/_dashboard/carrinho'
     | '/clubedascolecionadoras/_dashboard/codigos'
     | '/clubedascolecionadoras/_dashboard/config'
     | '/clubedascolecionadoras/_dashboard/doar'
@@ -254,6 +303,9 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/_dashboard/registros'
     | '/clubedascolecionadoras/_dashboard/trocas'
     | '/clubedascolecionadoras/_dashboard/'
+    | '/clubedascolecionadoras/_dashboard/pagamento/falha'
+    | '/clubedascolecionadoras/_dashboard/pagamento/pendente'
+    | '/clubedascolecionadoras/_dashboard/pagamento/sucesso'
     | '/clubedascolecionadoras/album/u/$id'
   fileRoutesById: FileRoutesById
 }
@@ -382,6 +434,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubedascolecionadorasDashboardCodigosRouteImport
       parentRoute: typeof ClubedascolecionadorasDashboardRoute
     }
+    '/clubedascolecionadoras/_dashboard/carrinho': {
+      id: '/clubedascolecionadoras/_dashboard/carrinho'
+      path: '/carrinho'
+      fullPath: '/clubedascolecionadoras/carrinho'
+      preLoaderRoute: typeof ClubedascolecionadorasDashboardCarrinhoRouteImport
+      parentRoute: typeof ClubedascolecionadorasDashboardRoute
+    }
     '/clubedascolecionadoras/_dashboard/album': {
       id: '/clubedascolecionadoras/_dashboard/album'
       path: '/album'
@@ -396,11 +455,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubedascolecionadorasAlbumUIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clubedascolecionadoras/_dashboard/pagamento/sucesso': {
+      id: '/clubedascolecionadoras/_dashboard/pagamento/sucesso'
+      path: '/pagamento/sucesso'
+      fullPath: '/clubedascolecionadoras/pagamento/sucesso'
+      preLoaderRoute: typeof ClubedascolecionadorasDashboardPagamentoSucessoRouteImport
+      parentRoute: typeof ClubedascolecionadorasDashboardRoute
+    }
+    '/clubedascolecionadoras/_dashboard/pagamento/pendente': {
+      id: '/clubedascolecionadoras/_dashboard/pagamento/pendente'
+      path: '/pagamento/pendente'
+      fullPath: '/clubedascolecionadoras/pagamento/pendente'
+      preLoaderRoute: typeof ClubedascolecionadorasDashboardPagamentoPendenteRouteImport
+      parentRoute: typeof ClubedascolecionadorasDashboardRoute
+    }
+    '/clubedascolecionadoras/_dashboard/pagamento/falha': {
+      id: '/clubedascolecionadoras/_dashboard/pagamento/falha'
+      path: '/pagamento/falha'
+      fullPath: '/clubedascolecionadoras/pagamento/falha'
+      preLoaderRoute: typeof ClubedascolecionadorasDashboardPagamentoFalhaRouteImport
+      parentRoute: typeof ClubedascolecionadorasDashboardRoute
+    }
   }
 }
 
 interface ClubedascolecionadorasDashboardRouteChildren {
   ClubedascolecionadorasDashboardAlbumRoute: typeof ClubedascolecionadorasDashboardAlbumRoute
+  ClubedascolecionadorasDashboardCarrinhoRoute: typeof ClubedascolecionadorasDashboardCarrinhoRoute
   ClubedascolecionadorasDashboardCodigosRoute: typeof ClubedascolecionadorasDashboardCodigosRoute
   ClubedascolecionadorasDashboardConfigRoute: typeof ClubedascolecionadorasDashboardConfigRoute
   ClubedascolecionadorasDashboardDoarRoute: typeof ClubedascolecionadorasDashboardDoarRoute
@@ -410,12 +491,17 @@ interface ClubedascolecionadorasDashboardRouteChildren {
   ClubedascolecionadorasDashboardRegistrosRoute: typeof ClubedascolecionadorasDashboardRegistrosRoute
   ClubedascolecionadorasDashboardTrocasRoute: typeof ClubedascolecionadorasDashboardTrocasRoute
   ClubedascolecionadorasDashboardIndexRoute: typeof ClubedascolecionadorasDashboardIndexRoute
+  ClubedascolecionadorasDashboardPagamentoFalhaRoute: typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
+  ClubedascolecionadorasDashboardPagamentoPendenteRoute: typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
+  ClubedascolecionadorasDashboardPagamentoSucessoRoute: typeof ClubedascolecionadorasDashboardPagamentoSucessoRoute
 }
 
 const ClubedascolecionadorasDashboardRouteChildren: ClubedascolecionadorasDashboardRouteChildren =
   {
     ClubedascolecionadorasDashboardAlbumRoute:
       ClubedascolecionadorasDashboardAlbumRoute,
+    ClubedascolecionadorasDashboardCarrinhoRoute:
+      ClubedascolecionadorasDashboardCarrinhoRoute,
     ClubedascolecionadorasDashboardCodigosRoute:
       ClubedascolecionadorasDashboardCodigosRoute,
     ClubedascolecionadorasDashboardConfigRoute:
@@ -434,6 +520,12 @@ const ClubedascolecionadorasDashboardRouteChildren: ClubedascolecionadorasDashbo
       ClubedascolecionadorasDashboardTrocasRoute,
     ClubedascolecionadorasDashboardIndexRoute:
       ClubedascolecionadorasDashboardIndexRoute,
+    ClubedascolecionadorasDashboardPagamentoFalhaRoute:
+      ClubedascolecionadorasDashboardPagamentoFalhaRoute,
+    ClubedascolecionadorasDashboardPagamentoPendenteRoute:
+      ClubedascolecionadorasDashboardPagamentoPendenteRoute,
+    ClubedascolecionadorasDashboardPagamentoSucessoRoute:
+      ClubedascolecionadorasDashboardPagamentoSucessoRoute,
   }
 
 const ClubedascolecionadorasDashboardRouteWithChildren =
