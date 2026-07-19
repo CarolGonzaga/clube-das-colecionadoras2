@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { AlertCircle, Heart, Mail, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, Heart, CheckCircle2, Loader2, KeyRound } from "lucide-react";
 import { supabase } from "../../lib/db";
 
 const searchSchema = z.object({
-  token_hash: z.string().optional(),
+  email: z.string().optional(),
   type: z.string().optional(),
 });
 
@@ -16,15 +16,19 @@ export const Route = createFileRoute("/clubedascolecionadoras/confirmar-email")(
 });
 
 function ConfirmarEmailPage() {
-  const { token_hash, type } = Route.useSearch();
+  const search = Route.useSearch();
+  const [email, setEmail] = useState(search.email || "");
+  const type = search.type || "signup";
+  const [code, setCode] = useState("");
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleConfirm = async () => {
-    if (!token_hash || !type) {
-      setError("Parâmetros de confirmação ausentes no link.");
+  const handleConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !code) {
+      setError("Preencha o e-mail e o código de verificação.");
       return;
     }
 
@@ -33,12 +37,13 @@ function ConfirmarEmailPage() {
 
     try {
       const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash,
+        email: email.trim(),
+        token: code.trim(),
         type: type as any,
       });
 
       if (verifyError) {
-        setError(verifyError.message || "Link inválido ou expirado.");
+        setError(verifyError.message || "Código inválido ou expirado.");
       } else {
         setSuccess(true);
         setTimeout(() => {
@@ -55,8 +60,6 @@ function ConfirmarEmailPage() {
       setLoading(false);
     }
   };
-
-  const hasParams = !!token_hash && !!type;
 
   return (
     <div className="login-screen min-h-screen bg-pink-light flex flex-col justify-center items-center p-4">
@@ -97,35 +100,56 @@ function ConfirmarEmailPage() {
         ) : (
           <div className="w-full flex flex-col items-center gap-4 text-center">
             <div className="w-16 h-16 rounded-full bg-[#fce4ec] flex items-center justify-center border border-pink-200/60 animate-bounce">
-              <Mail className="w-8 h-8 text-[#C2185B]" />
+              <KeyRound className="w-8 h-8 text-[#C2185B]" />
             </div>
 
-            <p className="text-xs text-[#bf2a5e] font-semibold leading-relaxed px-2">
-              Para garantir que seu e-mail não seja ativado automaticamente por filtros automáticos de provedores de e-mail, confirme seu acesso abaixo.
+            <p className="text-xs text-[#bf2a5e] font-semibold leading-relaxed px-2 mb-2">
+              Enviamos um código de 6 dígitos para o seu e-mail. Por favor, insira-o abaixo para confirmar sua conta.
             </p>
 
-            <button
-              onClick={handleConfirm}
-              disabled={loading || !hasParams}
-              className="w-full py-3.5 rounded-2xl text-xs font-bold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98] mt-2 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: "var(--gradient-berry)" }}
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" /> Verificando...
-                </>
-              ) : (
-                <>
-                  Confirmar meu e-mail agora <Heart size={14} fill="currentColor" />
-                </>
+            <form onSubmit={handleConfirm} className="w-full flex flex-col gap-3">
+              {!search.email && (
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Seu e-mail"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-rose-soft focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-white/70"
+                    required
+                  />
+                </div>
               )}
-            </button>
+              
+              <div>
+                <input
+                  type="text"
+                  placeholder="Código"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  maxLength={6}
+                  className="w-full p-3 rounded-xl border border-rose-soft focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-xl tracking-[0.3em] font-mono font-bold bg-white/70 text-berry"
+                  required
+                />
+              </div>
 
-            {!hasParams && (
-              <p className="text-[10px] text-red-500 font-medium">
-                Este link está incompleto ou expirado. Acesse a tela de login para solicitar um novo link de confirmação.
-              </p>
-            )}
+              <button
+                type="submit"
+                disabled={loading || !email || !code || code.length < 6}
+                className="w-full py-3.5 rounded-2xl text-xs font-bold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98] mt-2 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: "var(--gradient-berry)" }}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Verificando...
+                  </>
+                ) : (
+                  <>
+                    Confirmar meu e-mail <Heart size={14} fill="currentColor" />
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         )}
 

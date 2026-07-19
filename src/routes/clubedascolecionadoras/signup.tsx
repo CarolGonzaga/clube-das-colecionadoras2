@@ -96,8 +96,10 @@ function SignupComponent() {
     try {
       const res = await signupAction(nick, email, pin, muralOptIn);
       if (res.success) {
-        setRegisteredEmail(email);
-        setSignupSuccess(true);
+        router.navigate({
+          to: "/clubedascolecionadoras/confirmar-email",
+          search: { email, type: "signup" },
+        });
       } else {
         const errorMsg =
           typeof res.message === "object" ? JSON.stringify(res.message) : res.message;
@@ -114,79 +116,7 @@ function SignupComponent() {
     }
   };
 
-  if (signupSuccess) {
-    return (
-      <div className="mx-auto w-full max-w-[460px] min-h-[100svh] flex flex-col justify-center px-6 py-8 relative overflow-x-hidden bg-rose-soft/20">
-        <span className="absolute top-20 right-10 text-primary opacity-30 select-none pointer-events-none text-2xl">
-          ✦
-        </span>
-        <span className="absolute bottom-24 left-12 text-primary opacity-30 select-none pointer-events-none text-3xl">
-          ✦
-        </span>
 
-        <div className="surface-card p-8 shadow-[var(--shadow-soft)] flex flex-col items-center text-center gap-5">
-          <img
-            src="/logo_text.png"
-            alt="Clube das Colecionadoras"
-            className="w-36 mx-auto drop-shadow-[0_4px_10px_rgba(220,80,140,0.18)]"
-          />
-
-          {/* Icon */}
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center shadow-[var(--shadow-soft)]"
-            style={{ background: "var(--gradient-berry)" }}
-          >
-            <Mail size={30} className="text-white" />
-          </div>
-
-          {/* Title */}
-          <div>
-            <h2 className="text-berry font-bold text-lg tracking-tight">Confirme seu e-mail ✨</h2>
-            <p className="text-berry/70 text-xs mt-1 leading-relaxed">
-              Enviamos um link de confirmação para:
-            </p>
-            <p className="text-primary font-bold text-sm mt-0.5 break-all">{registeredEmail}</p>
-          </div>
-
-          {/* Steps */}
-          <div className="w-full bg-rose-soft/30 rounded-2xl p-4 text-left flex flex-col gap-3">
-            {[
-              "Abra seu e-mail e procure a mensagem do Clube das Colecionadoras",
-              "Clique no link de confirmação para ativar sua conta",
-              "Volte aqui e faça login para começar a colecionar!",
-            ].map((step, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div
-                  className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold mt-0.5"
-                  style={{ background: "var(--gradient-berry)" }}
-                >
-                  {i + 1}
-                </div>
-                <p className="text-xs text-berry/80 leading-relaxed">{step}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Tip */}
-          <div className="w-full flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
-            <CheckCircle2 size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-700 leading-relaxed">
-              Não encontrou? Verifique sua pasta de <b>spam</b> ou lixo eletrônico.
-            </p>
-          </div>
-
-          {/* Back to login */}
-          <Link
-            to="/clubedascolecionadoras/login"
-            className="w-full py-3 rounded-2xl text-xs font-bold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5"
-            style={{ background: "var(--gradient-berry)" }}
-          >
-            Ir para o Login <Heart size={13} fill="currentColor" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto w-full max-w-[460px] min-h-[100svh] flex flex-col justify-center px-6 py-8 relative overflow-x-hidden bg-rose-soft/20">
