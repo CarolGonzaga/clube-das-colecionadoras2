@@ -407,3 +407,12 @@ export async function validateAndUpdateNickAction(nick: string) {
     return { success: false, message: translateError(err) };
   }
 }
+
+export async function claimCollectionRewardAction(tagName: string) {
+  try {
+    const data = await dbService.claimCollectionReward(tagName);
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, message: translateError(err) };
+  }
+}

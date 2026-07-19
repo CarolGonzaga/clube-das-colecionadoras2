@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { RevealItem } from "@/lib/types";
 import PackOpener from "./PackOpener";
 import { SEED_STICKERS } from "@/lib/seeds";
@@ -18,6 +19,7 @@ interface UIContextType {
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [modalContent, setModalContent] = useState<React.ReactNode | null>(null);
   const [modalOptions, setModalOptions] = useState<{ fullScreen?: boolean }>({});
@@ -135,6 +137,26 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   }) => {
     triggerHearts();
     const tagName = pack.rewardTag || "Saga";
+
+    try {
+      const stored = localStorage.getItem("trade_notifications");
+      const notifications = stored ? JSON.parse(stored) : [];
+      const notifId = `completed-tag-${tagName}`;
+      if (!notifications.some((n: any) => n.id === notifId)) {
+        const newNotif = {
+          id: notifId,
+          type: "collection_completed",
+          message: `Parabéns! Você completou a coleção ${tagName}! Você possui prêmios a serem resgatados.`,
+          seen: false,
+          date: new Date().toISOString(),
+        };
+        localStorage.setItem("trade_notifications", JSON.stringify([newNotif, ...notifications]));
+        window.dispatchEvent(new Event("trade_notifications_change"));
+      }
+    } catch (e) {
+      console.warn("Failed to save completed tag notification:", e);
+    }
+
     const families = [
       { tag: "Baldaverso", stickers: [1, 53, 54] },
       { tag: "Frutaverso", stickers: [5, 59, 60] },
@@ -183,10 +205,13 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           style={{ padding: "14px", background: "var(--gradient-berry)" }}
           onClick={() => {
             closeModal();
-            startPackAnimation(pack);
+            router.navigate({
+              to: "/clubedascolecionadoras/album",
+              search: { tab: "colecoes" }
+            });
           }}
         >
-          Abrir pacote extra (5 figurinhas) ✦
+          Ir para Coleções
         </button>
       </div>,
     );
@@ -303,75 +328,6 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         if (nextPack.rewardMsg) {
           presentQueuedPack(nextPack);
           return restQueue;
-          triggerHearts();
-          const tagName = nextPack.rewardTag || "Saga";
-          const families = [
-            { tag: "Baldaverso", stickers: [1, 53, 54] },
-            { tag: "Frutaverso", stickers: [5, 59, 60] },
-            { tag: "Bright Falls", stickers: [22, 51, 52] },
-            { tag: "HQ", stickers: [84, 85, 87] },
-            { tag: "Opostos Co.", stickers: [19, 73, 74] },
-          ];
-          const fam = families.find((f) => f.tag === tagName);
-
-          openModal(
-            <div style={{ textAlign: "center", padding: "10px" }}>
-              <h2 style={{ color: "var(--magenta)", marginBottom: "10px", fontSize: "22px" }}>
-                {tagName === "Baldaverso"
-                  ? "Kit Baldaverso Completo!"
-                  : `Saga ${tagName} Completa!`}
-              </h2>
-              <p style={{ fontSize: "14px", marginBottom: "16px", fontWeight: 600, color: "#444" }}>
-                {nextPack.rewardMsg}
-              </p>
-
-              {fam && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "8px",
-                    marginBottom: "20px",
-                  }}
-                >
-                  {fam.stickers.map((num) => {
-                    const s = SEED_STICKERS.find((st) => st.number === num);
-                    if (!s) return null;
-                    return (
-                      <div key={num} style={{ width: "70px", height: "100px" }}>
-                        <img
-                          src={s.cover_url ? `/covers/${s.cover_url}` : undefined}
-                          alt={s.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            borderRadius: "6px",
-                            border: "2px solid var(--gold)",
-                            boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <button
-                className="btn w-full"
-                style={{ padding: "14px", background: "var(--gradient-berry)" }}
-                onClick={() => {
-                  closeModal();
-                  setReveals(nextPack.items);
-                  setRevealsTitle(nextPack.title);
-                  setOpenedPacks([]);
-                  setRevealedLabels([]);
-                }}
-              >
-                Abrir Pacote Extra ✦
-              </button>
-            </div>,
-          );
         } else {
           setReveals(nextPack.items);
           setRevealsTitle(nextPack.title);
@@ -437,75 +393,6 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         if (nextPack.rewardMsg) {
           presentQueuedPack(nextPack);
           return restQueue;
-          triggerHearts();
-          const tagName = nextPack.rewardTag || "Saga";
-          const families = [
-            { tag: "Baldaverso", stickers: [1, 53, 54] },
-            { tag: "Frutaverso", stickers: [5, 59, 60] },
-            { tag: "Bright Falls", stickers: [22, 51, 52] },
-            { tag: "HQ", stickers: [84, 85, 87] },
-            { tag: "Opostos Co.", stickers: [19, 73, 74] },
-          ];
-          const fam = families.find((f) => f.tag === tagName);
-
-          openModal(
-            <div style={{ textAlign: "center", padding: "10px" }}>
-              <h2 style={{ color: "var(--magenta)", marginBottom: "10px", fontSize: "22px" }}>
-                {tagName === "Baldaverso"
-                  ? "Kit Baldaverso Completo!"
-                  : `Saga ${tagName} Completa!`}
-              </h2>
-              <p style={{ fontSize: "14px", marginBottom: "16px", fontWeight: 600, color: "#444" }}>
-                {nextPack.rewardMsg}
-              </p>
-
-              {fam && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "8px",
-                    marginBottom: "20px",
-                  }}
-                >
-                  {fam.stickers.map((num) => {
-                    const s = SEED_STICKERS.find((st) => st.number === num);
-                    if (!s) return null;
-                    return (
-                      <div key={num} style={{ width: "70px", height: "100px" }}>
-                        <img
-                          src={s.cover_url ? `/covers/${s.cover_url}` : undefined}
-                          alt={s.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            borderRadius: "6px",
-                            border: "2px solid var(--gold)",
-                            boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <button
-                className="btn w-full"
-                style={{ padding: "14px", background: "var(--gradient-berry)" }}
-                onClick={() => {
-                  closeModal();
-                  setReveals(nextPack.items);
-                  setRevealsTitle(nextPack.title);
-                  setOpenedPacks([]);
-                  setRevealedLabels([]);
-                }}
-              >
-                Abrir Pacote Extra ✦
-              </button>
-            </div>,
-          );
         } else {
           setReveals(nextPack.items);
           setRevealsTitle(nextPack.title);
@@ -561,82 +448,6 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         if (nextPack.rewardMsg) {
           presentQueuedPack(nextPack);
           return restQueue;
-          triggerHearts();
-          const tagName = nextPack.rewardTag || "Saga";
-          const families = [
-            { tag: "Baldaverso", stickers: [1, 53, 54] },
-            { tag: "Frutaverso", stickers: [5, 59, 60] },
-            { tag: "Bright Falls", stickers: [22, 51, 52] },
-            { tag: "HQ", stickers: [84, 85, 87] },
-            { tag: "Opostos Co.", stickers: [19, 73, 74] },
-          ];
-          const fam = families.find((f) => f.tag === tagName);
-
-          openModal(
-            <div style={{ textAlign: "center", padding: "10px" }}>
-              <h2
-                style={{
-                  color: "var(--wine)",
-                  marginBottom: "10px",
-                  fontSize: "22px",
-                  fontFamily: "Baloo 2",
-                }}
-              >
-                {tagName === "Baldaverso"
-                  ? "Kit Baldaverso Completo!"
-                  : `Saga ${tagName} Completa!`}
-              </h2>
-              <p style={{ fontSize: "14px", marginBottom: "16px", fontWeight: 600, color: "#444" }}>
-                {nextPack.rewardMsg}
-              </p>
-
-              {fam && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "8px",
-                    marginBottom: "20px",
-                  }}
-                >
-                  {fam.stickers.map((num) => {
-                    const s = SEED_STICKERS.find((st) => st.number === num);
-                    if (!s) return null;
-                    return (
-                      <div key={num} style={{ width: "70px", height: "100px" }}>
-                        <img
-                          src={s.cover_url ? `/covers/${s.cover_url}` : undefined}
-                          alt={s.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            borderRadius: "6px",
-                            border: "2px solid var(--gold)",
-                            boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              <button
-                className="btn w-full"
-                style={{ padding: "14px", background: "var(--gradient-berry)" }}
-                onClick={() => {
-                  closeModal();
-                  setReveals(nextPack.items);
-                  setRevealsTitle(nextPack.title);
-                  setOpenedPacks([]);
-                  setRevealedLabels([]);
-                }}
-              >
-                Abrir Pacote Extra ✦
-              </button>
-            </div>,
-          );
         } else {
           setReveals(nextPack.items);
           setRevealsTitle(nextPack.title);

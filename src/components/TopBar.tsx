@@ -87,17 +87,24 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
             }}
           >
             {notifications.map((n: any) => {
-              const isClickable = n.type === "trade_claim";
+              const isClickable = n.type === "trade_claim" || n.type === "collection_completed";
               return (
                 <div
                   key={n.id}
                   onClick={() => {
                     if (isClickable) {
                       ui.closeModal();
-                      router.navigate({
-                        to: "/clubedascolecionadoras/trocas",
-                        search: { tab: "history" }
-                      });
+                      if (n.type === "collection_completed") {
+                        router.navigate({
+                          to: "/clubedascolecionadoras/album",
+                          search: { tab: "colecoes" }
+                        });
+                      } else {
+                        router.navigate({
+                          to: "/clubedascolecionadoras/trocas",
+                          search: { tab: "history" }
+                        });
+                      }
                     }
                   }}
                   style={{
@@ -126,7 +133,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
                   </div>
                   {isClickable && (
                     <span style={{ fontSize: "10px", color: "#C2185B", fontWeight: "bold", display: "block", marginTop: "4px" }}>
-                      Clique para resgatar ➔
+                      {n.type === "collection_completed" ? "Clique para ver ➔" : "Clique para resgatar ➔"}
                     </span>
                   )}
                 </div>

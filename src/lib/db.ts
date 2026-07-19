@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Sticker, Profile, UserSticker, Style, UserStyle, RevealItem, Donation, TradeRequest, TradeUserLookup } from "./types";
 import { getLoginUrl } from "./urls";
+import { SEED_STICKERS } from "./seeds";
 
 const TIMEZONE = "America/Sao_Paulo";
 
@@ -144,7 +145,13 @@ export const dbService = {
       .select("*")
       .order("number", { ascending: true });
     if (error) throw new Error(error.message);
-    return data as Sticker[];
+    return (data || []).map((dbSticker: any) => {
+      const seedSticker = SEED_STICKERS.find((s) => s.number === dbSticker.number);
+      return {
+        ...dbSticker,
+        ilustrator: seedSticker?.ilustrator || null,
+      } as Sticker;
+    });
   },
 
   async getUserStickers(userId: string): Promise<UserSticker[]> {
@@ -526,6 +533,22 @@ export const dbService = {
       .update({ reveals_queue: queue })
       .eq("id", user.id);
     if (error) throw new Error(error.message);
+  },
+
+  async getCompletedTags(): Promise<{ tag_name: string; claimed: boolean }[]> {
+    const { data, error } = await supabase
+      .from("completed_tags")
+      .select("tag_name, claimed");
+    if (error) throw new Error(error.message);
+    return data || [];
+  },
+
+  async claimCollectionReward(tagName: string) {
+    const { data, error } = await supabase.rpc("claim_collection_reward", {
+      tag_name_param: tagName,
+    });
+    if (error) throw new Error(error.message);
+    return data;
   },
 
   // ── TRADE SYSTEM ──────────────────────────────────────────────
