@@ -1717,7 +1717,7 @@ export default function HomeClient({
         </div>
       </div>
 
-      <div className="mx-4 mb-4">
+      <div className="home-dashboard-banner mx-4 mb-4">
         <a
           href="http://amzn.to/3SKQPnL"
           target="_blank"

@@ -5787,7 +5787,8 @@ html.theme-lilac .empty {
   .home-dashboard-poster,
   .home-dashboard-missions,
   .home-dashboard-mural,
-  .home-dashboard-share {
+  .home-dashboard-share,
+  .home-dashboard-banner {
     margin: 0;
     min-width: 0;
   }
@@ -5852,6 +5853,11 @@ html.theme-lilac .empty {
   .home-dashboard-share {
     grid-column: 2 / 14;
     grid-row: 6;
+  }
+
+  .home-dashboard-banner {
+    grid-column: 2 / 14;
+    grid-row: 7;
   }
 
   .home-share-panel {
