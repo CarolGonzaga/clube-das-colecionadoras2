@@ -351,8 +351,6 @@ function RegistrosPage() {
         </>
       )}
 
-      {exclusiveTotal > 0 && <span className="sr-only">{exclusiveTotal} exclusivas adquiridas</span>}
-      {commonTotal + rareTotal > 0 && <span className="sr-only">{commonTotal + rareTotal} figurinhas comuns e raras adquiridas</span>}
     </main>
   );
 }
