@@ -25,6 +25,7 @@ export type SimPackRecord = {
   date: string;
   status: "pending" | "opened";
   sourcePurchaseId: string;
+  sourceItemId?: string;
   reveals: RevealItem[];
   openedDate?: string;
 };
@@ -252,6 +253,7 @@ export const purchaseStorage = {
           date,
           status: "pending",
           sourcePurchaseId: purchaseId,
+          sourceItemId: item.id,
           reveals,
         });
       }
@@ -273,6 +275,7 @@ export const purchaseStorage = {
             date,
             status: "pending",
             sourcePurchaseId: purchaseId,
+            sourceItemId: item.id,
             reveals: [reveal],
           });
         }

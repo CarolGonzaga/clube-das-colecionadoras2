@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { purchaseStorage, type SimPurchaseRecord } from "@/lib/shopSimulation";
 import { redeemCodeAction } from "@/lib/actions";
-import AutographSeal from "@/components/AutographSeal";
-import Stamp from "@/components/Stamp";
 import { dbService } from "@/lib/db";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/registros")({
@@ -105,7 +103,45 @@ function RegistrosPage() {
   const exclusiveTotal = acquiredStickers.filter((item) => item.kind === "exclusiva").length;
   const lastPurchaseDate = purchases[0]?.date || "-";
 
-  const latestStickers = useMemo(() => acquiredStickers.slice(0, 24), [acquiredStickers]);
+  const purchaseStickerHistory = useMemo(() => {
+    return approvedPurchases
+      .map((purchase) => {
+        const itemGroups = purchase.items
+          .map((item) => {
+            const openedPacks = purchase.packs.filter(
+              (pack) =>
+                pack.status === "opened" &&
+                (pack.sourceItemId
+                  ? pack.sourceItemId === item.id
+                  : item.kind === "pack" || item.kind === "single"),
+            );
+            const directStickers =
+              item.kind === "exclusive"
+                ? purchase.acquired.filter((sticker) => sticker.number === Number(item.id.replace("exclusive-", "")))
+                : [];
+
+            return {
+              item,
+              openedPacks,
+              directStickers,
+              stickerTotal:
+                openedPacks.reduce((sum, pack) => sum + pack.reveals.length, 0) + directStickers.length,
+            };
+          })
+          .filter((group) => group.stickerTotal > 0);
+
+        const stickerTotal = itemGroups.reduce((sum, group) => sum + group.stickerTotal, 0);
+
+        return {
+          id: purchase.id,
+          date: purchase.date,
+          paymentConfirmedDate: purchase.paymentConfirmedDate || purchase.date,
+          itemGroups,
+          stickerTotal,
+        };
+      })
+      .filter((purchase) => purchase.stickerTotal > 0);
+  }, [approvedPurchases]);
 
   const finishedOrders = useMemo(() => {
     return approvedPurchases.map((purchase) => {
