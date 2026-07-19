@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, Clock, PackageOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { getMyOrder } from "@/lib/checkout";
+import { getMyOrder, reconcileMercadoPagoPayment } from "@/lib/checkout";
 
 const searchSchema = z.object({
   order: z.string().optional(),
+  payment_id: z.string().optional(),
 });
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/pagamento/sucesso")({
@@ -20,21 +21,31 @@ function PaymentSuccessPage() {
   useEffect(() => {
     if (!search.order) return;
     let alive = true;
+    let reconciled = false;
+
     const load = async () => {
       try {
+        if (!reconciled && search.payment_id) {
+          reconciled = true;
+          await reconcileMercadoPagoPayment({
+            data: { orderId: search.order!, paymentId: search.payment_id },
+          });
+        }
+
         const result = await getMyOrder({ data: { orderId: search.order! } });
         if (alive) setOrder(result.order);
       } catch {
         // Keep the friendly pending state.
       }
     };
+
     load();
     const timer = window.setInterval(load, 5000);
     return () => {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [search.order]);
+  }, [search.order, search.payment_id]);
 
   const released =
     order?.payment_status === "approved" &&

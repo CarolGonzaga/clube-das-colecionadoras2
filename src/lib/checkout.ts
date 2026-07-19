@@ -16,6 +16,11 @@ const getOrderSchema = z.object({
   orderId: z.string().uuid(),
 });
 
+const reconcilePaymentSchema = z.object({
+  orderId: z.string().uuid(),
+  paymentId: z.string().min(1),
+});
+
 function getPublicBaseUrl() {
   const configured =
     process.env.PUBLIC_SITE_URL ||
@@ -104,6 +109,21 @@ async function createMercadoPagoPreference({
     init_point?: string;
     sandbox_init_point?: string;
   };
+}
+
+async function fetchMercadoPagoPayment(paymentId: string) {
+  const accessToken = getMercadoPagoAccessToken();
+
+  const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.message || "Erro ao consultar pagamento no Mercado Pago.");
+  }
+
+  return payload;
 }
 
 export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
@@ -240,6 +260,35 @@ export const getMyOrder = createServerFn({ method: "GET" })
       packs: packs || [],
       payments: payments || [],
     };
+  });
+
+export const reconcileMercadoPagoPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data) => reconcilePaymentSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: orderError } = await supabase
+      .from("purchase_orders")
+      .select("id, user_id, amount_due_cents, currency")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (orderError) throw new Error(orderError.message);
+    if (!order) throw new Error("Pedido não encontrado.");
+
+    const payment = await fetchMercadoPagoPayment(data.paymentId);
+    if (String(payment?.external_reference || "") !== data.orderId) {
+      throw new Error("Pagamento não pertence a este pedido.");
+    }
+
+    const { data: result, error: processError } = await supabaseAdmin.rpc(
+      "process_mercado_pago_payment",
+      { payment_payload: payment },
+    );
+    if (processError) throw new Error(processError.message);
+
+    return result;
   });
 
 export const listMyOrders = createServerFn({ method: "GET" })
