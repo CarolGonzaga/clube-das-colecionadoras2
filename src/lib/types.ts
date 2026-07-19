@@ -5,10 +5,11 @@ export interface Sticker {
   slug: string;
   name: string;
   author: string | null;
-  type: "quiz" | "sorteio" | "ls" | "frase";
+  type: "quiz" | "sorteio" | "ls" | "frase" | "loja" | "exclusiva";
   cover_url: string | null;
   category?: "quiz" | "comum" | "exclusiva" | null;
   amazon_url?: string | null;
+  ilustrator?: string | null;
 }
 
 export interface Profile {

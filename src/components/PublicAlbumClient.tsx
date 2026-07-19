@@ -5,6 +5,7 @@ import { Profile, Sticker, UserSticker } from "@/lib/types";
 import Stamp from "./Stamp";
 import AutographSeal from "./AutographSeal";
 import { Star, Sparkles } from "lucide-react";
+import { isExclusiveSticker } from "@/lib/albumRules";
 
 interface PublicAlbumClientProps {
   profile: Profile;
@@ -231,12 +232,13 @@ export default function PublicAlbumClient({
             {paginatedStickers.map((sticker) => {
               const info = getOwnedInfo(sticker.number);
               const isRare = (info?.is_rare && sticker.type !== "sorteio") || false;
+              const isExclusive = isExclusiveSticker(sticker);
               const copies = getCopiesCount(sticker.number);
 
               return (
                 <div
                   key={sticker.number}
-                  className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""}`}
+                  className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""} ${isExclusive ? "exclusive-cell" : ""}`}
                   style={{ cursor: "default" }}
                 >
                   <Stamp
@@ -250,6 +252,11 @@ export default function PublicAlbumClient({
                   {isRare && (
                     <span className="auto-badge flex items-center justify-center">
                       <Star size={8} fill="currentColor" stroke="none" />
+                    </span>
+                  )}
+                  {isExclusive && (
+                    <span className="exclusive-badge">
+                      <Sparkles size={10} />
                     </span>
                   )}
                   {copies > 1 && (

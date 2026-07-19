@@ -720,13 +720,18 @@ button {
 }
 .filters {
   display: flex;
-  gap: 6px;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 8px;
   margin: 14px 0 18px;
   flex-wrap: wrap;
   row-gap: 8px;
+  width: 100%;
 }
 .chip {
-  flex: 0 0 auto;
+  flex: 1 1 120px;
+  max-width: 180px;
+  justify-content: center;
   background: var(--blush);
   color: var(--wine);
   font-weight: 800;
@@ -829,17 +834,27 @@ button {
   line-height: 1.35;
 }
 .cell.exclusive-cell {
-  border: 2px solid rgba(185, 195, 205, 0.88);
+  border: 2px solid #cbd5e0;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+    inset 0 0 0 2px #cbd5e0,
     0 8px 22px rgba(102, 113, 128, 0.14);
+  position: relative;
 }
-.cell.exclusive-cell:not(.foil)::after {
-  content: none;
+.cell.exclusive-cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(125deg, #fff6 0%, #fff0 25%, #cbd5e1aa 45%, #fff0 65%, #fff6 100%);
+  background-size: 250% 250%;
+  animation: shine 3.2s linear infinite;
+  mix-blend-mode: screen;
+  z-index: 1;
 }
 .exclusive-badge {
   position: absolute;
-  left: 5px;
+  right: 5px;
+  left: auto;
   top: 5px;
   width: 22px;
   height: 22px;
@@ -850,6 +865,7 @@ button {
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 4px 10px rgba(85, 96, 112, 0.18);
+  z-index: 3;
 }
 .album.album-list {
   gap: 9px;
@@ -6460,3 +6476,135 @@ html.theme-lilac .text-\[#5c0d2b\] {
     opacity: 1;
   }
 }
+
+/* ── Theme Lilac Active Buttons and Search Overrides ── */
+html.theme-lilac .album-view-toggle button.active svg,
+html.theme-lilac .album-page-size button.active svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+html.theme-lilac .trade-btn-trade svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+html.theme-lilac .trade-flow-search-btn svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* ── Album Family Collections Styles ── */
+.collection-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(216, 27, 122, 0.05);
+  border: 1px solid var(--blush);
+  position: relative;
+}
+
+.collection-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.collection-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: "Baloo 2";
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--wine);
+  border-bottom: 1px solid #fdeef4;
+  padding-bottom: 8px;
+}
+
+.collection-stamps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 12px;
+  justify-items: center;
+}
+
+.collection-stamp-wrapper {
+  width: 70px;
+  transition: transform 0.2s ease;
+}
+
+.collection-stamp-wrapper:hover {
+  transform: translateY(-2px);
+}
+
+.collection-seal-container {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  border-radius: 12px;
+  border: 2px dashed #cbd5e0;
+  padding: 6px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.collection-seal-container.completed {
+  background: rgba(216, 27, 122, 0.04);
+  border: 2px dashed var(--magenta);
+}
+
+.collection-seal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(0.4);
+  transform: scale(0.95);
+  transition: all 0.3s ease;
+}
+
+.collection-seal-container.completed .collection-seal-img {
+  filter: none;
+  transform: scale(1.05);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .collection-seal-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 44px;
+    height: 44px;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    z-index: 10;
+  }
+
+  .collection-seal-img {
+    width: 44px;
+    height: 44px;
+    filter: none;
+    transform: none;
+  }
+
+  .collection-stamps-grid {
+    grid-template-columns: repeat(3, 70px) !important;
+    justify-content: center;
+    margin: 0 auto;
+  }
+
+  .collection-header {
+    padding-right: 48px;
+  }
+}
+
