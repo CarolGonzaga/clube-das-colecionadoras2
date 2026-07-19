@@ -75,6 +75,7 @@ function LojaPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "pending">("idle");
   const [useWalletPoints, setUseWalletPoints] = useState(false);
+  const [walletPoints, setWalletPoints] = useState(parentData.pointsBalance || 0);
   const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias" | "exclusivas">(
     "todos",
   );
@@ -85,7 +86,7 @@ function LojaPage() {
   const cartPointsTotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.pointsPrice * item.qty, 0);
   }, [cart]);
-  const availablePoints = Math.max(0, parentData.pointsBalance || 0);
+  const availablePoints = Math.max(0, walletPoints);
   const appliedPoints = useWalletPoints ? Math.min(availablePoints, cartPointsTotal) : 0;
   const pointsDiscountCents = appliedPoints;
   const amountDueCents = Math.max(0, cartTotalCents - pointsDiscountCents);
@@ -147,11 +148,20 @@ function LojaPage() {
         pointsPrice: item.pointsPrice,
         kind: item.section === "exclusivas" ? "exclusive" : item.id === "single-random" ? "single" : "pack",
       }));
+      let finalPointsUsed = appliedPoints;
+      let finalAmountDue = amountDue;
+      if (appliedPoints > 0) {
+        const pointResult = await dbService.spendShopCheckoutPoints(appliedPoints, cartPointsTotal);
+        finalPointsUsed = Number(pointResult?.points_used || appliedPoints);
+        const newBalance = Number(pointResult?.new_balance ?? Math.max(0, availablePoints - finalPointsUsed));
+        setWalletPoints(newBalance);
+        finalAmountDue = Math.max(0, (cartTotalCents - finalPointsUsed) / 100);
+      }
       const purchase = purchaseStorage.createPurchase({
         userId: parentData.profile.id,
         items,
-        pointsUsed: appliedPoints,
-        amountPaid: amountDue,
+        pointsUsed: finalPointsUsed,
+        amountPaid: finalAmountDue,
         stickers: parentData.stickers,
         userStickers: parentData.userStickers,
       });
@@ -162,7 +172,7 @@ function LojaPage() {
       setCart([]);
       setUseWalletPoints(false);
       setCartOpen(false);
-      ui.toast(amountDueCents > 0
+      ui.toast(finalAmountDue > 0
         ? "Pedido registrado. A diferença em reais seguirá para pagamento."
         : "Compra aprovada com pontos. Itens adicionados em Pedidos.");
       await router.invalidate();
@@ -403,7 +413,7 @@ function LojaPage() {
                   <b>{appliedPoints.toLocaleString("pt-BR")} pts</b>
                   <span>Desconto em pontos</span>
                   <b>-{formatMoney(pointsDiscountCents / 100)}</b>
-                  <span>Diferença via Mercado Pago</span>
+                  <span>Diferença a pagar</span>
                   <b>{formatMoney(amountDue)}</b>
                 </div>
               </div>

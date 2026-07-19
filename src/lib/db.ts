@@ -665,6 +665,15 @@ export const dbService = {
     return data;
   },
 
+  async spendShopCheckoutPoints(requestedPoints: number, cartPointTotal: number) {
+    const { data, error } = await supabase.rpc("spend_shop_checkout_points", {
+      requested_points_param: requestedPoints,
+      cart_point_total_param: cartPointTotal,
+    });
+    if (error) throw new Error(error.message);
+    return data as { points_used: number; new_balance: number };
+  },
+
   async countIncomingPendingTrades(): Promise<number> {
     const { data, error } = await supabase.rpc("count_incoming_pending_trades");
     if (error) return 0;
