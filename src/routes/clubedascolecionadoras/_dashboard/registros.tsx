@@ -1,4 +1,4 @@
-import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
+﻿import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, CircleHelp, PackageOpen, Coins, Ticket } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -14,6 +14,12 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/registr
 function stickerTotalForPurchaseItem(item: SimPurchaseRecord["items"][number]) {
   if (item.kind === "pack") return item.id === "pack-combo" ? item.qty * 50 : item.qty * 5;
   return item.qty;
+}
+
+function packCountForPurchaseItem(item: SimPurchaseRecord["items"][number]) {
+  if (item.kind === "pack") return item.id === "pack-combo" ? item.qty * 10 : item.qty;
+  if (item.kind === "single") return item.qty;
+  return 0;
 }
 
 function formatItemCount(count: number) {
@@ -64,12 +70,12 @@ function RegistrosPage() {
         <CircleHelp size={30} />
         <h2>Como funcionam os pontos?</h2>
         <p>
-          Pontos são créditos internos do Clube. Você pode ganhar pontos ao trocar figurinhas de
-          loja repetidas na página de Trocas.
+          Pontos sÃ£o crÃ©ditos internos do Clube. VocÃª pode ganhar pontos ao trocar figurinhas de
+          loja repetidas na pÃ¡gina de Trocas.
         </p>
         <p>
-          Eles ficam salvos na sua conta e poderão ser usados em recursos da loja quando essa opção
-          estiver disponível.
+          Eles ficam salvos na sua conta e poderÃ£o ser usados em recursos da loja quando essa opÃ§Ã£o
+          estiver disponÃ­vel.
         </p>
         <button type="button" className="btn" onClick={ui.closeModal}>
           Entendi
@@ -106,15 +112,19 @@ function RegistrosPage() {
   const purchaseStickerHistory = useMemo(() => {
     return approvedPurchases
       .map((purchase) => {
+        const openedPacksWithoutItem = purchase.packs.filter((pack) => pack.status === "opened" && !pack.sourceItemId);
+        let fallbackPackCursor = 0;
+
         const itemGroups = purchase.items
           .map((item) => {
-            const openedPacks = purchase.packs.filter(
-              (pack) =>
-                pack.status === "opened" &&
-                (pack.sourceItemId
-                  ? pack.sourceItemId === item.id
-                  : item.kind === "pack" || item.kind === "single"),
+            const openedPacksWithItem = purchase.packs.filter(
+              (pack) => pack.status === "opened" && pack.sourceItemId === item.id,
             );
+            const fallbackCount = packCountForPurchaseItem(item);
+            const openedPacks = openedPacksWithItem.length > 0
+              ? openedPacksWithItem
+              : openedPacksWithoutItem.slice(fallbackPackCursor, fallbackPackCursor + fallbackCount);
+            fallbackPackCursor += openedPacksWithItem.length > 0 ? 0 : fallbackCount;
             const directStickers =
               item.kind === "exclusive"
                 ? purchase.acquired.filter((sticker) => sticker.number === Number(item.id.replace("exclusive-", "")))
@@ -199,10 +209,10 @@ function RegistrosPage() {
       {/* Code Redemption Input */}
       <div className="trade-redeem-section bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 mb-4">
         <h3 className="text-xs font-bold text-[#5c0d2b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Ticket className="w-4 h-4 text-[#C2185B]" /> Códigos do Lendo Sáficos
+          <Ticket className="w-4 h-4 text-[#C2185B]" /> CÃ³digos do Lendo SÃ¡ficos
         </h3>
         <p className="text-[11px] text-[#bf2a5e]/80 mb-3">
-          Os códigos são liberados pelo LS ao longo dos 5 dias do evento. Cada código pode ser usado uma única vez e tem o prazo de 24 horas para resgate. Fique de olho nas redes!
+          Os cÃ³digos sÃ£o liberados pelo LS ao longo dos 5 dias do evento. Cada cÃ³digo pode ser usado uma Ãºnica vez e tem o prazo de 24 horas para resgate. Fique de olho nas redes!
         </p>
         <form
           onSubmit={async (e) => {
@@ -214,16 +224,16 @@ function RegistrosPage() {
             setRedeemLoading(false);
             if (res.success && res.data) {
               e.currentTarget.reset();
-              ui.toast("Código resgatado com sucesso! 🎉");
+              ui.toast("CÃ³digo resgatado com sucesso! ðŸŽ‰");
               if (Array.isArray(res.data) && res.data.length > 0) {
-                ui.showReveals(res.data, "Figurinhas do Código");
+                ui.showReveals(res.data, "Figurinhas do CÃ³digo");
               } else if (res.data.reveals && Array.isArray(res.data.reveals)) {
-                ui.showReveals(res.data.reveals, "Figurinhas do Código");
+                ui.showReveals(res.data.reveals, "Figurinhas do CÃ³digo");
               }
               refreshPurchases();
               router.invalidate();
             } else {
-              ui.toast(res.message || "Erro ao resgatar código.");
+              ui.toast(res.message || "Erro ao resgatar cÃ³digo.");
             }
           }}
           className="flex gap-2"
@@ -231,7 +241,7 @@ function RegistrosPage() {
           <input
             name="redeemCode"
             type="text"
-            placeholder="Cole seu código aqui"
+            placeholder="Cole seu cÃ³digo aqui"
             disabled={redeemLoading}
             style={{ height: "40px" }}
             className="flex-1 min-w-0 px-3 border border-pink-200/60 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
@@ -252,7 +262,7 @@ function RegistrosPage() {
         <section className="registry-empty-state" style={{ marginBottom: "24px" }}>
           <PackageOpen size={34} />
           <b>Nenhum pedido registrado ainda</b>
-          <p>Quando uma compra for finalizada na Loja, os pacotes e figurinhas aparecerão aqui.</p>
+          <p>Quando uma compra for finalizada na Loja, os pacotes e figurinhas aparecerÃ£o aqui.</p>
         </section>
       ) : (
         <>
@@ -328,7 +338,7 @@ function RegistrosPage() {
             defaultOpen={false}
           >
             {pendingPurchases.length === 0 ? (
-              <div className="empty">Nenhuma compra aguardando confirmação de pagamento.</div>
+              <div className="empty">Nenhuma compra aguardando confirmaÃ§Ã£o de pagamento.</div>
             ) : (
               <div className="registry-purchase-list">
                 {pendingPurchases.map((purchase) => (
@@ -336,7 +346,7 @@ function RegistrosPage() {
                     <div>
                       <b>{purchase.date}</b>
                       <span>
-                        {purchase.items.map((item) => `${item.qty}x ${item.name}`).join(" · ")}
+                        {purchase.items.map((item) => `${item.qty}x ${item.name}`).join(" Â· ")}
                       </span>
                     </div>
                     <strong style={{ color: "var(--wine)" }}>Aguardando</strong>
@@ -349,34 +359,64 @@ function RegistrosPage() {
           {/* 4. Latest stickers acquired */}
           <AccordionSection
             title="Últimas figurinhas adquiridas"
-            count={`${latestStickers.length} itens`}
+            count={`${purchaseStickerHistory.reduce((sum, order) => sum + order.stickerTotal, 0)} itens`}
             defaultOpen={false}
           >
-            <div className="registry-sticker-grid">
-              {latestStickers.map((sticker, index) => (
-                <article className="registry-sticker-row" key={`${sticker.number}-${index}`}>
-                  <div className={`registry-sticker-number ${sticker.kind === "rara" ? "rare-thumb" : ""}`}>
-                    {sticker.kind === "rara" ? (
-                      <>
-                        <Stamp number={sticker.number} owned={true} auto={true} cover={sticker.slug} />
-                        <AutographSeal author={sticker.author} />
-                      </>
-                    ) : (
-                      String(sticker.number).padStart(3, "0")
-                    )}
-                  </div>
-                  <div>
-                    <b>{sticker.name}</b>
-                    <span>
-                      {sticker.author || "Autoria a definir"} · {sticker.source}
-                    </span>
-                  </div>
-                  <small className={sticker.kind === "rara" ? "is-rare" : ""}>
-                    {sticker.kind}
-                  </small>
-                </article>
-              ))}
-            </div>
+            {purchaseStickerHistory.length === 0 ? (
+              <div className="empty">Nenhuma figurinha de compra foi recebida ainda.</div>
+            ) : (
+              <div className="registry-sticker-history">
+                {purchaseStickerHistory.map((order) => (
+                  <article className="registry-sticker-order" key={order.id}>
+                    <div className="registry-sticker-order-head">
+                      <b>Pedido #{order.id.replace("purchase-", "")}</b>
+                      <span>{formatStickerCount(order.stickerTotal)}</span>
+                    </div>
+                    <div className="registry-sticker-order-dates">
+                      <small>Compra: {order.date}</small>
+                      <small>Pagamento: {order.paymentConfirmedDate}</small>
+                    </div>
+
+                    {order.itemGroups.map((group) => (
+                      <div className="registry-sticker-item-group" key={group.item.id}>
+                        <div className="registry-sticker-item-head">
+                          <strong>{group.item.qty}x {group.item.name}</strong>
+                          <span>{formatStickerCount(group.stickerTotal)}</span>
+                        </div>
+
+                        {group.openedPacks.map((pack, packIndex) => (
+                          <div className="registry-pack-receipt" key={pack.id}>
+                            <div className="registry-pack-receipt-head">
+                              <b>{pack.title} #{packIndex + 1}</b>
+                              <small>Aberto em {pack.openedDate || pack.date}</small>
+                            </div>
+                            <ol className="registry-sticker-receipt-list">
+                              {pack.reveals.map((sticker, index) => (
+                                <li key={`${pack.id}-${sticker.number}-${index}`}>
+                                  <span>#{String(sticker.number).padStart(3, "0")} - {sticker.name || `Figurinha ${sticker.number}`}</span>
+                                  <small>{sticker.repeat ? "repetida" : "nova"}</small>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        ))}
+
+                        {group.directStickers.length > 0 && (
+                          <ol className="registry-sticker-receipt-list registry-direct-sticker-list">
+                            {group.directStickers.map((sticker, index) => (
+                              <li key={`${order.id}-${sticker.number}-${index}`}>
+                                <span>#{String(sticker.number).padStart(3, "0")} - {sticker.name}</span>
+                                <small>{sticker.kind}</small>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                      </div>
+                    ))}
+                  </article>
+                ))}
+              </div>
+            )}
           </AccordionSection>
         </>
       )}

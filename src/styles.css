@@ -4115,6 +4115,111 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   font-weight: 900;
 }
 
+.registry-sticker-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.registry-sticker-order {
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 12px;
+}
+
+.registry-sticker-order-head,
+.registry-sticker-order-dates,
+.registry-sticker-item-head,
+.registry-pack-receipt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.registry-sticker-order-head b,
+.registry-sticker-item-head strong,
+.registry-pack-receipt-head b {
+  color: var(--wine);
+  font-family: "Baloo 2", cursive;
+}
+
+.registry-sticker-order-head span,
+.registry-sticker-item-head span {
+  color: var(--magenta);
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.registry-sticker-order-dates {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-top: 2px;
+}
+
+.registry-sticker-order-dates small,
+.registry-pack-receipt-head small {
+  color: rgba(126, 23, 70, 0.62);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.registry-sticker-item-group {
+  margin-top: 10px;
+  border-radius: 12px;
+  background: rgba(255, 241, 247, 0.62);
+  padding: 10px;
+}
+
+.registry-pack-receipt {
+  margin-top: 8px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 8px;
+}
+
+.registry-sticker-receipt-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.registry-sticker-receipt-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  border-radius: 9px;
+  background: rgba(255, 241, 247, 0.76);
+  padding: 7px 8px;
+}
+
+.registry-sticker-receipt-list li span {
+  overflow: hidden;
+  color: var(--wine);
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registry-sticker-receipt-list li small {
+  color: var(--magenta);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.registry-direct-sticker-list {
+  margin-top: 8px;
+}
+
 .registry-open-btn {
   min-width: 76px;
   padding: 10px 12px;
@@ -4721,6 +4826,10 @@ html.theme-lilac .text-\[\#5c0d2b\] {
 
   .registry-stat b {
     font-size: 17px;
+  }
+
+  .registry-sticker-receipt-list {
+    grid-template-columns: 1fr;
   }
 }
 
