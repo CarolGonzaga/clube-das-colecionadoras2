@@ -5,7 +5,7 @@ export type SimPurchaseItem = {
   name: string;
   qty: number;
   price: number;
-  kind: "pack" | "single" | "rare";
+  kind: "pack" | "single" | "exclusive";
 };
 
 export type SimPurchaseRecord = {
@@ -83,18 +83,64 @@ function stickerToAcquired(sticker: Sticker, date: string, source: string, kind:
   };
 }
 
-function getAcquiredKind(sticker: Sticker, isRare: boolean): SimAcquiredSticker["kind"] {
-  if (isRare) return "rara";
-  if (sticker.number >= 320 && sticker.number <= 360) return "exclusiva";
+function getAcquiredKind(sticker: Sticker): SimAcquiredSticker["kind"] {
+  if (sticker.number >= 330 && sticker.number <= 360) return "exclusiva";
   return "comum";
 }
 
-function pickSticker(pool: Sticker[], usedNumbers: Set<number>) {
-  const available = pool.filter((sticker) => !usedNumbers.has(sticker.number));
-  const source = available.length > 0 ? available : pool;
-  const picked = source[Math.floor(Math.random() * source.length)];
-  if (picked) usedNumbers.add(picked.number);
-  return picked;
+/**
+ * Draw stickers for a 5-card pack from the loja pool (194–329).
+ * - 40% chance each slot is a duplicate from owned stickers (max 2 identical per pack).
+ * - When user owns >= 50% of the album, duplicate chance rises to 47%.
+ */
+function buildPackReveals(
+  lojaPool: Sticker[],
+  userStickers: UserSticker[],
+  albumTotal: number,
+  packInternalUsed: Set<number>,
+): RevealItem[] {
+  const ownedCount = userStickers.filter((us) => us.copies > 0).length;
+  const duplicateChance = ownedCount / albumTotal >= 0.5 ? 0.47 : 0.40;
+
+  const ownedInPool = lojaPool.filter((s) => userStickers.some((us) => us.sticker_number === s.number && us.copies > 0));
+  const unownedInPool = lojaPool.filter((s) => !userStickers.some((us) => us.sticker_number === s.number && us.copies > 0));
+
+  const reveals: RevealItem[] = [];
+  const duplicateCountInPack = new Map<number, number>();
+
+  for (let i = 0; i < 5; i++) {
+    let pick: Sticker | undefined;
+
+    const tryDuplicate = Math.random() < duplicateChance && ownedInPool.length > 0;
+
+    if (tryDuplicate) {
+      const validDuplicates = ownedInPool.filter((s) => (duplicateCountInPack.get(s.number) || 0) < 2);
+      if (validDuplicates.length > 0) {
+        pick = validDuplicates[Math.floor(Math.random() * validDuplicates.length)];
+        duplicateCountInPack.set(pick.number, (duplicateCountInPack.get(pick.number) || 0) + 1);
+      }
+    }
+
+    if (!pick) {
+      const available = unownedInPool.filter((s) => !packInternalUsed.has(s.number));
+      if (available.length > 0) {
+        pick = available[Math.floor(Math.random() * available.length)];
+        packInternalUsed.add(pick.number);
+      } else {
+        const fallback = lojaPool.filter((s) => !packInternalUsed.has(s.number));
+        pick = fallback.length > 0
+          ? fallback[Math.floor(Math.random() * fallback.length)]
+          : lojaPool[Math.floor(Math.random() * lojaPool.length)];
+        if (pick) packInternalUsed.add(pick.number);
+      }
+    }
+
+    if (pick) {
+      reveals.push(stickerToReveal(pick, userStickers, false));
+    }
+  }
+
+  return reveals;
 }
 
 export const purchaseStorage = {
@@ -121,14 +167,14 @@ export const purchaseStorage = {
             slug: item.slug,
             name: `Figurinha ${item.number}`,
             author: "Autoria a definir",
-            type: "sorteio",
+            type: "loja",
             cover_url: null,
           };
           return stickerToAcquired(
             sticker || fallbackSticker,
             nowStr,
             pack.title,
-            getAcquiredKind(sticker || fallbackSticker, item.isRare),
+            getAcquiredKind(sticker || fallbackSticker),
           );
         });
         return { ...pack, status: "opened" as const, openedDate: nowStr };
@@ -163,19 +209,25 @@ export const purchaseStorage = {
       minute: "2-digit",
     });
     const purchaseId = `purchase-${now.getTime()}`;
-    const commonPool = stickers.filter((sticker) => sticker.number >= 194 && sticker.number <= 360);
-    const rarePool = stickers.filter((sticker) => sticker.number >= 1 && sticker.number <= 20);
+
+    // Loja regular pool: 194–329 (excludes exclusives 330-360)
+    const lojaPool = stickers.filter((s) => s.number >= 194 && s.number <= 329);
+    const albumTotal = stickers.length;
+
     const packs: SimPackRecord[] = [];
     const acquired: SimAcquiredSticker[] = [];
-    const usedNumbers = new Set<number>();
+    const globalUsed = new Set<number>();
 
     items.forEach((item) => {
-      const packCount = item.kind === "pack" ? (item.id === "pack-combo" ? 10 * item.qty : item.qty) : 0;
+      const packCount = item.kind === "pack"
+        ? (item.id === "pack-combo" ? 10 * item.qty : item.qty)
+        : 0;
+
       for (let packIndex = 0; packIndex < packCount; packIndex += 1) {
-        const reveals = Array.from({ length: 5 }, () => {
-          const sticker = pickSticker(commonPool, usedNumbers) || commonPool[0];
-          return stickerToReveal(sticker, userStickers, false);
-        });
+        const packUsed = new Set<number>(globalUsed);
+        const reveals = buildPackReveals(lojaPool, userStickers, albumTotal, packUsed);
+        reveals.forEach((r) => globalUsed.add(r.number));
+
         packs.push({
           id: `${purchaseId}-pack-${packs.length + 1}`,
           title: item.id === "pack-combo" ? "Combo com 10 pacotes" : "Pacote com 5 figurinhas",
@@ -188,7 +240,14 @@ export const purchaseStorage = {
 
       if (item.kind === "single") {
         for (let i = 0; i < item.qty; i += 1) {
-          const sticker = pickSticker(commonPool, usedNumbers) || commonPool[0];
+          const packUsed = new Set<number>(globalUsed);
+          const unowned = lojaPool.filter(
+            (s) => !packUsed.has(s.number) && !userStickers.some((us) => us.sticker_number === s.number && us.copies > 0),
+          );
+          const pool = unowned.length > 0 ? unowned : lojaPool.filter((s) => !packUsed.has(s.number));
+          const sticker = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : lojaPool[0];
+          if (sticker) globalUsed.add(sticker.number);
+
           packs.push({
             id: `${purchaseId}-single-${i + 1}`,
             title: "Figurinha unitária sortida",
@@ -200,11 +259,12 @@ export const purchaseStorage = {
         }
       }
 
-      if (item.kind === "rare") {
-        const rareNumber = Number(item.id.replace("rare-", ""));
-        const sticker = rarePool.find((entry) => entry.number === rareNumber) || rarePool[0];
-        for (let i = 0; i < item.qty; i += 1) {
-          acquired.push(stickerToAcquired(sticker, date, "Rara individual", "rara"));
+      if (item.kind === "exclusive") {
+        // item.id format: "exclusive-NNN"
+        const exclusiveNumber = Number(item.id.replace("exclusive-", ""));
+        const sticker = stickers.find((s) => s.number === exclusiveNumber);
+        if (sticker) {
+          acquired.push(stickerToAcquired(sticker, date, "Exclusiva individual", "exclusiva"));
         }
       }
     });

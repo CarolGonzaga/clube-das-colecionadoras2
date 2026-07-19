@@ -1314,7 +1314,7 @@ export default function HomeClient({
 
           {/* Progress info */}
           <div className="pc-right">
-            <p className="pc-count">{ownedCount}/100 figurinhas</p>
+            <p className="pc-count">{ownedCount}/{albumTotal} figurinhas</p>
             <div className="pc-progress-row">
               <div className="bar">
                 <i style={{ width: `${pct}%` }} />

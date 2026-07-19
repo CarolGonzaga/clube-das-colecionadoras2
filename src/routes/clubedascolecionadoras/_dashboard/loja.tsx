@@ -17,7 +17,7 @@ type StoreItem = {
   price: number;
   image: string;
   tag: string;
-  section: "pacotes" | "unitarias" | "raras";
+  section: "pacotes" | "unitarias" | "raras" | "exclusivas";
   stickerNumber?: number;
 };
 
@@ -69,7 +69,7 @@ function LojaPage() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "pending">("idle");
-  const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias">(
+  const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias" | "exclusivas">(
     "todos",
   );
   const [rareSearch, setRareSearch] = useState("");
@@ -130,7 +130,7 @@ function LojaPage() {
       name: item.name,
       qty: item.qty,
       price: item.price,
-      kind: item.section === "raras" ? "rare" : item.id === "single-random" ? "single" : "pack",
+      kind: item.section === "exclusivas" ? "exclusive" : item.id === "single-random" ? "single" : "pack",
     }));
     purchaseStorage.createPurchase({
       userId: parentData.profile.id,
@@ -150,7 +150,7 @@ function LojaPage() {
       <div className="shop-title-row">
         <div>
           <h1 className="section-title">Loja</h1>
-          <p className="section-sub">Pacotes, unitarias e raras para completar sua colecao.</p>
+          <p className="section-sub">Pacotes, unitárias e figurinhas exclusivas para completar sua coleção.</p>
         </div>
         <button type="button" className="shop-cart-button" onClick={() => setCartOpen(true)}>
           <ShoppingBag size={18} />
@@ -163,6 +163,7 @@ function LojaPage() {
           ["todos", "Todos"],
           ["pacotes", "Pacotes"],
           ["unitarias", "Unitárias"],
+          ["exclusivas", "Exclusivas ✨"],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -175,11 +176,11 @@ function LojaPage() {
         ))}
       </section>
 
-      {featuredItems.length > 0 && (
+      {(storeFilter === "todos" || storeFilter === "pacotes" || storeFilter === "unitarias") && featuredItems.length > 0 && (
         <section className="shop-section">
           <div className="shop-section-head">
             <h2>Itens principais</h2>
-            <span>Pacotes e unitárias</span>
+            <span>Pacotes e unitárias da loja</span>
           </div>
           <div className="shop-grid featured">
             {featuredItems.map((item) => {
@@ -217,7 +218,71 @@ function LojaPage() {
         </section>
       )}
 
+      {/* Exclusive Stickers Section */}
+      {(storeFilter === "todos" || storeFilter === "exclusivas") && (() => {
+        const exclusiveStickers = parentData.stickers.filter((s) => s.number >= 330 && s.number <= 360);
+        const alreadyOwned = (num: number) =>
+          parentData.userStickers.some((us) => us.sticker_number === num && us.copies > 0);
+        return exclusiveStickers.length > 0 ? (
+          <section className="shop-section">
+            <div className="shop-section-head">
+              <h2><Sparkles size={16} style={{ display: "inline", verticalAlign: "middle" }} /> Exclusivas</h2>
+              <span>R$ 2,50 cada &middot; uma por usuária</span>
+            </div>
+            <div className="shop-grid featured">
+              {exclusiveStickers.map((sticker) => {
+                const itemId = `exclusive-${sticker.number}`;
+                const owned = alreadyOwned(sticker.number);
+                const storeItem: StoreItem = {
+                  id: itemId,
+                  name: sticker.name,
+                  description: sticker.author ? `Arte: ${sticker.author}` : "Figurinha exclusiva do clube.",
+                  price: 2.5,
+                  image: sticker.cover_url ? `/covers/${sticker.cover_url}` : "/verso-card.png",
+                  tag: "exclusiva",
+                  section: "exclusivas",
+                  stickerNumber: sticker.number,
+                };
 
+                return (
+                  <article className="shop-card" key={itemId} style={{ opacity: owned ? 0.55 : 1 }}>
+                    <div className="shop-card-media" style={{ position: "relative" }}>
+                      <img src={storeItem.image} alt={sticker.name} />
+                      <small style={{ background: "linear-gradient(135deg, #9c27b0, #e91e63)" }}>{storeItem.tag}</small>
+                      {owned && (
+                        <span style={{
+                          position: "absolute", top: 6, right: 6,
+                          background: "#22c55e", color: "#fff",
+                          fontSize: "9px", fontWeight: 800,
+                          padding: "2px 6px", borderRadius: "6px",
+                        }}>
+                          Já tenho
+                        </span>
+                      )}
+                    </div>
+                    <div className="shop-card-body">
+                      <h2>#{String(sticker.number).padStart(3, "0")} {sticker.name}</h2>
+                      <p>{storeItem.description}</p>
+                      <b>{formatMoney(storeItem.price)}</b>
+                    </div>
+                    <div className="shop-card-actions">
+                      <button
+                        type="button"
+                        className="btn shop-add-btn"
+                        disabled={owned || cart.some((c) => c.id === itemId)}
+                        onClick={() => addToCart(storeItem)}
+                        style={{ width: "100%" }}
+                      >
+                        {owned ? "Já adquirida" : cart.some((c) => c.id === itemId) ? "No carrinho" : "Adicionar"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null;
+      })()}
 
       {cartOpen && (
         <div className="modal-bg" onClick={(event) => event.target === event.currentTarget && setCartOpen(false)}>

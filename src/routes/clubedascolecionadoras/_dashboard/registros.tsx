@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
-import { CalendarDays, ChevronDown, ChevronUp, PackageOpen, Sparkles, Star, Coins, Gift } from "lucide-react";
+import { ChevronDown, ChevronUp, PackageOpen, Coins, Gift } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
@@ -76,7 +76,7 @@ function RegistrosPage() {
   const finishedOrders = useMemo(() => {
     return approvedPurchases.flatMap((purchase) => {
       const openedPacks = purchase.packs.filter((pack) => pack.status === "opened");
-      const directItems = purchase.items.filter((item) => item.kind === "rare");
+      const directItems = purchase.items.filter((item) => item.kind === "exclusive");
       return [
         ...openedPacks.map((pack) => ({
           id: pack.id,
@@ -84,7 +84,7 @@ function RegistrosPage() {
           purchaseDate: pack.date,
           redeemDate: pack.openedDate || pack.date,
           type: "Pacote Resgatado" as const,
-          detail: `${pack.reveals.length} figurinhas`,
+          stickerCount: pack.reveals.length,
         })),
         ...directItems.flatMap((item) => 
           Array.from({ length: item.qty }, (_, i) => ({
@@ -93,7 +93,7 @@ function RegistrosPage() {
             purchaseDate: purchase.date,
             redeemDate: purchase.date,
             type: "Figurinha Avulsa" as const,
-            detail: `Comprada diretamente`,
+            stickerCount: 1,
           }))
         )
       ];
@@ -125,9 +125,12 @@ function RegistrosPage() {
 
       {/* Code Redemption Input */}
       <section style={{ background: "#fff", padding: "16px", borderRadius: "16px", border: "1px solid var(--blush)", boxShadow: "0 4px 15px rgba(216, 27, 122, 0.03)", marginBottom: "20px" }}>
-        <h2 style={{ fontFamily: "Baloo 2", fontSize: "16px", color: "var(--wine)", margin: "0 0 10px", fontWeight: 800 }}>
-          Resgatar Código
+        <h2 style={{ fontFamily: "Baloo 2", fontSize: "16px", color: "var(--wine)", margin: "0 0 4px", fontWeight: 800 }}>
+          Códigos do Lendo Sáficos
         </h2>
+        <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "12px", lineHeight: 1.5 }}>
+          Os códigos são liberados pelo LS ao longo dos 5 dias do evento. Cada código pode ser usado uma única vez e tem o prazo de 24 horas para resgate. Fique de olho nas redes!
+        </p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -237,15 +240,12 @@ function RegistrosPage() {
                   <article className="registry-purchase-card" key={order.id} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px", padding: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                       <b style={{ color: "var(--wine)", fontFamily: "Baloo 2", fontSize: "14px" }}>{order.title}</b>
-                      <span className="done-pill" style={{ background: "rgba(216, 27, 122, 0.08)", color: "var(--magenta)", padding: "2px 8px", borderRadius: "8px", fontSize: "10px", fontWeight: "bold" }}>
-                        {order.type}
-                      </span>
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", fontSize: "11px", color: "rgba(75, 85, 99, 0.8)" }}>
                       <span><b>Compra:</b> {order.purchaseDate}</span>
                       <span><b>Resgate:</b> {order.redeemDate}</span>
                     </div>
-                    <span style={{ fontSize: "11px", color: "var(--magenta)" }}>{order.detail}</span>
+                    <span style={{ fontSize: "11px", color: "var(--magenta)" }}>Quantidade de figurinhas recebidas: {order.stickerCount}</span>
                   </article>
                 ))}
               </div>
@@ -311,30 +311,6 @@ function RegistrosPage() {
           </AccordionSection>
         </>
       )}
-
-      {/* Stats Dashboard at the bottom */}
-      <section className="registry-dashboard compact" style={{ marginTop: "24px" }}>
-        <article className="registry-stat">
-          <PackageOpen size={18} />
-          <span>pedidos</span>
-          <b>{purchases.length}</b>
-        </article>
-        <article className="registry-stat">
-          <Sparkles size={18} />
-          <span>comuns</span>
-          <b>{commonTotal}</b>
-        </article>
-        <article className="registry-stat">
-          <Star size={18} />
-          <span>raras</span>
-          <b>{rareTotal}</b>
-        </article>
-        <article className="registry-stat">
-          <CalendarDays size={18} />
-          <span>último</span>
-          <b>{lastPurchaseDate}</b>
-        </article>
-      </section>
 
       {exclusiveTotal > 0 && <span className="sr-only">{exclusiveTotal} exclusivas adquiridas</span>}
     </main>

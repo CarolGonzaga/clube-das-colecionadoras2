@@ -6608,3 +6608,32 @@ html.theme-lilac .trade-flow-search-btn svg {
   }
 }
 
+/* ── ALBUM MOBILE TEXT REDUCTION (15%) ───────────────────────────────── */
+@media (max-width: 540px) {
+  .album-list-info b {
+    font-size: 11px;
+  }
+  .album-list-info span {
+    font-size: 10px;
+  }
+  .album-list-info small,
+  .album-list-info em {
+    font-size: 9.5px;
+  }
+  .cell .num {
+    font-size: 8px;
+  }
+  .auto-badge,
+  .exclusive-badge {
+    width: 14px;
+    height: 14px;
+  }
+  .qty {
+    font-size: 8px !important;
+    width: 15px !important;
+    height: 15px !important;
+    min-width: 15px !important;
+  }
+}
+
+

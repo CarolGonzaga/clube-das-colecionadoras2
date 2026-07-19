@@ -1066,9 +1066,9 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
         </div>
       ) : (
         <>
-          {/* Modern Filter Dropdown */}
-          <div className="filter-dropdown-container" style={{ margin: "14px 0", display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--wine)", fontFamily: "Baloo 2" }}>Filtrar por:</span>
+          {/* Modern Filter Dropdown with counts */}
+          <div className="filter-dropdown-container" style={{ margin: "14px 0", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--wine)", fontFamily: "Baloo 2" }}>Filtrar:</span>
             <select
               value={filter}
               onChange={(e) => {
@@ -1090,12 +1090,24 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               }}
             >
               <option value="todas">Todas as figurinhas</option>
-              <option value="faltam">Faltam (não coladas)</option>
-              <option value="coladas">Coladas (adquiridas)</option>
+              <option value="faltam">Faltam</option>
+              <option value="coladas">Coladas</option>
               <option value="repetidas">Repetidas</option>
-              <option value="raras">Raras (assinadas)</option>
+              <option value="raras">Raras</option>
               <option value="exclusivas">Exclusivas</option>
             </select>
+            {/* Count badge shown outside dropdown */}
+            <span style={{
+              background: "var(--blush)",
+              color: "var(--magenta)",
+              fontWeight: 800,
+              fontSize: "12px",
+              padding: "4px 10px",
+              borderRadius: "10px",
+              fontFamily: "Baloo 2",
+            }}>
+              {filteredStickers.length} figurinha{filteredStickers.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
           {filter === "exclusivas" && (
