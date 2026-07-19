@@ -6,7 +6,7 @@ import { getMyOrder, reconcileMercadoPagoPayment } from "@/lib/checkout";
 
 const searchSchema = z.object({
   order: z.string().optional(),
-  payment_id: z.string().optional(),
+  payment_id: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/pagamento/sucesso")({
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/pagamen
 function PaymentSuccessPage() {
   const search = Route.useSearch();
   const [order, setOrder] = useState<any>(null);
+  const [confirmationError, setConfirmationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!search.order) return;
@@ -30,12 +31,15 @@ function PaymentSuccessPage() {
           await reconcileMercadoPagoPayment({
             data: { orderId: search.order!, paymentId: search.payment_id },
           });
+          if (alive) setConfirmationError(null);
         }
 
         const result = await getMyOrder({ data: { orderId: search.order! } });
         if (alive) setOrder(result.order);
-      } catch {
-        // Keep the friendly pending state.
+      } catch (error: any) {
+        if (alive && search.payment_id) {
+          setConfirmationError(error?.message || "Ainda não conseguimos confirmar automaticamente este pagamento.");
+        }
       }
     };
 
@@ -61,6 +65,11 @@ function PaymentSuccessPage() {
             ? "Suas figurinhas já foram adicionadas aos Registros para abertura."
             : "Estamos confirmando a transação com o Mercado Pago. Esta página atualiza automaticamente."}
         </p>
+        {!released && confirmationError && (
+          <p className="payment-result-warning">
+            Pagamento localizado, mas a liberação automática ainda não foi concluída. Tente atualizar em alguns segundos.
+          </p>
+        )}
         <Link to="/clubedascolecionadoras/registros" className="btn">
           <PackageOpen size={16} />
           Ver meus pedidos

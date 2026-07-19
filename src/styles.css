@@ -206,6 +206,14 @@
   line-height: 1.5;
 }
 
+.payment-result-card .payment-result-warning {
+  max-width: 620px;
+  border-radius: 14px;
+  background: rgba(255, 244, 196, 0.8);
+  color: #8a5a00;
+  padding: 10px 14px;
+}
+
 .payment-result-card .btn {
   display: inline-flex;
   align-items: center;
