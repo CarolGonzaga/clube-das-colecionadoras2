@@ -160,6 +160,41 @@ export const dbService = {
     return data as UserSticker[];
   },
 
+  async addPurchasedStickers(userId: string, stickerNumbers: number[]) {
+    const counts = stickerNumbers.reduce<Record<number, number>>((acc, number) => {
+      acc[number] = (acc[number] || 0) + 1;
+      return acc;
+    }, {});
+    const numbers = Object.keys(counts).map(Number);
+    if (numbers.length === 0) return [];
+
+    const { data: existing, error: readError } = await supabase
+      .from("user_stickers")
+      .select("sticker_number, copies, is_rare, first_unlocked_at")
+      .eq("user_id", userId)
+      .in("sticker_number", numbers);
+    if (readError) throw new Error(readError.message);
+
+    const existingByNumber = new Map((existing || []).map((row: any) => [row.sticker_number, row]));
+    const rows = numbers.map((number) => {
+      const current = existingByNumber.get(number);
+      return {
+        user_id: userId,
+        sticker_number: number,
+        copies: (current?.copies || 0) + counts[number],
+        is_rare: current?.is_rare || false,
+        first_unlocked_at: current?.first_unlocked_at || new Date().toISOString(),
+      };
+    });
+
+    const { data, error } = await supabase
+      .from("user_stickers")
+      .upsert(rows, { onConflict: "user_id,sticker_number" })
+      .select("*");
+    if (error) throw new Error(error.message);
+    return data as UserSticker[];
+  },
+
   async getPublicUserStickers(userId: string): Promise<UserSticker[]> {
     const { data, error } = await supabase.rpc("get_public_album", { profile_id: userId });
     if (error) throw new Error(error.message);

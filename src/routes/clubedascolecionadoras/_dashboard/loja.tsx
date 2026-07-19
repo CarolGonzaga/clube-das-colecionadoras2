@@ -1,10 +1,9 @@
 import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
-import { Minus, Plus, Search, ShoppingBag, Sparkles, Trash2, X } from "lucide-react";
+import { Minus, Plus, ShoppingBag, ShoppingCart, Sparkles, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { purchaseStorage, type SimPurchaseItem } from "@/lib/shopSimulation";
-import AutographSeal from "@/components/AutographSeal";
-import Stamp from "@/components/Stamp";
+import { dbService } from "@/lib/db";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
   component: LojaPage,
@@ -28,8 +27,8 @@ type CartLine = StoreItem & {
 const STORE_ITEMS: StoreItem[] = [
   {
     id: "pack-single",
-    name: "Pacote com 5 figurinhas",
-    description: "Pacote sortido para abrir na tela de pedidos.",
+    name: "1x Pacote",
+    description: "Pacote com 5 figurinhas sortidas - Você receberá 5 figurinhas sortidas entre 194 e 319",
     price: 2.5,
     image: "/frames/1.webp",
     tag: "pacote",
@@ -37,8 +36,8 @@ const STORE_ITEMS: StoreItem[] = [
   },
   {
     id: "pack-combo",
-    name: "Combo com 10 pacotes",
-    description: "Economia para completar o álbum mais rápido.",
+    name: "10x Pacotes",
+    description: "Pacote com 50 figurinhas sortidas entre 194 e 319",
     price: 22.5,
     image: "/frames/1.webp",
     tag: "combo",
@@ -46,16 +45,14 @@ const STORE_ITEMS: StoreItem[] = [
   },
   {
     id: "single-random",
-    name: "Figurinha unitária sortida",
-    description: "Uma figurinha comum sorteada automaticamente.",
+    name: "1x Figurinha unitária sortida",
+    description: "1x figurinha sortida entre 194 e 319",
     price: 1,
     image: "/verso-card.png",
     tag: "unitaria",
     section: "unitarias",
   },
 ];
-
-const RARE_ITEMS: StoreItem[] = [];
 
 function formatMoney(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -72,7 +69,6 @@ function LojaPage() {
   const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias" | "exclusivas">(
     "todos",
   );
-  const [rareSearch, setRareSearch] = useState("");
 
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -82,7 +78,6 @@ function LojaPage() {
   const featuredItems = STORE_ITEMS.filter(
     (item) => storeFilter === "todos" || item.section === storeFilter,
   );
-  const rareItems: StoreItem[] = [];
 
   const getQty = (id: string) => quantities[id] || 1;
 
@@ -119,30 +114,40 @@ function LojaPage() {
     setCart((current) => current.filter((item) => item.id !== id));
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
       ui.toast("Adicione um item antes de finalizar.");
       return;
     }
     setCheckoutStatus("pending");
-    const items: SimPurchaseItem[] = cart.map((item) => ({
-      id: item.id,
-      name: item.name,
-      qty: item.qty,
-      price: item.price,
-      kind: item.section === "exclusivas" ? "exclusive" : item.id === "single-random" ? "single" : "pack",
-    }));
-    purchaseStorage.createPurchase({
-      userId: parentData.profile.id,
-      items,
-      stickers: parentData.stickers,
-      userStickers: parentData.userStickers,
-    });
-    setCart([]);
-    setCartOpen(false);
-    setCheckoutStatus("idle");
-    ui.toast("Compra simulada aprovada. Itens adicionados em Registros.");
-    router.navigate({ to: "/clubedascolecionadoras/registros" });
+    try {
+      const items: SimPurchaseItem[] = cart.map((item) => ({
+        id: item.id,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        kind: item.section === "exclusivas" ? "exclusive" : item.id === "single-random" ? "single" : "pack",
+      }));
+      const purchase = purchaseStorage.createPurchase({
+        userId: parentData.profile.id,
+        items,
+        stickers: parentData.stickers,
+        userStickers: parentData.userStickers,
+      });
+      const directStickerNumbers = purchase.acquired.map((sticker) => sticker.number);
+      if (directStickerNumbers.length > 0) {
+        await dbService.addPurchasedStickers(parentData.profile.id, directStickerNumbers);
+      }
+      setCart([]);
+      setCartOpen(false);
+      ui.toast("Compra simulada aprovada. Itens adicionados em Pedidos.");
+      await router.invalidate();
+      router.navigate({ to: "/clubedascolecionadoras/registros" });
+    } catch (error: any) {
+      ui.toast(error?.message || "Erro ao registrar a compra.");
+    } finally {
+      setCheckoutStatus("idle");
+    }
   };
 
   return (
@@ -228,6 +233,7 @@ function LojaPage() {
                       </button>
                     </div>
                     <button type="button" className="btn shop-add-btn" onClick={() => addToCart(item)}>
+                      <ShoppingCart size={15} />
                       Adicionar
                     </button>
                   </div>
@@ -240,23 +246,23 @@ function LojaPage() {
 
       {/* Exclusive Stickers Section */}
       {(storeFilter === "todos" || storeFilter === "exclusivas") && (() => {
-        const exclusiveStickers = parentData.stickers.filter((s) => s.number >= 330 && s.number <= 360);
+        const exclusiveStickers = parentData.stickers.filter((s) => s.number >= 320 && s.number <= 360);
         const alreadyOwned = (num: number) =>
           parentData.userStickers.some((us) => us.sticker_number === num && us.copies > 0);
         return exclusiveStickers.length > 0 ? (
           <section className="shop-section">
             <div className="shop-section-head">
               <h2><Sparkles size={16} style={{ display: "inline", verticalAlign: "middle" }} /> Exclusivas</h2>
-              <span>R$ 2,50 cada &middot; uma por usuária</span>
+              <span>Somente uma unidade por usuário.</span>
             </div>
-            <div className="shop-grid featured">
+            <div className="shop-grid featured exclusive-shop-grid">
               {exclusiveStickers.map((sticker) => {
                 const itemId = `exclusive-${sticker.number}`;
                 const owned = alreadyOwned(sticker.number);
                 const storeItem: StoreItem = {
                   id: itemId,
                   name: sticker.name,
-                  description: sticker.author ? `Arte: ${sticker.author}` : "Figurinha exclusiva do clube.",
+                  description: sticker.author || "Autoria a definir",
                   price: 2.5,
                   image: sticker.cover_url ? `/covers/${sticker.cover_url}` : "/verso-card.png",
                   tag: "exclusiva",
@@ -266,24 +272,10 @@ function LojaPage() {
 
                 return (
                   <article className="shop-card exclusive-shop-card" key={itemId} style={{ opacity: owned ? 0.65 : 1 }}>
-                    {/* Full-bleed cover image — Amazon ebook style */}
-                    <div style={{
-                      position: "relative",
-                      width: "100%",
-                      aspectRatio: "2/3",
-                      overflow: "hidden",
-                      flexShrink: 0,
-                    }}>
+                    <div className="exclusive-shop-cover">
                       <img
                         src={storeItem.image}
                         alt={sticker.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          objectPosition: "center top",
-                          display: "block",
-                        }}
                       />
                       {owned && (
                         <span style={{
@@ -299,7 +291,10 @@ function LojaPage() {
                     </div>
                     <div className="shop-card-body">
                       <h2 style={{ fontSize: "13px" }}>#{String(sticker.number).padStart(3, "0")} {sticker.name}</h2>
-                      <p>{storeItem.description}</p>
+                      <p className="exclusive-credit-line">
+                        <span>{storeItem.description}</span>
+                        <span>{sticker.ilustrator ? `arte: ${sticker.ilustrator}` : "arte: a definir"}</span>
+                      </p>
                       <b>{formatMoney(storeItem.price)}</b>
                     </div>
                     <div className="shop-card-actions">
@@ -310,6 +305,7 @@ function LojaPage() {
                         onClick={() => addToCart(storeItem)}
                         style={{ width: "100%" }}
                       >
+                        {!owned && !cart.some((c) => c.id === itemId) && <ShoppingCart size={15} />}
                         {owned ? "Já adquirida" : cart.some((c) => c.id === itemId) ? "No carrinho" : "Adicionar"}
                       </button>
                     </div>

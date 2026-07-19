@@ -33,6 +33,7 @@ export type SimAcquiredSticker = {
   slug: string;
   name: string;
   author: string | null;
+  ilustrator?: string | null;
   kind: "comum" | "rara" | "exclusiva";
   date: string;
   source: string;
@@ -77,6 +78,7 @@ function stickerToAcquired(sticker: Sticker, date: string, source: string, kind:
     slug: sticker.slug,
     name: sticker.name,
     author: sticker.author,
+    ilustrator: sticker.ilustrator || null,
     kind,
     date,
     source,
@@ -84,7 +86,7 @@ function stickerToAcquired(sticker: Sticker, date: string, source: string, kind:
 }
 
 function getAcquiredKind(sticker: Sticker): SimAcquiredSticker["kind"] {
-  if (sticker.number >= 330 && sticker.number <= 360) return "exclusiva";
+  if (sticker.number >= 320 && sticker.number <= 360) return "exclusiva";
   return "comum";
 }
 
@@ -211,7 +213,7 @@ export const purchaseStorage = {
     const purchaseId = `purchase-${now.getTime()}`;
 
     // Loja regular pool: 194–329 (excludes exclusives 330-360)
-    const lojaPool = stickers.filter((s) => s.number >= 194 && s.number <= 329);
+    const lojaPool = stickers.filter((s) => s.number >= 194 && s.number <= 319);
     const albumTotal = stickers.length;
 
     const packs: SimPackRecord[] = [];
@@ -230,7 +232,7 @@ export const purchaseStorage = {
 
         packs.push({
           id: `${purchaseId}-pack-${packs.length + 1}`,
-          title: item.id === "pack-combo" ? "Combo com 10 pacotes" : "Pacote com 5 figurinhas",
+          title: item.id === "pack-combo" ? "10x Pacotes" : "1x Pacote",
           date,
           status: "pending",
           sourcePurchaseId: purchaseId,
@@ -250,7 +252,7 @@ export const purchaseStorage = {
 
           packs.push({
             id: `${purchaseId}-single-${i + 1}`,
-            title: "Figurinha unitária sortida",
+            title: "1x Figurinha unitária sortida",
             date,
             status: "pending",
             sourcePurchaseId: purchaseId,

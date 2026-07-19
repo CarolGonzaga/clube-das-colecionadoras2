@@ -7,7 +7,7 @@ alter table public.stickers
 update public.stickers
 set category = case
   when number between 1 and 20 then 'quiz'
-  when number between 330 and 360 then 'exclusiva'
+  when number between 320 and 360 then 'exclusiva'
   else 'comum'
 end
 where category is null;
@@ -17,13 +17,13 @@ select
   n,
   'sticker-' || n::text,
   case
-    when n between 101 and 329 then 'Figurinha comum ' || n::text
-    when n between 330 and 360 then 'Figurinha exclusiva ' || n::text
+    when n between 101 and 319 then 'Figurinha comum ' || n::text
+    when n between 320 and 360 then 'Figurinha exclusiva ' || n::text
   end,
   'Autoria a definir',
-  case when n between 330 and 360 then 'frase' else 'sorteio' end,
+  case when n between 320 and 360 then 'exclusiva' else 'sorteio' end,
   null,
-  case when n between 330 and 360 then 'exclusiva' else 'comum' end
+  case when n between 320 and 360 then 'exclusiva' else 'comum' end
 from generate_series(101, 360) as n
 on conflict (number) do update
 set category = excluded.category,

@@ -5,7 +5,7 @@ export const TOTAL_ALBUM_STICKERS = 360;
 export function getStickerCategory(stickerOrNumber: Sticker | number) {
   const number = typeof stickerOrNumber === "number" ? stickerOrNumber : stickerOrNumber.number;
   if (number >= 1 && number <= 20) return "quiz";
-  if (number >= 330 && number <= 360) return "exclusiva";
+  if (number >= 320 && number <= 360) return "exclusiva";
   return "comum";
 }
 

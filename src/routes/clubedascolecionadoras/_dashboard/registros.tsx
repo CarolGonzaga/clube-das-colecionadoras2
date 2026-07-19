@@ -7,6 +7,7 @@ import { purchaseStorage, type SimPurchaseRecord } from "@/lib/shopSimulation";
 import { redeemCodeAction } from "@/lib/actions";
 import AutographSeal from "@/components/AutographSeal";
 import Stamp from "@/components/Stamp";
+import { dbService } from "@/lib/db";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/registros")({
   component: RegistrosPage,
@@ -100,13 +101,21 @@ function RegistrosPage() {
     });
   }, [approvedPurchases]);
 
-  const handleOpenPack = (packId: string) => {
+  const handleOpenPack = async (packId: string) => {
     const pack = pendingPacks.find((item) => item.id === packId);
     if (!pack) return;
-    purchaseStorage.markPackOpened(parentData.profile.id, pack.id, parentData.stickers);
-    refreshPurchases();
-    ui.showReveals(pack.reveals, pack.title);
-    router.invalidate();
+    try {
+      await dbService.addPurchasedStickers(
+        parentData.profile.id,
+        pack.reveals.map((item) => item.number),
+      );
+      purchaseStorage.markPackOpened(parentData.profile.id, pack.id, parentData.stickers);
+      refreshPurchases();
+      ui.showReveals(pack.reveals, pack.title);
+      router.invalidate();
+    } catch (error: any) {
+      ui.toast(error?.message || "Erro ao registrar as figurinhas do pacote.");
+    }
   };
 
   return (
