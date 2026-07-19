@@ -83,7 +83,7 @@ export async function handleMercadoPagoWebhook(request: Request) {
     !verifyMercadoPagoSignature({
       xSignature,
       xRequestId,
-      dataId: signatureDataId,
+      dataId: paymentId,
       secret: webhookSecret,
     })
   ) {
