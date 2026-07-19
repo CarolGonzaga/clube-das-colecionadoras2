@@ -1717,6 +1717,26 @@ export default function HomeClient({
         </div>
       </div>
 
+      <div className="mx-4 mb-4">
+        <a
+          href="http://amzn.to/3SKQPnL"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Abrir oferta em uma nova aba"
+          className="block overflow-hidden rounded-2xl shadow-sm transition-transform active:scale-[0.99]"
+        >
+          <picture>
+            <source media="(min-width: 768px)" srcSet="/banner/130x1080.jpg" />
+            <img
+              src="/banner/130x600.jpg"
+              alt="Banner promocional"
+              className="block w-full h-auto"
+              loading="lazy"
+            />
+          </picture>
+        </a>
+      </div>
+
       {/* Poster Canvas Modal */}
       {showPoster && (
         <PosterModal
