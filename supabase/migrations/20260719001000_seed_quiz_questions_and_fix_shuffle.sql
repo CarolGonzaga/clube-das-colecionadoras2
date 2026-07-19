@@ -1,6 +1,6 @@
--- Migration: Seed all 40 quiz questions and fix option shuffle hash consistency in answer_quiz_legacy
+-- Migration: Complete Quiz Sync (All 40 questions + matching shuffle for get_quiz_questions_for_today and answer_quiz_legacy)
 
--- 1. Upsert all 40 official quiz questions (matching SEED_QUESTIONS from V1/V2 seeds.ts)
+-- 1. Seed / Sync all 40 official quiz questions matching V1/V2 seeds.ts
 INSERT INTO public.quiz_questions (sticker_number, q_index, text, options, correct_index)
 VALUES
   (1, 0, 'Em um romance de G.B. Baldassari, qual acontecimento coloca Abby e Eva em uma confusão familiar inesperada?', ARRAY['Uma advogada precisa defender uma lutadora acusada injustamente', 'Uma menina procura a mãe biológica e aproxima duas mulheres com vidas muito diferentes', 'Uma campeã de boxe reencontra uma rival do passado dentro de uma academia', 'Uma jornalista investiga o desaparecimento de uma criança adotada'], 1),
@@ -38,7 +38,7 @@ VALUES
   (17, 0, 'No romance de Yasmim Mahmud Kader, qual segredo cerca a relação entre Gabriela e Sky?', ARRAY['Gabriela não sabe que Céu também é Sky, a e-girl por quem ela se apaixonou online', 'Sky finge ser uma estudante universitária quando na verdade já se formou', 'Gabriela esconde que escreve resenhas anônimas sobre os vídeos de Sky', 'Sky vive em outra cidade e finge morar no mesmo bairro que Gabriela'], 0),
   (17, 1, 'Uma garota cria um disfarce online para fugir da timidez e acaba se apaixonando pela vizinha. Qual o nome do livro?', ARRAY['Amor por Telas', 'Não é só de amor que eu sei falar', 'Identidade Secreta', 'Vozes da Internet'], 1),
   (18, 0, 'Antes de se envolver com Eleanor, qual dilema pessoal deixa Natalie sobrecarregada?', ARRAY['Ela tenta esconder dos pais que desistiu da faculdade de medicina', 'Ela faz hora extra em um sábado tentando evitar uma possível demissão', 'Ela descobre que a empresa onde trabalha vai fechar as portas', 'Ela disputa uma promoção direta com sua melhor amiga'], 1),
-  (18, 1, 'Um romance entre Natalie e Eleanor, um passado guardado a sete chaves e um reencontro no litoral. Qual o nome do livro?', ARRAY['Cartas do Passado', 'Marés da Vida', 'Os segredos que contei ao oceano', 'Litoral do Desejo'], 2),
+  (18, 1, 'Um romance entre Natalie and Eleanor, um passado guardado a sete chaves e um reencontro no litoral. Qual o nome do livro?', ARRAY['Cartas do Passado', 'Marés da Vida', 'Os segredos que contei ao oceano', 'Litoral do Desejo'], 2),
   (19, 0, 'No livro de Fernanda V., qual é a relação de Aurora com os irmãos mais novos de Helena?', ARRAY['Aurora é vizinha e cuida deles aos fins de semana', 'Aurora é professora deles', 'Aurora é a médica pediatra responsável pelo tratamento deles', 'Aurora é a tutora de artes da escola deles'], 1),
   (19, 1, 'Uma mulher metódica, uma professora expansiva, crianças adoráveis e uma convivência inesperada. Qual o nome do livro?', ARRAY['Métodos do Amor', 'A Professora e a Vizinha', 'Família por Escolha', 'Opostos Complementares'], 3),
   (20, 0, 'Na fantasia gótica de Giu Domingues, como os demônios são invocados no Conservatório?', ARRAY['Por meio do canto das sopranos', 'Através de um espelho antigo escondido na biblioteca', 'Com a leitura de partituras proibidas no porão', 'Ao tocar um órgão de tubos feito de ossos'], 0),
@@ -49,9 +49,258 @@ ON CONFLICT (sticker_number, q_index) DO UPDATE SET
   correct_index = EXCLUDED.correct_index;
 
 
--- 2. Update answer_quiz_legacy to retrieve current_day directly from quiz_attempts
---    Guaranteeing that option shuffle in answer_quiz_legacy matches get_quiz_questions_for_today
+-- 2. get_quiz_questions_for_today: Fetches session questions and applies deterministic option shuffle
+create or replace function public.get_quiz_questions_for_today()
+returns jsonb as $$
+declare
+  user_id_param uuid;
+  current_day text;
+  attempt_row public.quiz_attempts%rowtype;
+  new_dia_atual integer;
+  erradas_ids integer[];
+  novas_ids integer[];
+  final_pool integer[];
+  q_item jsonb;
+  questions_list jsonb := '[]'::jsonb;
+  temp_sticker_number integer;
+  temp_slug text;
+  temp_name text;
+  temp_author text;
+  temp_q_index integer;
+  temp_text text;
+  temp_options text[];
+  temp_correct_index integer;
+  temp_errors integer;
+  temp_answered boolean;
+  temp_correct boolean;
+  temp_chosen_index integer;
+  temp_hide_indices integer[];
+  i integer;
+begin
+  user_id_param := auth.uid();
+  if user_id_param is null then
+    raise exception 'Unauthorized';
+  end if;
 
+  if not exists (select 1 from public.profiles where id = user_id_param) then
+    insert into public.profiles (id, nick, avatar_emoji, mural_opt_in)
+    values (user_id_param, 'Colecionadora', '📷', false);
+  end if;
+
+  current_day := to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD');
+
+  select * into attempt_row from public.quiz_attempts where user_id = user_id_param;
+
+  if not found then
+    select array_agg(sticker_number) into final_pool from (
+      select number as sticker_number
+      from (values 
+        (1), (2), (3), (4), (5), (6), (7), (8), (9), (10),
+        (11), (12), (13), (14), (15), (16), (17), (18), (19), (20)
+      ) as all_q(number)
+      where not exists (
+        select 1 from public.user_stickers us where us.user_id = user_id_param and us.sticker_number = all_q.number and us.copies > 0
+      )
+      order by random() limit 4
+    ) q;
+
+    if final_pool is null then
+      final_pool := '{}'::integer[];
+    end if;
+
+    insert into public.quiz_attempts (user_id, ultimo_dia_acesso, tentativas_hoje_count, dia_atual, perguntas_pendentes)
+    values (user_id_param, current_day, 0, 1, final_pool)
+    returning * into attempt_row;
+    
+  elsif attempt_row.ultimo_dia_acesso <> current_day then
+    new_dia_atual := attempt_row.dia_atual + 1;
+    
+    select array_agg(distinct sticker_number) into erradas_ids from (
+      select qa.sticker_number
+      from public.quiz_answers qa
+      where qa.user_id = user_id_param 
+        and qa.correct = false
+        and not exists (
+          select 1 from public.user_stickers us where us.user_id = user_id_param and us.sticker_number = qa.sticker_number and us.copies > 0
+        )
+      order by qa.sticker_number asc
+    ) q;
+
+    if erradas_ids is null then
+      erradas_ids := '{}'::integer[];
+    end if;
+
+    select array_agg(sticker_number) into novas_ids from (
+      select number as sticker_number
+      from (values 
+        (1), (2), (3), (4), (5), (6), (7), (8), (9), (10),
+        (11), (12), (13), (14), (15), (16), (17), (18), (19), (20)
+      ) as all_q(number)
+      where not exists (
+        select 1 from public.user_stickers us where us.user_id = user_id_param and us.sticker_number = all_q.number and us.copies > 0
+      )
+      and not (all_q.number = any(erradas_ids))
+      order by random()
+    ) q;
+
+    if novas_ids is null then
+      novas_ids := '{}'::integer[];
+    end if;
+
+    final_pool := (erradas_ids || novas_ids)[1:4];
+
+    update public.quiz_attempts
+    set ultimo_dia_acesso = current_day,
+        tentativas_hoje_count = 0,
+        dia_atual = new_dia_atual,
+        perguntas_pendentes = final_pool
+    where user_id = user_id_param
+    returning * into attempt_row;
+  end if;
+
+  if array_length(attempt_row.perguntas_pendentes, 1) > 0 then
+    for i in 1 .. array_upper(attempt_row.perguntas_pendentes, 1) loop
+      temp_sticker_number := attempt_row.perguntas_pendentes[i];
+      
+      temp_q_index := (temp_sticker_number + attempt_row.dia_atual) % 2;
+
+      select text, options, correct_index into temp_text, temp_options, temp_correct_index
+      from public.quiz_questions
+      where sticker_number = temp_sticker_number and q_index = temp_q_index;
+
+      if temp_text is null then
+        continue;
+      end if;
+
+      -- Deterministic shuffle matching answer_quiz_legacy
+      declare
+        h integer;
+        perm0 integer; perm1 integer; perm2 integer; perm3 integer;
+        tmp_int integer;
+        shuffled_options text[];
+      begin
+        h := abs(hashtext(user_id_param::text || temp_sticker_number::text || attempt_row.ultimo_dia_acesso));
+
+        perm0 := 0; perm1 := 1; perm2 := 2; perm3 := 3;
+
+        case (h % 4)
+          when 0 then tmp_int := perm0; perm0 := perm3; perm3 := tmp_int;
+          when 1 then tmp_int := perm1; perm1 := perm3; perm3 := tmp_int;
+          when 2 then tmp_int := perm2; perm2 := perm3; perm3 := tmp_int;
+          else null;
+        end case;
+        h := h / 4;
+        case (h % 3)
+          when 0 then tmp_int := perm0; perm0 := perm2; perm2 := tmp_int;
+          when 1 then tmp_int := perm1; perm1 := perm2; perm2 := tmp_int;
+          else null;
+        end case;
+        h := h / 3;
+        if (h % 2) = 0 then
+          tmp_int := perm0; perm0 := perm1; perm1 := tmp_int;
+        end if;
+
+        shuffled_options := array[
+          temp_options[perm0 + 1],
+          temp_options[perm1 + 1],
+          temp_options[perm2 + 1],
+          temp_options[perm3 + 1]
+        ];
+
+        temp_options := shuffled_options;
+      end;
+
+      select 
+        case temp_sticker_number
+          when 1 then 'Amor Fati' when 2 then 'Cupidos não se apaixonam' when 3 then 'Eu, minha crush e minha irmã'
+          when 4 then 'Liz Flores é uma farsa' when 5 then 'Segundo Clichê (Frutaverso Livro 1)' when 6 then 'Desejos Ocultos das Violetas'
+          when 7 then 'O Casamento' when 8 then 'Como (não) se apaixonar' when 9 then 'Ela é mais do que você imagina'
+          when 10 then '(Não) conta pra ela' when 11 then 'Opostas em Guerra' when 12 then 'Em todas as gotas de chuva'
+          when 13 then 'Colegas de Quarto' when 14 then 'Imensurável: Uma nova chance para amar' when 15 then 'Georgia Rose: Segredos de Florença'
+          when 16 then 'A Garota do Topo' when 17 then 'Não é só de amor que eu sei falar' when 18 then 'Os Segredos Que Contei Ao Oceano'
+          when 19 then 'Opostos Complementares (Opostos Co. Livro 1)' when 20 then 'Canção dos Ossos'
+          else 'Sticker Quiz'
+        end into temp_name;
+
+      select 
+        case temp_sticker_number
+          when 1 then 'G.B. Baldassari' when 2 then 'Clara Alves' when 3 then 'Bia Crespo'
+          when 4 then 'Victoria Mendes' when 5 then 'Line Cunha' when 6 then 'Mariana Rosa'
+          when 7 then 'Ju Mesquita' when 8 then 'D. Barreto' when 9 then 'V.S. Vilela'
+          when 10 then 'Karoline Mandu' when 11 then 'Sarah Oliveira' when 12 then 'Englantine'
+          when 13 then 'Marina Basso' when 14 then 'Zey Shelsea' when 15 then 'Victoria Moon'
+          when 16 then 'Helena Nolasco' when 17 then 'Yasmim Mahmud Kader' when 18 then 'Camilla Giordanno'
+          when 19 then 'Fernanda V.' when 20 then 'Giu Domingues'
+          else 'Autora'
+        end into temp_author;
+
+      select 
+        case temp_sticker_number
+          when 1 then 'amor-fati' when 2 then 'cupidos-nao-se-apaixonam' when 3 then 'eu-minha-crush-e-minha-irma'
+          when 4 then 'liz-flores-e-uma-farsa' when 5 then 'segundo-cliche' when 6 then 'desejos-ocultos-das-violetas'
+          when 7 then 'o-casamento' when 8 then 'como-nao-se-apaixonar' when 9 then 'ela-e-mais-do-que-voce-imagina'
+          when 10 then 'nao-conta-pra-ela' when 11 then 'opostas-em-guerra' when 12 then 'em-todas-as-gotas-de-chuva'
+          when 13 then 'colegas-de-quarto' when 14 then 'imensuravel-uma-nova-chance-para-amar' when 15 then 'georgia-rose'
+          when 16 then 'a-garota-do-topo' when 17 then 'nao-e-so-de-amor-que-eu-sei-falar' when 18 then 'os-segredos-que-contei-ao-oceano'
+          when 19 then 'opostos-complementares' when 20 then 'cancao-dos-ossos'
+          else 'slug'
+        end into temp_slug;
+
+      select count(*) into temp_errors
+      from public.quiz_answers
+      where user_id = user_id_param and sticker_number = temp_sticker_number and correct = false;
+
+      select exists (
+        select 1 from public.quiz_answers
+        where user_id = user_id_param
+          and sticker_number = temp_sticker_number
+          and q_index = temp_q_index
+          and attempt_day = attempt_row.ultimo_dia_acesso::date
+      ), correct, chosen_index
+      into temp_answered, temp_correct, temp_chosen_index
+      from public.quiz_answers
+      where user_id = user_id_param
+        and sticker_number = temp_sticker_number
+        and q_index = temp_q_index
+        and attempt_day = attempt_row.ultimo_dia_acesso::date
+      order by answered_at desc limit 1;
+
+      temp_answered := coalesce(temp_answered, false);
+
+      q_item := jsonb_build_object(
+        'sticker_number', temp_sticker_number,
+        'slug', temp_slug,
+        'title', temp_name,
+        'author', temp_author,
+        'q_index', temp_q_index,
+        'text', temp_text,
+        'options', temp_options,
+        'errors', temp_errors,
+        'answered', temp_answered,
+        'correct', temp_correct,
+        'chosenIndex', temp_chosen_index,
+        'options_to_hide', '[]'::jsonb
+      );
+
+      questions_list := questions_list || jsonb_build_array(q_item);
+    end loop;
+  end if;
+
+  select count(*) into i
+  from public.user_stickers us
+  where us.user_id = user_id_param and us.sticker_number between 1 and 20 and us.copies > 0;
+
+  return jsonb_build_object(
+    'diaAtual', attempt_row.dia_atual,
+    'tentativasHojeCount', attempt_row.tentativas_hoje_count,
+    'perguntasRespondidasCorretasCount', i,
+    'questions', questions_list
+  );
+end;
+$$ language plpgsql security definer;
+
+
+-- 3. answer_quiz_legacy: Validates user answer against the exact same option shuffle
 create or replace function public.answer_quiz_legacy(
   sticker_number_param integer,
   q_index_param integer,
@@ -78,7 +327,6 @@ begin
     raise exception 'Unauthorized';
   end if;
 
-  -- Derive session current_day directly from public.quiz_attempts (ensures 100% hash shuffle consistency)
   select ultimo_dia_acesso, tentativas_hoje_count
   into current_day, attempt_count
   from public.quiz_attempts
@@ -93,7 +341,6 @@ begin
     raise exception 'Você já esgotou suas 4 tentativas de hoje! Volte amanhã ⏳';
   end if;
 
-  -- Verify if question is in today's pending session
   if not exists (
     select 1 from public.quiz_attempts
     where user_id = user_id_param and sticker_number_param = any(perguntas_pendentes)
@@ -101,7 +348,6 @@ begin
     raise exception 'Esta pergunta não está disponível para ser respondida hoje.';
   end if;
 
-  -- Check if already answered in this session
   if exists (
     select 1 from public.quiz_answers
     where user_id = user_id_param
@@ -112,7 +358,6 @@ begin
     raise exception 'Você já respondeu a esta pergunta hoje.';
   end if;
 
-  -- Retrieve correct index from secure quiz_questions table
   select correct_index into correct_idx_val
   from public.quiz_questions
   where sticker_number = sticker_number_param and q_index = q_index_param;
@@ -121,7 +366,7 @@ begin
     raise exception 'Pergunta não encontrada.';
   end if;
 
-  -- Apply same deterministic shuffle as get_quiz_questions_for_today
+  -- Apply 100% identical deterministic shuffle as get_quiz_questions_for_today
   declare
     h integer;
     perm0 integer; perm1 integer; perm2 integer; perm3 integer;
@@ -157,12 +402,10 @@ begin
     is_correct := (chosen_index_param <> -1 and chosen_index_param = shuffled_correct_index);
   end;
 
-  -- Update attempts count
   update public.quiz_attempts
   set tentativas_hoje_count = tentativas_hoje_count + 1
   where user_id = user_id_param;
 
-  -- Record user answer
   insert into public.quiz_answers (
     user_id,
     sticker_number,
@@ -193,10 +436,8 @@ begin
     end into target_slug;
 
   if is_correct then
-    -- Roll for 40% chance of Rare
     new_is_rare := (random() < 0.40);
 
-    -- Grant sticker in inventory
     insert into public.user_stickers (user_id, sticker_number, copies, is_rare, first_unlocked_at)
     values (user_id_param, sticker_number_param, 1, new_is_rare, now())
     on conflict (user_id, sticker_number) do update set 
@@ -214,7 +455,6 @@ begin
     );
     reveals := reveals || reveal_item;
 
-    -- Trigger Milestone check
     progression_reveals := public.check_and_grant_rewards(user_id_param);
     reveals := reveals || progression_reveals;
 
@@ -234,3 +474,26 @@ begin
   end if;
 end;
 $$ language plpgsql security definer;
+
+
+-- 4. answer_quiz wrapper and permissions
+create or replace function public.answer_quiz(
+  sticker_number_param integer,
+  q_index_param integer,
+  chosen_index_param integer
+)
+returns jsonb language plpgsql security definer set search_path=public as $$
+declare uid uuid:=auth.uid(); deadline timestamptz; result jsonb;
+begin
+  if uid is null then raise exception 'Unauthorized'; end if;
+  select expires_at into deadline from public.quiz_question_timers where user_id=uid and sticker_number=sticker_number_param and q_index=q_index_param;
+  if deadline is not null and deadline<=now() then return public.record_quiz_timeout(uid,sticker_number_param,q_index_param); end if;
+  if deadline is null then insert into public.quiz_question_timers(user_id,sticker_number,q_index,expires_at) values(uid,sticker_number_param,q_index_param,now()+interval '3 minutes') on conflict do nothing; end if;
+  result:=public.answer_quiz_legacy(sticker_number_param,q_index_param,chosen_index_param);
+  delete from public.quiz_question_timers where user_id=uid and sticker_number=sticker_number_param and q_index=q_index_param;
+  return result;
+end; $$;
+
+grant execute on function public.get_quiz_questions_for_today() to authenticated;
+grant execute on function public.answer_quiz(integer, integer, integer) to authenticated;
+grant execute on function public.answer_quiz_legacy(integer, integer, integer) to authenticated;

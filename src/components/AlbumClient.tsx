@@ -528,6 +528,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   const openSticker = (sticker: Sticker) => {
     const info = getOwnedInfo(sticker.number);
     const isRare = isRareStickerVersion(sticker, info);
+    const isExclusive = isExclusiveSticker(sticker);
     const affiliateTag = process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_TAG || "lendosaficos-20";
 
     const getUnlockHint = (st: Sticker) => {

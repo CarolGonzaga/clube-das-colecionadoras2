@@ -478,8 +478,22 @@ begin
     end into target_slug;
 
   if is_correct then
-    -- Roll for 5% chance of Rare
-    new_is_rare := (random() < 0.05);
+    -- Roll for 25% chance of Rare, up to a max of 12 rare quiz stickers
+    declare
+      current_quiz_rares integer;
+    begin
+      select count(*) into current_quiz_rares
+      from public.user_stickers
+      where user_id = user_id_param 
+        and is_rare = true 
+        and sticker_number between 1 and 20;
+
+      if current_quiz_rares >= 12 then
+        new_is_rare := false;
+      else
+        new_is_rare := (random() < 0.25);
+      end if;
+    end;
 
     -- Grant sticker in inventory (new_is_rare avoids ambiguity with column name)
     insert into public.user_stickers (user_id, sticker_number, copies, is_rare, first_unlocked_at)
