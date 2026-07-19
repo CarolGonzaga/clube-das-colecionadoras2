@@ -11,7 +11,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: "/icons/home.png", label: "home", path: "/clubedascolecionadoras" },
   { icon: "/icons/album.png", label: "album", path: "/clubedascolecionadoras/album" },
   { icon: "/icons/quiz.png", label: "quiz", path: "/clubedascolecionadoras/quiz" },
-  { icon: "/icons/registro.png", label: "registros", path: "/clubedascolecionadoras/registros" },
+  { icon: "/icons/registro.png", label: "pedidos", path: "/clubedascolecionadoras/registros" },
   { icon: "/icons/repetidas.png", label: "trocas", path: "/clubedascolecionadoras/trocas" },
   { icon: "/icons/loja.png", label: "loja", path: "/clubedascolecionadoras/loja" },
 ];
