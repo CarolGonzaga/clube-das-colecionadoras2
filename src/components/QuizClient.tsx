@@ -368,12 +368,6 @@ export default function QuizClient({
                 {Math.max(0, 4 - tentativasHojeCount)} de 4 restantes hoje
               </span>
             </div>
-            <div className="flex items-center gap-1 bg-pink-50/50 dark:bg-zinc-950 px-3 py-1.5 rounded-full border border-pink-100 dark:border-zinc-800">
-              <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-[#bf2a5e] dark:text-pink-400 font-sans">
-                Dia {diaAtual} de 5
-              </span>
-            </div>
           </div>
         </div>
 
