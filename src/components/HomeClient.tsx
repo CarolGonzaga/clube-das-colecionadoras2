@@ -1170,7 +1170,7 @@ export default function HomeClient({
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox="0 0 400 280"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="xMidYMin slice"
         >
           <defs>
             <filter id="glow">
