@@ -480,8 +480,8 @@ export default function TrocasClient({
       })
       .filter(Boolean) as { sticker: Sticker; copies: number; isRare: boolean }[];
 
-  const freeDupes = buildDupes(1, 200);
-  const shopDupes = buildDupes(201, 360);
+  const freeDupes = buildDupes(21, 193);
+  const shopDupes = buildDupes(194, 319);
 
   // ─── Trade flow handlers ──────────────────────────────────────────────────
 
@@ -613,6 +613,29 @@ export default function TrocasClient({
             if (res.success) {
               ui.toast(accept ? "Troca concluída! 🎉" : "Troca recusada.");
               router.invalidate();
+              if (accept) {
+                try {
+                  const claimRes = await claimTradeRewardAction(tradeId);
+                  if (claimRes.success && claimRes.data) {
+                    ui.showReveals(
+                      [
+                        {
+                          slug: `sticker-${claimRes.data.sticker_number}`,
+                          number: claimRes.data.sticker_number,
+                          wasNew: false,
+                          isRare: claimRes.data.is_rare,
+                          repeat: false,
+                          reward: null,
+                        },
+                      ],
+                      "Troca Recebida!",
+                    );
+                    router.invalidate();
+                  }
+                } catch (err: any) {
+                  console.error("Erro ao resgatar figurinha da troca:", err);
+                }
+              }
             } else {
               ui.toast(res.message || "Erro ao responder.");
             }
@@ -814,7 +837,7 @@ export default function TrocasClient({
         </div>
       )}
       <p className="note" style={{ marginTop: 12 }}>
-        Figurinhas 1–200 podem ser trocadas entre colecionadoras por outras na mesma faixa.
+        Figurinhas de sorteio (21–193) podem ser trocadas entre colecionadoras por outras na mesma faixa.
       </p>
     </div>
   );
@@ -844,7 +867,7 @@ export default function TrocasClient({
         </div>
       )}
       <p className="note" style={{ marginTop: 12 }}>
-        Figurinhas 201–360 (Loja) podem ser trocadas por pontos ou com outra usuária.
+        Figurinhas de loja (194–319) podem ser trocadas por pontos ou com outra usuária.
       </p>
     </div>
   );

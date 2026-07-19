@@ -55,16 +55,7 @@ const STORE_ITEMS: StoreItem[] = [
   },
 ];
 
-const RARE_ITEMS: StoreItem[] = Array.from({ length: 16 }, (_, index) => ({
-  id: `rare-${index + 1}`,
-  name: `Rara individual ${index + 1}`,
-  description: "Figurinha rara revelada para escolher antes da compra.",
-  price: 4.5,
-  image: "/verso-card.png",
-  tag: "rara",
-  section: "raras",
-  stickerNumber: index + 1,
-}));
+const RARE_ITEMS: StoreItem[] = [];
 
 function formatMoney(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -78,7 +69,7 @@ function LojaPage() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "pending">("idle");
-  const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias" | "raras">(
+  const [storeFilter, setStoreFilter] = useState<"todos" | "pacotes" | "unitarias">(
     "todos",
   );
   const [rareSearch, setRareSearch] = useState("");
@@ -91,13 +82,7 @@ function LojaPage() {
   const featuredItems = STORE_ITEMS.filter(
     (item) => storeFilter === "todos" || item.section === storeFilter,
   );
-  const rareItems = RARE_ITEMS.filter((item) => {
-    const sticker = parentData.stickers.find((entry) => entry.number === item.stickerNumber);
-    const searchText = `${item.name} ${sticker?.name || ""} ${sticker?.author || ""}`.toLowerCase();
-    const matchesFilter = storeFilter === "todos" || storeFilter === "raras";
-    const matchesSearch = searchText.includes(rareSearch.trim().toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const rareItems: StoreItem[] = [];
 
   const getQty = (id: string) => quantities[id] || 1;
 
@@ -178,7 +163,6 @@ function LojaPage() {
           ["todos", "Todos"],
           ["pacotes", "Pacotes"],
           ["unitarias", "Unitárias"],
-          ["raras", "Raras"],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -233,71 +217,7 @@ function LojaPage() {
         </section>
       )}
 
-      {rareItems.length > 0 && (
-        <section className="shop-section rare-shop-section">
-          <div className="shop-section-head">
-            <h2>Raras individuais</h2>
-            <span>Escolha a figurinha revelada</span>
-          </div>
-          <label className="shop-search">
-            <Search size={15} />
-            <input
-              value={rareSearch}
-              onChange={(event) => setRareSearch(event.target.value)}
-              placeholder="Filtrar rara por nome"
-            />
-          </label>
-          <div className="shop-grid rare-grid">
-            {rareItems.map((item) => {
-          const qty = getQty(item.id);
-          const sticker = parentData.stickers.find((entry) => entry.number === item.stickerNumber);
-          const displayName = sticker?.name || item.name;
 
-          return (
-            <article className="shop-card rare-store-card" key={item.id}>
-              <div className="shop-card-media">
-                {sticker ? (
-                  <div className="shop-rare-stamp">
-                    <Stamp
-                      number={sticker.number}
-                      owned={true}
-                      auto={true}
-                      cover={sticker.slug}
-                    />
-                    <AutographSeal author={sticker.author} />
-                  </div>
-                ) : (
-                  <img src={item.image} alt={item.name} />
-                )}
-                <small>
-                  <Sparkles size={10} /> {item.tag}
-                </small>
-              </div>
-              <div className="shop-card-body">
-                <h2>{displayName}</h2>
-                <p>{item.description}</p>
-                <b>{formatMoney(item.price)}</b>
-              </div>
-              <div className="shop-card-actions">
-                <div className="qty-stepper">
-                  <button type="button" onClick={() => setQty(item.id, qty - 1)} aria-label="Diminuir">
-                    <Minus size={14} />
-                  </button>
-                  <span>{qty}</span>
-                  <button type="button" onClick={() => setQty(item.id, qty + 1)} aria-label="Aumentar">
-                    <Plus size={14} />
-                  </button>
-                </div>
-                <button type="button" className="btn shop-add-btn" onClick={() => addToCart(item)}>
-                  Adicionar
-                </button>
-              </div>
-            </article>
-          );
-            })}
-          </div>
-        </section>
-      )}
 
       {cartOpen && (
         <div className="modal-bg" onClick={(event) => event.target === event.currentTarget && setCartOpen(false)}>

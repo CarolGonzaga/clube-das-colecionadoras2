@@ -25,6 +25,7 @@ export type SimPackRecord = {
   status: "pending" | "opened";
   sourcePurchaseId: string;
   reveals: RevealItem[];
+  openedDate?: string;
 };
 
 export type SimAcquiredSticker = {
@@ -84,7 +85,7 @@ function stickerToAcquired(sticker: Sticker, date: string, source: string, kind:
 
 function getAcquiredKind(sticker: Sticker, isRare: boolean): SimAcquiredSticker["kind"] {
   if (isRare) return "rara";
-  if (sticker.number >= 330 && sticker.number <= 360) return "exclusiva";
+  if (sticker.number >= 320 && sticker.number <= 360) return "exclusiva";
   return "comum";
 }
 
@@ -102,6 +103,13 @@ export const purchaseStorage = {
   },
 
   markPackOpened(userId: string, packId: string, stickers: Sticker[]) {
+    const nowStr = new Date().toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     const purchases = readPurchases(userId).map((purchase) => {
       let acquiredFromOpenedPack: SimAcquiredSticker[] = [];
       const packs = purchase.packs.map((pack) => {
@@ -118,18 +126,12 @@ export const purchaseStorage = {
           };
           return stickerToAcquired(
             sticker || fallbackSticker,
-            new Date().toLocaleString("pt-BR", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
+            nowStr,
             pack.title,
             getAcquiredKind(sticker || fallbackSticker, item.isRare),
           );
         });
-        return { ...pack, status: "opened" as const };
+        return { ...pack, status: "opened" as const, openedDate: nowStr };
       });
 
       return {
@@ -161,7 +163,7 @@ export const purchaseStorage = {
       minute: "2-digit",
     });
     const purchaseId = `purchase-${now.getTime()}`;
-    const commonPool = stickers.filter((sticker) => sticker.number >= 21 && sticker.number <= 329);
+    const commonPool = stickers.filter((sticker) => sticker.number >= 194 && sticker.number <= 360);
     const rarePool = stickers.filter((sticker) => sticker.number >= 1 && sticker.number <= 20);
     const packs: SimPackRecord[] = [];
     const acquired: SimAcquiredSticker[] = [];
