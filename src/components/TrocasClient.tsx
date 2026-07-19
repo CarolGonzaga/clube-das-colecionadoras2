@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { Sticker, UserSticker, TradeRequest, TradeUserLookup, Donation } from "@/lib/types";
 import { useUI } from "@/components/UIProvider";
 import { useRouter } from "@tanstack/react-router";
@@ -17,6 +17,7 @@ import {
   redeemDonationAction,
   getOutgoingDonationsAction,
 } from "@/lib/actions";
+import { POINTS_BALANCE_CHANGED, emitPointsBalanceChanged, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 import Stamp from "./Stamp";
 import { isRareStickerVersion } from "@/lib/albumRules";
 import {
@@ -39,7 +40,7 @@ import {
   Gift,
 } from "lucide-react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface TrocasClientProps {
   stickers: Sticker[];
@@ -58,7 +59,7 @@ type MainTab = "free" | "shop" | "requests";
 type RequestsSubTab = "incoming" | "outgoing" | "history";
 type TradeFlowStep = "idle" | "enter-nick" | "confirm-user" | "select-sticker" | "confirm-trade";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function timeLeft(expiresAt: string) {
   const diff = new Date(expiresAt).getTime() - Date.now();
@@ -90,7 +91,7 @@ function avatarDisplay(
   }
   return (
     <div className="w-9 h-9 rounded-full bg-pink-100 border-2 border-pink-200 flex items-center justify-center text-lg">
-      {avatarEmoji || "📷"}
+      {avatarEmoji || "ðŸ“·"}
     </div>
   );
 }
@@ -98,7 +99,7 @@ function avatarDisplay(
 function statusBadge(status: TradeRequest["status"]) {
   const map: Record<string, { label: string; cls: string }> = {
     pending: { label: "Pendente", cls: "badge-pending" },
-    accepted: { label: "Aceita ✓", cls: "badge-accepted" },
+    accepted: { label: "Aceita âœ“", cls: "badge-accepted" },
     rejected: { label: "Recusada", cls: "badge-rejected" },
     cancelled: { label: "Cancelada", cls: "badge-cancelled" },
     expired: { label: "Expirada", cls: "badge-expired" },
@@ -107,7 +108,7 @@ function statusBadge(status: TradeRequest["status"]) {
   return <span className={`trade-status-badge ${s.cls}`}>{s.label}</span>;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface StickerDupeCardProps {
   stickerNumber: number;
@@ -142,7 +143,7 @@ function StickerDupeCard({
       </div>
       <div className="trade-dupe-info">
         <b>
-          #{String(stickerNumber).padStart(3, "0")} · {stickerName}
+          #{String(stickerNumber).padStart(3, "0")} Â· {stickerName}
         </b>
         <span>{qty} repetida{qty !== 1 ? "s" : ""}</span>
         {category === "shop" && (
@@ -154,7 +155,7 @@ function StickerDupeCard({
       </div>
       <div className="trade-dupe-actions">
         {onTrade && (
-          <button className="btn sm trade-btn-trade" onClick={onTrade} title="Trocar com outra usuária">
+          <button className="btn sm trade-btn-trade" onClick={onTrade} title="Trocar com outra usuÃ¡ria">
             <ArrowLeftRight className="w-3.5 h-3.5" />
             <span>Trocar</span>
           </button>
@@ -164,7 +165,7 @@ function StickerDupeCard({
             className="btn sm soft trade-btn-donate"
             onClick={onDonate}
             disabled={donateLoading}
-            title="Doar figurinha e gerar código"
+            title="Doar figurinha e gerar cÃ³digo"
           >
             <Gift className="w-3.5 h-3.5" />
             <span>Doar</span>
@@ -186,7 +187,7 @@ function StickerDupeCard({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function TrocasClient({
   stickers,
@@ -242,12 +243,12 @@ export default function TrocasClient({
         <CircleHelp size={30} />
         <h2>Como funcionam os pontos?</h2>
         <p>
-          Pontos são créditos internos do Clube. Você pode ganhar pontos ao trocar figurinhas de
-          loja repetidas por créditos.
+          Pontos sÃ£o crÃ©ditos internos do Clube. VocÃª pode ganhar pontos ao trocar figurinhas de
+          loja repetidas por crÃ©ditos.
         </p>
         <p>
-          Eles ficam salvos na sua conta e poderão ser usados em recursos da loja quando essa opção
-          estiver disponível.
+          Eles ficam salvos na sua conta e poderÃ£o ser usados em recursos da loja quando essa opÃ§Ã£o
+          estiver disponÃ­vel.
         </p>
         <button type="button" className="btn" onClick={ui.closeModal}>
           Entendi
@@ -275,6 +276,31 @@ export default function TrocasClient({
   useEffect(() => {
     setPointsBalance(initialPointsBalance);
   }, [initialPointsBalance]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const refreshBalance = async () => {
+      const bal = await getPointsBalanceAction();
+      if (bal.success) setPointsBalance(bal.balance);
+    };
+
+    const handlePointsChange = (event: Event) => {
+      const nextBalance = readPointsBalanceFromEvent(event);
+      if (typeof nextBalance === "number") {
+        setPointsBalance(nextBalance);
+      } else {
+        refreshBalance();
+      }
+    };
+
+    window.addEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
+    window.addEventListener("focus", refreshBalance);
+    return () => {
+      window.removeEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
+      window.removeEventListener("focus", refreshBalance);
+    };
+  }, []);
 
   useEffect(() => {
     setDonations(initialDonations);
@@ -330,7 +356,7 @@ export default function TrocasClient({
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", textAlign: "left", fontSize: "12px", color: "#5c0d2b" }}>
               <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
                 <span style={{ fontSize: "14px", fontWeight: "bold" }}>1.</span>
-                <p style={{ margin: 0 }}><b>Troca por Pontos na Loja:</b> O usuário pode trocar figurinhas compradas por pontos que podem ser usados para adquirir novas.</p>
+                <p style={{ margin: 0 }}><b>Troca por Pontos na Loja:</b> O usuÃ¡rio pode trocar figurinhas compradas por pontos que podem ser usados para adquirir novas.</p>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
                 <span style={{ fontSize: "14px", fontWeight: "bold" }}>2.</span>
@@ -338,11 +364,11 @@ export default function TrocasClient({
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
                 <span style={{ fontSize: "14px", fontWeight: "bold" }}>3.</span>
-                <p style={{ margin: 0 }}><b>Como Trocar:</b> Basta escolher a figurinha que deseja trocar, informar o nick do usuário e selecionar a figurinha dele que deseja receber.</p>
+                <p style={{ margin: 0 }}><b>Como Trocar:</b> Basta escolher a figurinha que deseja trocar, informar o nick do usuÃ¡rio e selecionar a figurinha dele que deseja receber.</p>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
                 <span style={{ fontSize: "14px", fontWeight: "bold" }}>4.</span>
-                <p style={{ margin: 0 }}><b>Resgate:</b> Quando o usuário aceitar a troca, a nova figurinha ficará disponível para resgate.</p>
+                <p style={{ margin: 0 }}><b>Resgate:</b> Quando o usuÃ¡rio aceitar a troca, a nova figurinha ficarÃ¡ disponÃ­vel para resgate.</p>
               </div>
             </div>
 
@@ -355,7 +381,7 @@ export default function TrocasClient({
                   }}
                   style={{ accentColor: "#C2185B", width: "14px", height: "14px" }}
                 />
-                Não mostrar este tutorial novamente
+                NÃ£o mostrar este tutorial novamente
               </label>
 
               <button 
@@ -390,23 +416,23 @@ export default function TrocasClient({
         if (reveals.length > 0) {
           const pendingObj = {
             reveals,
-            title: "Figurinha recebida por doação! 🎁",
+            title: "Figurinha recebida por doaÃ§Ã£o! ðŸŽ",
             flippedCards: [],
             isOpened: false,
           };
           localStorage.setItem("pending_pack", JSON.stringify(pendingObj));
           ui.triggerPendingPack();
         } else {
-          ui.toast("Figurinha resgatada com sucesso! 🎉");
+          ui.toast("Figurinha resgatada com sucesso! ðŸŽ‰");
         }
         setRedeemCodeInput("");
         router.invalidate();
         refreshTrades();
       } else {
-        ui.toast(res.message || "Erro ao resgatar código.");
+        ui.toast(res.message || "Erro ao resgatar cÃ³digo.");
       }
     } catch (e: any) {
-      ui.toast("Erro ao resgatar código.");
+      ui.toast("Erro ao resgatar cÃ³digo.");
     } finally {
       setRedeemLoading(false);
     }
@@ -417,14 +443,14 @@ export default function TrocasClient({
     try {
       const res = await generateDonationAction(stickerNumber);
       if (res.success && res.code) {
-        ui.toast(`Código de doação gerado com sucesso! Copie-o abaixo. 🎁`);
+        ui.toast(`CÃ³digo de doaÃ§Ã£o gerado com sucesso! Copie-o abaixo. ðŸŽ`);
         
         ui.openModal(
           <div style={{ textAlign: "center", padding: "8px 0" }}>
             <Gift className="w-12 h-12 text-[#C2185B] mx-auto mb-2 animate-bounce" />
-            <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Código de Doação Gerado! 🎁</h2>
+            <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>CÃ³digo de DoaÃ§Ã£o Gerado! ðŸŽ</h2>
             <p style={{ fontSize: "12px", color: "#bf2a5e", margin: "8px 0 16px" }}>
-              Envie este código para uma amiga. Ela poderá resgatar a figurinha <b>#{String(stickerNumber).padStart(3, "0")} · {stickerName}</b> imediatamente!
+              Envie este cÃ³digo para uma amiga. Ela poderÃ¡ resgatar a figurinha <b>#{String(stickerNumber).padStart(3, "0")} Â· {stickerName}</b> imediatamente!
             </p>
             
             <div style={{ background: "#fff0f7", border: "1.5px dashed #fecdd3", borderRadius: "12px", padding: "12px", fontSize: "16px", fontWeight: "bold", color: "#9e1b4a", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "16px" }}>
@@ -432,7 +458,7 @@ export default function TrocasClient({
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(res.code || "");
-                  ui.toast("Código copiado! 📋");
+                  ui.toast("CÃ³digo copiado! ðŸ“‹");
                 }}
                 style={{ background: "none", border: "none", cursor: "pointer", color: "#bf2a5e" }}
               >
@@ -441,7 +467,7 @@ export default function TrocasClient({
             </div>
 
             <p className="note" style={{ fontSize: "10px", margin: "0 0 16px" }}>
-              Válido por 24h. Se não resgatado, a figurinha volta para seu deck.
+              VÃ¡lido por 24h. Se nÃ£o resgatado, a figurinha volta para seu deck.
             </p>
 
             <button className="btn" onClick={() => ui.closeModal()} style={{ width: "100%" }}>
@@ -489,7 +515,7 @@ export default function TrocasClient({
     }
   };
 
-  // ─── Computed duplicates ──────────────────────────────────────────────────
+  // â”€â”€â”€ Computed duplicates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const buildDupes = (rangeMin: number, rangeMax: number) =>
     stickers
@@ -505,7 +531,7 @@ export default function TrocasClient({
   const freeDupes = buildDupes(21, 193);
   const shopDupes = buildDupes(194, 319);
 
-  // ─── Trade flow handlers ──────────────────────────────────────────────────
+  // â”€â”€â”€ Trade flow handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const startTradeFlow = (stickerNumber: number, category: "free" | "shop") => {
     setFlowMySticker(stickerNumber);
@@ -522,7 +548,7 @@ export default function TrocasClient({
     const res = await lookupUserByNickAction(flowNickInput.trim().toLowerCase());
     setFlowNickLoading(false);
     if (!res.success || !res.data) {
-      ui.toast(res.message || "Usuária não encontrada.");
+      ui.toast(res.message || "UsuÃ¡ria nÃ£o encontrada.");
       return;
     }
     setFlowLookup(res.data);
@@ -546,10 +572,10 @@ export default function TrocasClient({
     setTradeSubmitting(false);
     if (res.success) {
       setFlowStep("idle");
-      ui.toast("Solicitação de troca enviada! ✨");
+      ui.toast("SolicitaÃ§Ã£o de troca enviada! âœ¨");
       refreshTrades();
     } else {
-      ui.toast(res.message || "Erro ao criar solicitação de troca.");
+      ui.toast(res.message || "Erro ao criar solicitaÃ§Ã£o de troca.");
     }
   };
 
@@ -561,7 +587,7 @@ export default function TrocasClient({
     setFlowDesiredSticker(null);
   };
 
-  // ─── Exchange for points ──────────────────────────────────────────────────
+  // â”€â”€â”€ Exchange for points â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const handleExchangeForPoints = async (stickerNumber: number, stickerName: string) => {
     ui.openModal(
@@ -570,11 +596,11 @@ export default function TrocasClient({
         <h2 style={{ marginBottom: 6 }}>Trocar por pontos?</h2>
         <p style={{ margin: "0 0 16px", color: "var(--wine)" }}>
           <b>
-            #{String(stickerNumber).padStart(3, "0")} · {stickerName}
+            #{String(stickerNumber).padStart(3, "0")} Â· {stickerName}
           </b>
         </p>
         <p style={{ margin: "0 0 20px", fontSize: 14 }}>
-          Você receberá <b>45 pontos</b> por esta figurinha repetida.
+          VocÃª receberÃ¡ <b>45 pontos</b> por esta figurinha repetida.
         </p>
         <button
           className="btn"
@@ -586,6 +612,7 @@ export default function TrocasClient({
             if (res.success) {
               const newBal = res.data?.new_balance ?? pointsBalance + 45;
               setPointsBalance(newBal);
+              emitPointsBalanceChanged(newBal);
               setUserStickers((prev) =>
                 prev.map((us) =>
                   us.sticker_number === stickerNumber
@@ -593,7 +620,8 @@ export default function TrocasClient({
                     : us,
                 ),
               );
-              ui.toast(`+45 pontos! Saldo: ${newBal} pts 🪙`);
+              ui.toast(`+45 pontos! Saldo: ${newBal} pts ðŸª™`);
+              router.invalidate();
             } else {
               ui.toast(res.message || "Erro ao trocar por pontos.");
             }
@@ -608,7 +636,7 @@ export default function TrocasClient({
     );
   };
 
-  // ─── Respond to trade ─────────────────────────────────────────────────────
+  // â”€â”€â”€ Respond to trade â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const handleRespond = async (tradeId: string, accept: boolean, trade: TradeRequest) => {
     ui.openModal(
@@ -621,8 +649,8 @@ export default function TrocasClient({
         <h2 style={{ marginBottom: 6 }}>{accept ? "Aceitar troca?" : "Recusar troca?"}</h2>
         {accept && (
           <p style={{ fontSize: 13, margin: "0 0 16px", color: "var(--wine)" }}>
-            Você dará <b>{trade.receiver_sticker_name || `#${trade.receiver_sticker}`}</b> e
-            receberá <b>{trade.initiator_sticker_name || `#${trade.initiator_sticker}`}</b>.
+            VocÃª darÃ¡ <b>{trade.receiver_sticker_name || `#${trade.receiver_sticker}`}</b> e
+            receberÃ¡ <b>{trade.initiator_sticker_name || `#${trade.initiator_sticker}`}</b>.
           </p>
         )}
         <button
@@ -633,7 +661,7 @@ export default function TrocasClient({
             const res = await respondToTradeAction(tradeId, accept);
             setRespondLoading((p) => ({ ...p, [tradeId]: false }));
             if (res.success) {
-              ui.toast(accept ? "Troca concluída! 🎉" : "Troca recusada.");
+              ui.toast(accept ? "Troca concluÃ­da! ðŸŽ‰" : "Troca recusada.");
               router.invalidate();
               if (accept) {
                 try {
@@ -672,15 +700,15 @@ export default function TrocasClient({
     );
   };
 
-  // ─── Cancel trade ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ Cancel trade â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const handleCancel = async (tradeId: string) => {
     ui.openModal(
       <div style={{ textAlign: "center" }}>
         <XCircle className="w-10 h-10 text-red-400 mx-auto mb-2" />
-        <h2 style={{ marginBottom: 6 }}>Cancelar solicitação?</h2>
+        <h2 style={{ marginBottom: 6 }}>Cancelar solicitaÃ§Ã£o?</h2>
         <p style={{ fontSize: 13, margin: "0 0 16px" }}>
-          A solicitação será cancelada e a figurinha voltará como repetida.
+          A solicitaÃ§Ã£o serÃ¡ cancelada e a figurinha voltarÃ¡ como repetida.
         </p>
         <button
           className="btn soft"
@@ -688,14 +716,14 @@ export default function TrocasClient({
             ui.closeModal();
             const res = await cancelTradeAction(tradeId);
             if (res.success) {
-              ui.toast("Solicitação cancelada.");
+              ui.toast("SolicitaÃ§Ã£o cancelada.");
               router.invalidate();
             } else {
               ui.toast(res.message || "Erro ao cancelar.");
             }
           }}
         >
-          Cancelar solicitação
+          Cancelar solicitaÃ§Ã£o
         </button>
         <button className="btn" style={{ marginTop: 8 }} onClick={() => ui.closeModal()}>
           Manter
@@ -704,7 +732,7 @@ export default function TrocasClient({
     );
   };
 
-  // ─── Trade Flow Inline Steps ──────────────────────────────────────────────
+  // â”€â”€â”€ Trade Flow Inline Steps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const mySticker = stickers.find((s) => s.number === flowMySticker);
 
@@ -712,15 +740,15 @@ export default function TrocasClient({
     if (flowStep === "enter-nick") {
       return (
         <div className="trade-flow-modal">
-          <button className="trade-flow-back" onClick={resetFlow}>← Voltar</button>
+          <button className="trade-flow-back" onClick={resetFlow}>â† Voltar</button>
           <ArrowLeftRight className="w-8 h-8 text-pink-500 mx-auto mb-2" />
-          <h2>Trocar com outra usuária</h2>
+          <h2>Trocar com outra usuÃ¡ria</h2>
           <p className="note" style={{ margin: "4px 0 16px", textAlign: "center" }}>
-            Você está oferecendo:{" "}
-            <b>#{String(flowMySticker).padStart(3, "0")} · {mySticker?.name}</b>
+            VocÃª estÃ¡ oferecendo:{" "}
+            <b>#{String(flowMySticker).padStart(3, "0")} Â· {mySticker?.name}</b>
           </p>
           <div className="trade-flow-input-group">
-            <label className="trade-flow-label">Nome de usuário da outra colecionadora</label>
+            <label className="trade-flow-label">Nome de usuÃ¡rio da outra colecionadora</label>
             <div className="trade-flow-search-row">
               <input
                 className="input"
@@ -748,23 +776,23 @@ export default function TrocasClient({
       const eligibleDupes = flowCategory === "free" ? flowLookup.free_dupes : flowLookup.shop_dupes;
       return (
         <div className="trade-flow-modal">
-          <button className="trade-flow-back" onClick={() => setFlowStep("enter-nick")}>← Voltar</button>
+          <button className="trade-flow-back" onClick={() => setFlowStep("enter-nick")}>â† Voltar</button>
           <div className="trade-flow-user-header">
             {avatarDisplay(flowLookup.avatar_url, flowLookup.avatar_emoji, flowLookup.nick)}
             <div>
               <b>@{flowLookup.nick}</b>
               <p className="note" style={{ margin: 0 }}>
-                {eligibleDupes.length} repetida{eligibleDupes.length !== 1 ? "s" : ""} disponível{eligibleDupes.length !== 1 ? "eis" : ""}
+                {eligibleDupes.length} repetida{eligibleDupes.length !== 1 ? "s" : ""} disponÃ­vel{eligibleDupes.length !== 1 ? "eis" : ""}
               </p>
             </div>
           </div>
-          <p style={{ fontSize: 13, margin: "8px 0 4px" }}>Você quer receber qual figurinha?</p>
+          <p style={{ fontSize: 13, margin: "8px 0 4px" }}>VocÃª quer receber qual figurinha?</p>
           <p className="note" style={{ margin: "0 0 10px" }}>
-            Você dará: <b>#{String(flowMySticker).padStart(3, "0")} · {mySticker?.name}</b>
+            VocÃª darÃ¡: <b>#{String(flowMySticker).padStart(3, "0")} Â· {mySticker?.name}</b>
           </p>
           {eligibleDupes.length === 0 ? (
             <div className="empty" style={{ padding: "24px 0" }}>
-              Esta usuária não tem repetidas elegíveis para troca.
+              Esta usuÃ¡ria nÃ£o tem repetidas elegÃ­veis para troca.
             </div>
           ) : (
             <div className="trade-flow-sticker-list">
@@ -799,29 +827,29 @@ export default function TrocasClient({
       return (
         <div className="trade-flow-modal" style={{ textAlign: "center" }}>
           <button className="trade-flow-back" style={{ textAlign: "left" }} onClick={() => setFlowStep("confirm-user")}>
-            ← Voltar
+            â† Voltar
           </button>
           <ArrowLeftRight className="w-8 h-8 text-pink-500 mx-auto mb-2" />
           <h2>Confirmar troca?</h2>
           <div className="trade-confirm-summary">
             <div className="trade-confirm-side">
-              <span className="note">Você dá</span>
+              <span className="note">VocÃª dÃ¡</span>
               <b>#{String(flowMySticker).padStart(3, "0")}</b>
               <span style={{ fontSize: 12 }}>{mySticker?.name}</span>
             </div>
             <ArrowLeftRight className="w-5 h-5 text-pink-400 mx-2 flex-shrink-0 mt-4" />
             <div className="trade-confirm-side">
-              <span className="note">Você recebe</span>
+              <span className="note">VocÃª recebe</span>
               <b>#{String(flowDesiredSticker).padStart(3, "0")}</b>
               <span style={{ fontSize: 12 }}>{desiredName}</span>
             </div>
           </div>
           <p style={{ fontSize: 13, margin: "8px 0 16px" }}>com <b>@{flowLookup.nick}</b></p>
           <p className="note" style={{ margin: "0 0 16px" }}>
-            A troca só será concluída quando a outra usuária aceitar. Ela tem 48h para responder.
+            A troca sÃ³ serÃ¡ concluÃ­da quando a outra usuÃ¡ria aceitar. Ela tem 48h para responder.
           </p>
           <button className="btn" onClick={handleConfirmTrade} disabled={tradeSubmitting}>
-            {tradeSubmitting ? "Enviando..." : "Enviar solicitação ✨"}
+            {tradeSubmitting ? "Enviando..." : "Enviar solicitaÃ§Ã£o âœ¨"}
           </button>
           <button className="btn soft" style={{ marginTop: 8 }} onClick={resetFlow}>
             Cancelar
@@ -832,14 +860,14 @@ export default function TrocasClient({
     return null;
   };
 
-  // ─── Render helpers ───────────────────────────────────────────────────────
+  // â”€â”€â”€ Render helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const renderFreeDupes = () => (
     <div>
       {freeDupes.length === 0 ? (
         <div className="trade-empty">
           <img src="/icons/repetidas.png" alt="" />
-          <p>Você ainda não tem figurinhas gratuitas repetidas.</p>
+          <p>VocÃª ainda nÃ£o tem figurinhas gratuitas repetidas.</p>
         </div>
       ) : (
         <div className="trade-dupes-list">
@@ -859,7 +887,7 @@ export default function TrocasClient({
         </div>
       )}
       <p className="note" style={{ marginTop: 12 }}>
-        Figurinhas de sorteio (21–193) podem ser trocadas entre colecionadoras por outras na mesma faixa.
+        Figurinhas de sorteio (21â€“193) podem ser trocadas entre colecionadoras por outras na mesma faixa.
       </p>
     </div>
   );
@@ -869,7 +897,7 @@ export default function TrocasClient({
       {shopDupes.length === 0 ? (
         <div className="trade-empty">
           <img src="/icons/loja.png" alt="" />
-          <p>Você ainda não tem figurinhas de loja repetidas.</p>
+          <p>VocÃª ainda nÃ£o tem figurinhas de loja repetidas.</p>
         </div>
       ) : (
         <div className="trade-dupes-list">
@@ -889,7 +917,7 @@ export default function TrocasClient({
         </div>
       )}
       <p className="note" style={{ marginTop: 12 }}>
-        Figurinhas de loja (194–319) podem ser trocadas por pontos ou com outra usuária.
+        Figurinhas de loja (194â€“319) podem ser trocadas por pontos ou com outra usuÃ¡ria.
       </p>
     </div>
   );
@@ -897,7 +925,7 @@ export default function TrocasClient({
   const renderIncoming = () => (
     <div>
       {incoming.length === 0 ? (
-        <div className="trade-empty"><p>Nenhuma solicitação de troca recebida.</p></div>
+        <div className="trade-empty"><p>Nenhuma solicitaÃ§Ã£o de troca recebida.</p></div>
       ) : (
         <div className="trade-requests-list">
           {incoming.map((tr) => (
@@ -915,13 +943,13 @@ export default function TrocasClient({
               </div>
               <div className="trade-request-stickers">
                 <div className="trade-req-sticker">
-                  <span className="note">Ela dá</span>
+                  <span className="note">Ela dÃ¡</span>
                   <b>#{String(tr.initiator_sticker).padStart(3, "0")}</b>
                   <span style={{ fontSize: 11 }}>{tr.initiator_sticker_name}</span>
                 </div>
                 <ArrowLeftRight className="w-4 h-4 text-pink-400 mx-1 mt-3 flex-shrink-0" />
                 <div className="trade-req-sticker">
-                  <span className="note">Você dá</span>
+                  <span className="note">VocÃª dÃ¡</span>
                   <b>#{String(tr.receiver_sticker).padStart(3, "0")}</b>
                   <span style={{ fontSize: 11 }}>{tr.receiver_sticker_name}</span>
                 </div>
@@ -944,7 +972,7 @@ export default function TrocasClient({
   const renderOutgoing = () => (
     <div>
       {outgoing.length === 0 ? (
-        <div className="trade-empty"><p>Você ainda não enviou solicitações de troca.</p></div>
+        <div className="trade-empty"><p>VocÃª ainda nÃ£o enviou solicitaÃ§Ãµes de troca.</p></div>
       ) : (
         <div className="trade-requests-list">
           {outgoing.map((tr) => (
@@ -957,7 +985,7 @@ export default function TrocasClient({
                     {tr.status === "pending" ? (
                       <><Clock className="w-3 h-3 flex-shrink-0" />{timeLeft(tr.expires_at)}</>
                     ) : (
-                      tr.status === "accepted" ? "Aceita ✓" : tr.status === "rejected" ? "Recusada ❌" : tr.status === "cancelled" ? "Cancelada ❌" : tr.status
+                      tr.status === "accepted" ? "Aceita âœ“" : tr.status === "rejected" ? "Recusada âŒ" : tr.status === "cancelled" ? "Cancelada âŒ" : tr.status
                     )}
                   </span>
                 </div>
@@ -965,13 +993,13 @@ export default function TrocasClient({
               </div>
               <div className="trade-request-stickers">
                 <div className="trade-req-sticker">
-                  <span className="note">Você dá</span>
+                  <span className="note">VocÃª dÃ¡</span>
                   <b>#{String(tr.initiator_sticker).padStart(3, "0")}</b>
                   <span style={{ fontSize: 11 }}>{tr.initiator_sticker_name}</span>
                 </div>
                 <ArrowLeftRight className="w-4 h-4 text-pink-400 mx-1 mt-3 flex-shrink-0" />
                 <div className="trade-req-sticker">
-                  <span className="note">Você recebe</span>
+                  <span className="note">VocÃª recebe</span>
                   <b>#{String(tr.receiver_sticker).padStart(3, "0")}</b>
                   <span style={{ fontSize: 11 }}>{tr.receiver_sticker_name}</span>
                 </div>
@@ -987,7 +1015,7 @@ export default function TrocasClient({
                 <div className="trade-request-actions" style={{ marginTop: "8px" }}>
                   {tr.initiator_claimed ? (
                     <button className="btn sm soft" disabled style={{ width: "100%" }}>
-                      ✓ Resgatada
+                      âœ“ Resgatada
                     </button>
                   ) : (
                     <button
@@ -996,7 +1024,7 @@ export default function TrocasClient({
                       onClick={() => handleClaimSticker(tr.id)}
                       disabled={claimLoading[tr.id]}
                     >
-                      {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha 🎁"}
+                      {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha ðŸŽ"}
                     </button>
                   )}
                 </div>
@@ -1011,7 +1039,7 @@ export default function TrocasClient({
   const renderHistory = () => (
     <div>
       {resolved.length === 0 ? (
-        <div className="trade-empty"><p>Nenhuma troca concluída no histórico.</p></div>
+        <div className="trade-empty"><p>Nenhuma troca concluÃ­da no histÃ³rico.</p></div>
       ) : (
         <div className="trade-requests-list">
           {resolved.map((tr) => {
@@ -1034,13 +1062,13 @@ export default function TrocasClient({
                 </div>
                 <div className="trade-request-stickers">
                   <div className="trade-req-sticker">
-                    <span className="note">Iniciador dá</span>
+                    <span className="note">Iniciador dÃ¡</span>
                     <b>#{String(tr.initiator_sticker).padStart(3, "0")}</b>
                     <span style={{ fontSize: 11 }}>{tr.initiator_sticker_name}</span>
                   </div>
                   <ArrowLeftRight className="w-4 h-4 text-pink-400 mx-1 mt-3 flex-shrink-0" />
                   <div className="trade-req-sticker">
-                    <span className="note">Receptor dá</span>
+                    <span className="note">Receptor dÃ¡</span>
                     <b>#{String(tr.receiver_sticker).padStart(3, "0")}</b>
                     <span style={{ fontSize: 11 }}>{tr.receiver_sticker_name}</span>
                   </div>
@@ -1049,7 +1077,7 @@ export default function TrocasClient({
                   <div className="trade-request-actions" style={{ marginTop: "8px" }}>
                     {isClaimed ? (
                       <button className="btn sm soft" disabled style={{ width: "100%" }}>
-                        ✓ Resgatada
+                        âœ“ Resgatada
                       </button>
                     ) : (
                       <button
@@ -1058,7 +1086,7 @@ export default function TrocasClient({
                         onClick={() => handleClaimSticker(tr.id)}
                         disabled={claimLoading[tr.id]}
                       >
-                        {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha 🎁"}
+                        {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha ðŸŽ"}
                       </button>
                     )}
                   </div>
@@ -1077,7 +1105,7 @@ export default function TrocasClient({
         {donations.length === 0 ? (
           <div className="trade-empty">
             <Gift className="w-8 h-8 text-pink-300 mx-auto mb-2" />
-            <p>Nenhuma doação enviada ou recebida ainda.</p>
+            <p>Nenhuma doaÃ§Ã£o enviada ou recebida ainda.</p>
           </div>
         ) : (
           <div className="trade-requests-list">
@@ -1105,10 +1133,10 @@ export default function TrocasClient({
                 <div key={d.code} className="trade-request-card">
                   <div className="trade-request-header">
                     <div className="w-9 h-9 rounded-full bg-pink-100 border-2 border-pink-200 flex items-center justify-center text-lg">
-                      🎁
+                      ðŸŽ
                     </div>
                     <div className="trade-request-meta">
-                      <b>Doação: {d.code} {isOutgoing ? "(Enviada)" : "(Resgatada)"}</b>
+                      <b>DoaÃ§Ã£o: {d.code} {isOutgoing ? "(Enviada)" : "(Resgatada)"}</b>
                       <span className="trade-time-note">
                         {currentStatus === "active" ? (
                           <>
@@ -1138,10 +1166,10 @@ export default function TrocasClient({
                         style={{ width: "100%" }}
                         onClick={() => {
                           navigator.clipboard.writeText(d.code);
-                          ui.toast("Código copiado! 📋");
+                          ui.toast("CÃ³digo copiado! ðŸ“‹");
                         }}
                       >
-                        <Copy className="w-3.5 h-3.5" /> Copiar Código novamente
+                        <Copy className="w-3.5 h-3.5" /> Copiar CÃ³digo novamente
                       </button>
                     </div>
                   )}
@@ -1154,7 +1182,7 @@ export default function TrocasClient({
     );
   };
 
-  // ─── Main render ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ Main render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   if (flowStep !== "idle") {
     return (
@@ -1175,16 +1203,16 @@ export default function TrocasClient({
         {/* My nick chip */}
         <div className="trade-my-nick-bar flex-1" style={{ margin: 0 }}>
           <div className="trade-my-nick-left">
-            <span className="note" style={{ fontSize: 10, opacity: 0.8 }}>Seu usuário:</span>
+            <span className="note" style={{ fontSize: 10, opacity: 0.8 }}>Seu usuÃ¡rio:</span>
             <div className="trade-my-nick-user-row">
               <span className="trade-my-nick-chip">@{profileNick}</span>
               <button
                 className="trade-copy-btn"
-                title="Copiar nome de usuário"
+                title="Copiar nome de usuÃ¡rio"
                 onClick={async () => {
                   if (navigator.clipboard) {
                     await navigator.clipboard.writeText(profileNick);
-                    ui.toast("Nome copiado! 💝");
+                    ui.toast("Nome copiado! ðŸ’");
                   }
                 }}
               >
@@ -1231,12 +1259,12 @@ export default function TrocasClient({
           <Gift className="w-4 h-4 text-[#C2185B]" /> Resgatar Figurinha Doada
         </h3>
         <p className="text-[11px] text-[#bf2a5e]/80 mb-3">
-          Recebeu um código de doação de outra colecionadora? Cole o código de 8 caracteres abaixo para resgatar.
+          Recebeu um cÃ³digo de doaÃ§Ã£o de outra colecionadora? Cole o cÃ³digo de 8 caracteres abaixo para resgatar.
         </p>
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Cole o código de doação aqui (ex: DON-XXXXX)"
+            placeholder="Cole o cÃ³digo de doaÃ§Ã£o aqui (ex: DON-XXXXX)"
             value={redeemCodeInput}
             onChange={(e) => setRedeemCodeInput(e.target.value.toUpperCase().trim())}
             style={{ height: "40px" }}
@@ -1293,14 +1321,14 @@ export default function TrocasClient({
               </button>
               <button className={`trade-sub-tab ${requestsSubTab === "donations" ? "active" : ""}`} onClick={() => setRequestsSubTab("donations")}>
                 <Gift className="w-3.5 h-3.5" />
-                Doações
+                DoaÃ§Ãµes
                 {donations.filter((d) => d.status === "active").length > 0 && (
                   <span className="trade-tab-count">{donations.filter((d) => d.status === "active").length}</span>
                 )}
               </button>
               <button className={`trade-sub-tab ${requestsSubTab === "history" ? "active" : ""}`} onClick={() => setRequestsSubTab("history")}>
                 <Clock className="w-3.5 h-3.5" />
-                Histórico
+                HistÃ³rico
               </button>
             </div>
             {requestsSubTab === "incoming" && renderIncoming()}

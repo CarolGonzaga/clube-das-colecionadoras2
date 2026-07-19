@@ -6,6 +6,7 @@ import { useUI } from "@/components/UIProvider";
 import { purchaseStorage, type SimPurchaseRecord } from "@/lib/shopSimulation";
 import { redeemCodeAction } from "@/lib/actions";
 import { dbService } from "@/lib/db";
+import { POINTS_BALANCE_CHANGED, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/registros")({
   component: RegistrosPage,
@@ -67,6 +68,7 @@ function RegistrosPage() {
   const parentData = useLoaderData({ from: "/clubedascolecionadoras/_dashboard" });
   const [purchases, setPurchases] = useState<SimPurchaseRecord[]>([]);
   const [redeemLoading, setRedeemLoading] = useState(false);
+  const [walletPoints, setWalletPoints] = useState(parentData.pointsBalance || 0);
 
   const openPointsHelp = () => {
     ui.openModal(
@@ -101,6 +103,37 @@ function RegistrosPage() {
       window.removeEventListener("storage", refreshPurchases);
     };
   }, [parentData.profile.id]);
+
+  useEffect(() => {
+    let alive = true;
+
+    const refreshWallet = async () => {
+      try {
+        const balance = await dbService.getPointsBalance();
+        if (alive) setWalletPoints(balance);
+      } catch {
+        // Keep the current visual balance if the request fails briefly.
+      }
+    };
+
+    const handlePointsChange = (event: Event) => {
+      const nextBalance = readPointsBalanceFromEvent(event);
+      if (typeof nextBalance === "number") {
+        setWalletPoints(nextBalance);
+      } else {
+        refreshWallet();
+      }
+    };
+
+    refreshWallet();
+    window.addEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
+    window.addEventListener("focus", refreshWallet);
+    return () => {
+      alive = false;
+      window.removeEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
+      window.removeEventListener("focus", refreshWallet);
+    };
+  }, []);
 
   const pendingPacks = purchases.flatMap((purchase) =>
     purchase.status === "approved" ? purchase.packs.filter((pack) => pack.status === "pending") : [],
@@ -197,7 +230,7 @@ function RegistrosPage() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--blush)", padding: "6px 12px", borderRadius: "12px", color: "var(--magenta)", fontWeight: 800, fontSize: "14px" }}>
           <Coins size={16} />
-          <span>{parentData.pointsBalance.toLocaleString("pt-BR")} pts</span>
+          <span>{walletPoints.toLocaleString("pt-BR")} pts</span>
           <button
             type="button"
             className="points-help-btn"

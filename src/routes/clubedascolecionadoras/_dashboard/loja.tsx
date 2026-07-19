@@ -1,9 +1,10 @@
 ﻿import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
 import { Minus, Plus, ShoppingBag, ShoppingCart, Sparkles, Trash2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { purchaseStorage, type SimPurchaseItem } from "@/lib/shopSimulation";
 import { dbService } from "@/lib/db";
+import { POINTS_BALANCE_CHANGED, emitPointsBalanceChanged, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
   component: LojaPage,
@@ -98,6 +99,38 @@ function LojaPage() {
     (item) => storeFilter === "todos" || item.section === storeFilter,
   );
 
+  useEffect(() => {
+    let alive = true;
+
+    const refreshWallet = async () => {
+      try {
+        const balance = await dbService.getPointsBalance();
+        if (alive) setWalletPoints(balance);
+      } catch {
+        // Keep the current balance visible if the connection blips.
+      }
+    };
+
+    const handlePointsChange = (event: Event) => {
+      const nextBalance = readPointsBalanceFromEvent(event);
+      if (typeof nextBalance === "number") {
+        setWalletPoints(nextBalance);
+      } else {
+        refreshWallet();
+      }
+    };
+
+    refreshWallet();
+    window.addEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
+    window.addEventListener("focus", refreshWallet);
+
+    return () => {
+      alive = false;
+      window.removeEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
+      window.removeEventListener("focus", refreshWallet);
+    };
+  }, []);
+
   const getQty = (id: string) => quantities[id] || 1;
 
   const setQty = (id: string, next: number) => {
@@ -155,6 +188,7 @@ function LojaPage() {
         finalPointsUsed = Number(pointResult?.points_used || appliedPoints);
         const newBalance = Number(pointResult?.new_balance ?? Math.max(0, availablePoints - finalPointsUsed));
         setWalletPoints(newBalance);
+        emitPointsBalanceChanged(newBalance);
         finalAmountDue = Math.max(0, (cartTotalCents - finalPointsUsed) / 100);
       }
       const purchase = purchaseStorage.createPurchase({

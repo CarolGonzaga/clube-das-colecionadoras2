@@ -6,6 +6,7 @@ import { ThemeProvider } from "../../components/ThemeProvider";
 import TopBar from "../../components/TopBar";
 import Navigation from "../../components/Navigation";
 import { TOTAL_ALBUM_STICKERS } from "../../lib/albumRules";
+import { POINTS_BALANCE_CHANGED } from "../../lib/walletEvents";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
   ssr: false,
@@ -106,6 +107,15 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
       router.invalidate();
     }, 180000); // 3 minutes
     return () => clearInterval(interval);
+  }, [router]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handlePointsChange = () => {
+      router.invalidate();
+    };
+    window.addEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
+    return () => window.removeEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
   }, [router]);
 
   useEffect(() => {
@@ -227,9 +237,27 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
       )
       .subscribe();
 
+    const channelPoints = supabase
+      .channel(`points-${data.profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_points",
+          filter: `user_id=eq.${data.profile.id}`,
+        },
+        () => {
+          window.dispatchEvent(new Event(POINTS_BALANCE_CHANGED));
+          router.invalidate();
+        },
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channelInitiator);
       supabase.removeChannel(channelReceiver);
+      supabase.removeChannel(channelPoints);
     };
   }, [data.profile?.id, router, ui]);
 
@@ -286,4 +314,3 @@ function DashboardLayout() {
     </ThemeProvider>
   );
 }
-
