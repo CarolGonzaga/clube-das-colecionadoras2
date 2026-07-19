@@ -7,6 +7,7 @@ interface StampProps {
   number: number;
   owned?: boolean;
   auto?: boolean;
+  exclusive?: boolean;
   cover?: string | null;
 }
 
@@ -56,15 +57,17 @@ function getCoverFilename(number: number): string | null {
 }
 
 
-export default function Stamp({ number, owned = false, auto = false, cover = null }: StampProps) {
-  const pal = auto
-    ? { edge: "#ffffff", panel: "#fff7e6", line: "#dcae4e", num: "#cf9a1e", txt: "#cf9a1e" }
-    : owned
-      ? { edge: "#ffffff", panel: "#fde3ef", line: "#e98bb4", num: "#c2185b", txt: "#d81b7a" }
-      : { edge: "#ffffff", panel: "#fff1f4", line: "#fbc6d3", num: "#e887a0", txt: "#e887a0" };
+export default function Stamp({ number, owned = false, auto = false, exclusive = false, cover = null }: StampProps) {
+  const pal = exclusive
+    ? { edge: "#ffffff", panel: "#f1f5f9", line: "#94a3b8", num: "#334155", txt: "#334155" }
+    : auto
+      ? { edge: "#ffffff", panel: "#fff7e6", line: "#dcae4e", num: "#cf9a1e", txt: "#cf9a1e" }
+      : owned
+        ? { edge: "#ffffff", panel: "#fde3ef", line: "#e98bb4", num: "#c2185b", txt: "#d81b7a" }
+        : { edge: "#ffffff", panel: "#fff1f4", line: "#fbc6d3", num: "#e887a0", txt: "#e887a0" };
 
   const formatNum = String(number).padStart(3, "0");
-  const id = `sm-${number}-${owned ? "o" : "l"}-${auto ? "r" : "n"}`;
+  const id = `sm-${number}-${owned ? "o" : "l"}-${auto ? "r" : exclusive ? "e" : "n"}`;
 
   const coverFilename = getCoverFilename(number);
   const hasCover = !!coverFilename && owned;
@@ -105,10 +108,26 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
             <stop offset="100%" stopColor="#ffffff" stopOpacity={0.3} />
           </linearGradient>
         )}
+        {exclusive && (
+          <linearGradient id={`silverBorderGrad-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#F8FAFC" />
+            <stop offset="50%" stopColor="#94A3B8" />
+            <stop offset="100%" stopColor="#475569" />
+          </linearGradient>
+        )}
+        {exclusive && (
+          <linearGradient id={`silverSheen-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity={0.5} />
+            <stop offset="35%" stopColor="#E2E8F0" stopOpacity={0.3} />
+            <stop offset="50%" stopColor="#ffffff" stopOpacity={0.7} />
+            <stop offset="65%" stopColor="#94A3B8" stopOpacity={0.2} />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity={0.4} />
+          </linearGradient>
+        )}
       </defs>
 
       {/* Frame Background & Panel */}
-      <path d={getScallopedPath(200, 280, 7.5, 0, 10)} fill={auto ? "#FFFDF0" : pal.edge} />
+      <path d={getScallopedPath(200, 280, 7.5, 0, 10)} fill={auto ? "#FFFDF0" : exclusive ? "#F8FAFC" : pal.edge} />
       <rect
         x="13"
         y="13"
@@ -116,8 +135,8 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
         height="254"
         rx="6"
         fill={pal.panel}
-        stroke={auto ? `url(#goldBorderGrad-${id})` : "none"}
-        strokeWidth={auto ? 2.5 : 0}
+        stroke={auto ? `url(#goldBorderGrad-${id})` : exclusive ? `url(#silverBorderGrad-${id})` : "none"}
+        strokeWidth={auto || exclusive ? 2.5 : 0}
       />
 
       {hasCover ? (
@@ -153,6 +172,18 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
               style={{ mixBlendMode: "color-dodge", pointerEvents: "none" }}
             />
           )}
+          {exclusive && (
+            <rect
+              x="8"
+              y="8"
+              width="184"
+              height="264"
+              rx="12"
+              fill={`url(#silverSheen-${id})`}
+              clipPath={`url(#c-${id})`}
+              style={{ mixBlendMode: "color-dodge", pointerEvents: "none" }}
+            />
+          )}
 
           <rect
             x="8"
@@ -161,8 +192,8 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
             height="264"
             rx="12"
             fill="none"
-            stroke={auto ? `url(#goldBorderGrad-${id})` : "none"}
-            strokeWidth={auto ? "4" : "0"}
+            stroke={auto ? `url(#goldBorderGrad-${id})` : exclusive ? `url(#silverBorderGrad-${id})` : "none"}
+            strokeWidth={auto || exclusive ? "4" : "0"}
           />
           <g>
             <rect
@@ -172,7 +203,7 @@ export default function Stamp({ number, owned = false, auto = false, cover = nul
               width="40"
               height="22"
               rx="9"
-              fill={auto ? `url(#goldBorderGrad-${id})` : pal.num}
+              fill={auto ? `url(#goldBorderGrad-${id})` : exclusive ? `url(#silverBorderGrad-${id})` : pal.num}
             />
             <text
               x="24"

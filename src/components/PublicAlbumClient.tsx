@@ -245,9 +245,9 @@ export default function PublicAlbumClient({
                     number={sticker.number}
                     owned={!!info}
                     auto={isRare}
+                    exclusive={isExclusive}
                     cover={sticker.slug}
                   />
-                  {isRare && <AutographSeal author={sticker.author} />}
 
                   {isRare && (
                     <span className="auto-badge flex items-center justify-center">
@@ -255,8 +255,8 @@ export default function PublicAlbumClient({
                     </span>
                   )}
                   {isExclusive && (
-                    <span className="exclusive-badge">
-                      <Sparkles size={10} />
+                    <span className="auto-badge exclusive-auto-badge flex items-center justify-center">
+                      <Star size={8} fill="currentColor" stroke="none" />
                     </span>
                   )}
                   {copies > 1 && (

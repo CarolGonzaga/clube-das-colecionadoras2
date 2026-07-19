@@ -717,7 +717,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
           </button>
         </div>
         <div
-          className={`reveal-card ${isRare ? "foil" : ""}`}
+          className={`reveal-card ${isRare ? "foil" : ""} ${isExclusive ? "exclusive-cell" : ""}`}
           style={{
             width: isRare ? "75%" : "90%",
             maxWidth: isRare ? "260px" : "320px",
@@ -727,7 +727,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
             position: "relative",
           }}
         >
-          <Stamp number={sticker.number} owned={true} auto={isRare} cover={sticker.slug} />
+          <Stamp number={sticker.number} owned={true} auto={isRare} exclusive={isExclusive} cover={sticker.slug} />
           {isRare && (
             <AutographSeal author={sticker.author} onZoom={() => openZoomedAutograph(sticker)} />
           )}
@@ -1137,6 +1137,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                         number={sticker.number}
                         owned={!!info}
                         auto={isRare}
+                        exclusive={isExclusive}
                         cover={sticker.slug}
                       />
 

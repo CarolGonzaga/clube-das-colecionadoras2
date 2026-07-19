@@ -3,11 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PackageOpen, ArrowRight, Check, Sparkles } from "lucide-react";
-import { RevealItem, Sticker } from "@/lib/types";
 import Stamp from "./Stamp";
-import AutographSeal from "./AutographSeal";
 import { dbService } from "@/lib/db";
-import { canHaveRareVersion } from "@/lib/albumRules";
+import { canHaveRareVersion, isExclusiveSticker } from "@/lib/albumRules";
 
 interface PackOpenerProps {
   reveals: RevealItem[];
@@ -463,6 +461,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
   const currentSticker = currentReveal ? stickerLookup[currentReveal.number] : undefined;
   const currentAuthor = currentReveal?.author ?? currentSticker?.author ?? null;
   const currentIsRare = !!currentReveal?.isRare && canHaveRareVersion(currentReveal.number);
+  const currentIsExclusive = currentReveal ? isExclusiveSticker(currentReveal.number) : false;
   const isActiveFlipped = flippedCards.includes(activeCardIndex);
 
   const particlesRenderer = () => (
@@ -683,7 +682,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                 </div>
                 <div
                   className={`card-3d-front rounded-lg border-2 border-white/20 ${
-                    currentIsRare ? "rare-autographed" : ""
+                    currentIsRare ? "rare-autographed" : currentIsExclusive ? "exclusive-cell" : ""
                   }`}
                 >
                   {currentIsRare && <div className="card-rare-holo" />}
@@ -691,9 +690,9 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                     number={currentReveal.number}
                     owned={true}
                     auto={currentIsRare}
+                    exclusive={currentIsExclusive}
                     cover={currentReveal.slug}
                   />
-                  {currentIsRare && <AutographSeal author={currentAuthor} />}
                   {currentIsRare && <div className="card-rare-glow animate-pulse" />}
                 </div>
               </div>

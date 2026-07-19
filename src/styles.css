@@ -834,8 +834,8 @@ button {
   line-height: 1.35;
 }
 .cell.exclusive-cell {
-  border-color: #cbd5e0;
-  box-shadow: 0 0 0 2px #cbd5e0 inset;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 2px #cbd5e1 inset;
   position: relative;
 }
 .cell.exclusive-cell::after {
@@ -843,17 +843,28 @@ button {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(125deg, #fff6 0%, #fff0 25%, #cbd5e1aa 45%, #fff0 65%, #fff6 100%);
+  background: linear-gradient(125deg, #fff8 0%, #fff0 25%, #e2e8f0aa 45%, #fff0 65%, #fff8 100%);
   background-size: 250% 250%;
   animation: shine 3.2s linear infinite;
   mix-blend-mode: screen;
   z-index: 1;
 }
+.album:not(.album-list) .cell.exclusive-cell {
+  overflow: visible;
+}
 .cell .exclusive-auto-badge {
-  background: linear-gradient(135deg, #fff, #c9d1da);
-  color: #5e6876;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: linear-gradient(135deg, #f8fafc, #94a3b8);
+  color: #0f172a;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 4px;
+  border-radius: 6px;
+  font-family: "Baloo 2";
   border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 10px rgba(85, 96, 112, 0.18);
+  box-shadow: 0 4px 10px rgba(85, 96, 112, 0.22);
   z-index: 3;
 }
 .album.album-list {

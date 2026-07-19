@@ -489,7 +489,7 @@ begin
       'slug', target_slug,
       'number', sticker_number_param,
       'wasNew', was_new,
-      'isRare', final_is_rare,
+      'isRare', new_is_rare,
       'repeat', false,
       'reward', null
     );
