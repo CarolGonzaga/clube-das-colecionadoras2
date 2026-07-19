@@ -935,12 +935,16 @@ begin
     raise exception 'Unauthorized';
   end if;
 
-  current_day := to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD');
-
-  -- Verify and increment daily attempts count
-  select tentativas_hoje_count into attempt_count
+  -- Derive session current_day directly from public.quiz_attempts (ensures 100% hash shuffle consistency)
+  select ultimo_dia_acesso, tentativas_hoje_count
+  into current_day, attempt_count
   from public.quiz_attempts
   where user_id = user_id_param;
+
+  if current_day is null then
+    current_day := to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD');
+    attempt_count := 0;
+  end if;
 
   if attempt_count >= 4 then
     raise exception 'Você já esgotou suas 4 tentativas de hoje! Volte amanhã ⏳';
