@@ -5758,7 +5758,7 @@ html.theme-lilac .empty {
     grid-template-columns: minmax(0, 1fr) repeat(12, minmax(0, 50px)) minmax(0, 1fr);
     width: 100%;
     max-width: none;
-    margin-top: 0;
+    margin-top: 18px;
     margin-right: 0;
     margin-left: 0;
     align-items: start;
