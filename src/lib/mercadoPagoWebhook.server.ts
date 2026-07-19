@@ -83,10 +83,17 @@ export async function handleMercadoPagoWebhook(request: Request) {
     !verifyMercadoPagoSignature({
       xSignature,
       xRequestId,
-      dataId: paymentId,
+      dataId: signatureDataId,
       secret: webhookSecret,
     })
   ) {
+    console.error("[MercadoPago Webhook] Assinatura inválida!", {
+      xSignature,
+      xRequestId,
+      signatureDataId,
+      hasSecret: Boolean(webhookSecret),
+      secretPrefix: webhookSecret ? webhookSecret.substring(0, 5) + "..." : "none",
+    });
     return jsonResponse({ error: "Assinatura inválida." }, 401);
   }
 
