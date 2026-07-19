@@ -28,7 +28,7 @@ const STORE_ITEMS: StoreItem[] = [
   {
     id: "pack-single",
     name: "1x Pacote",
-    description: "Pacote com 5 figurinhas sortidas - Você receberá 5 figurinhas sortidas entre 194 e 319",
+    description: "Pacote com 5 figurinhas sortidas entre 194 e 319",
     price: 2.5,
     image: "/frames/1.webp",
     tag: "pacote",
@@ -253,7 +253,7 @@ function LojaPage() {
           <section className="shop-section">
             <div className="shop-section-head">
               <h2><Sparkles size={16} style={{ display: "inline", verticalAlign: "middle" }} /> Exclusivas</h2>
-              <span>Somente uma unidade por usuário.</span>
+              <span>Uma unidade por exclusiva por usuário.</span>
             </div>
             <div className="shop-grid featured exclusive-shop-grid">
               {exclusiveStickers.map((sticker) => {
@@ -290,10 +290,10 @@ function LojaPage() {
                       )}
                     </div>
                     <div className="shop-card-body">
-                      <h2 style={{ fontSize: "13px" }}>#{String(sticker.number).padStart(3, "0")} {sticker.name}</h2>
+                      <h2 className="exclusive-shop-title">#{String(sticker.number).padStart(3, "0")} {sticker.name}</h2>
                       <p className="exclusive-credit-line">
                         <span>{storeItem.description}</span>
-                        <span>{sticker.ilustrator ? `arte: ${sticker.ilustrator}` : "arte: a definir"}</span>
+                        {sticker.ilustrator && <span>arte: {sticker.ilustrator}</span>}
                       </p>
                       <b>{formatMoney(storeItem.price)}</b>
                     </div>

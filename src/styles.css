@@ -834,10 +834,8 @@ button {
   line-height: 1.35;
 }
 .cell.exclusive-cell {
-  border: 2px solid #cbd5e0;
-  box-shadow:
-    inset 0 0 0 2px #cbd5e0,
-    0 8px 22px rgba(102, 113, 128, 0.14);
+  border-color: #cbd5e0;
+  box-shadow: 0 0 0 2px #cbd5e0 inset;
   position: relative;
 }
 .cell.exclusive-cell::after {
@@ -851,18 +849,9 @@ button {
   mix-blend-mode: screen;
   z-index: 1;
 }
-.exclusive-badge {
-  position: absolute;
-  right: 5px;
-  left: auto;
-  top: 5px;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
+.cell .exclusive-auto-badge {
   background: linear-gradient(135deg, #fff, #c9d1da);
   color: #5e6876;
-  display: grid;
-  place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 4px 10px rgba(85, 96, 112, 0.18);
   z-index: 3;
@@ -4307,6 +4296,10 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   padding-top: 8px;
 }
 
+.exclusive-shop-title {
+  font-size: 17px !important;
+}
+
 .exclusive-shop-grid {
   gap: 18px;
 }
@@ -4336,6 +4329,8 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
 }
 
 .exclusive-credit-line span:first-child {
@@ -6754,8 +6749,7 @@ html.theme-lilac .trade-flow-search-btn svg {
   .cell .num {
     font-size: 8px;
   }
-  .auto-badge,
-  .exclusive-badge {
+  .auto-badge {
     width: 14px;
     height: 14px;
   }
@@ -6784,5 +6778,3 @@ html.theme-lilac .trade-flow-search-btn svg {
     font-size: 12.75px; /* 15px × 0.85 */
   }
 }
-
-

@@ -1110,18 +1110,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
             </span>
           </div>
 
-          {filter === "exclusivas" && (
-            <section className="exclusive-album-intro">
-              <div>
-                <Sparkles size={18} />
-                <b>Figurinhas exclusivas</b>
-              </div>
-              <p>
-                Uma área especial para destacar as figurinhas conquistadas em ações e eventos do clube.
-              </p>
-            </section>
-          )}
-
           {/* Album Grid */}
           {filteredStickers.length === 0 ? (
             <div className="empty">Nenhuma figurinha encontrada com este filtro.</div>
@@ -1139,11 +1127,12 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                   const visibleTag = getVisibleStickerTag(sticker, info);
                   const stickerFamily = getStickerFamily(sticker.number);
                   const copies = getCopiesCount(sticker.number);
+                  const revealListData = !!info;
 
                   return (
                     <div
                       key={sticker.number}
-                      className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""} ${isExclusive ? "exclusive-cell" : ""}`}
+                      className={`cell ${!info ? "locked" : ""} ${isRare ? "foil" : ""} ${isExclusive && viewMode !== "list" ? "exclusive-cell" : ""}`}
                       onClick={() => openSticker(sticker)}
                     >
                       <Stamp
@@ -1159,8 +1148,8 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                         </span>
                       )}
                       {isExclusive && (
-                        <span className="exclusive-badge">
-                          <Sparkles size={10} />
+                        <span className="auto-badge exclusive-auto-badge">
+                          <Star size={10} fill="currentColor" />
                         </span>
                       )}
                       {copies > 1 && (
@@ -1183,14 +1172,17 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                       {viewMode === "list" && (
                         <div className="album-list-info">
                           <b>
-                            #{String(sticker.number).padStart(3, "0")} - {sticker.name}
+                            #{String(sticker.number).padStart(3, "0")} -{" "}
+                            {revealListData ? sticker.name : "Figurinha misteriosa"}
                           </b>
-                          <span>{visibleTag}</span>
-                          <small>
-                            {sticker.author || "Autoria a definir"}
-                            {sticker.ilustrator && ` (arte: ${sticker.ilustrator})`}
-                          </small>
-                          {stickerFamily && (
+                          <span>{revealListData ? visibleTag : "faltando"}</span>
+                          {revealListData && (
+                            <small>
+                              {sticker.author || "Autoria a definir"}
+                              {sticker.ilustrator && ` (arte: ${sticker.ilustrator})`}
+                            </small>
+                          )}
+                          {revealListData && stickerFamily && (
                             <em>
                               {stickerFamily.tag}: {stickerFamily.stickers.length} itens (
                               {stickerFamily.stickers
