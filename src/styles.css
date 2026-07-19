@@ -5538,18 +5538,18 @@ html.theme-lilac .empty {
   }
 
   .home-dashboard-page {
-    width: calc(100% - 48px);
-    max-width: 840px;
-    margin: 24px auto 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     border: 0;
     border-radius: 0;
-    background: transparent;
+    background: #fdf0f3;
     box-shadow: none;
   }
 
   .home-dashboard-page > div:first-child {
-    border-radius: 26px;
-    box-shadow: 0 16px 38px rgba(112, 18, 63, 0.07);
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .home-dashboard-page .stat-circles {
@@ -5699,7 +5699,7 @@ html.theme-lilac .empty {
 
   html.dark .home-dashboard-page {
     border-color: transparent;
-    background: transparent;
+    background: #160915;
   }
 
   html.theme-lilac .club-dashboard-shell {
@@ -5748,7 +5748,7 @@ html.theme-lilac .empty {
 
   html.theme-lilac .home-dashboard-page {
     border-color: transparent;
-    background: transparent;
+    background: #fdf7fc;
   }
 }
 
@@ -5758,7 +5758,7 @@ html.theme-lilac .empty {
     grid-template-columns: minmax(0, 1fr) repeat(12, minmax(0, 50px)) minmax(0, 1fr);
     width: 100%;
     max-width: none;
-    margin-top: 18px;
+    margin-top: 0;
     margin-right: 0;
     margin-left: 0;
     align-items: start;
@@ -5773,7 +5773,7 @@ html.theme-lilac .empty {
 
   .home-dashboard-hero {
     grid-row: 1;
-    border-radius: 0 0 26px 26px !important;
+    border-radius: 0 !important;
   }
 
   .home-dashboard-progress {

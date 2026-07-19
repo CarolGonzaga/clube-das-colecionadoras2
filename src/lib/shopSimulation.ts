@@ -90,6 +90,21 @@ function getAcquiredKind(sticker: Sticker): SimAcquiredSticker["kind"] {
   return "comum";
 }
 
+function addToSimulatedInventory(userStickers: UserSticker[], stickerNumber: number) {
+  const existing = userStickers.find((item) => item.sticker_number === stickerNumber);
+  if (existing) {
+    existing.copies = (existing.copies || 0) + 1;
+    return;
+  }
+
+  userStickers.push({
+    sticker_number: stickerNumber,
+    copies: 1,
+    is_rare: false,
+    first_unlocked_at: new Date().toISOString(),
+  } as UserSticker);
+}
+
 /**
  * Draw stickers for a 5-card pack from the loja pool (194–329).
  * - 40% chance each slot is a duplicate from owned stickers (max 2 identical per pack).
@@ -218,7 +233,7 @@ export const purchaseStorage = {
 
     const packs: SimPackRecord[] = [];
     const acquired: SimAcquiredSticker[] = [];
-    const globalUsed = new Set<number>();
+    const simulatedUserStickers = userStickers.map((item) => ({ ...item }));
 
     items.forEach((item) => {
       const packCount = item.kind === "pack"
@@ -226,13 +241,13 @@ export const purchaseStorage = {
         : 0;
 
       for (let packIndex = 0; packIndex < packCount; packIndex += 1) {
-        const packUsed = new Set<number>(globalUsed);
-        const reveals = buildPackReveals(lojaPool, userStickers, albumTotal, packUsed);
-        reveals.forEach((r) => globalUsed.add(r.number));
+        const packUsed = new Set<number>();
+        const reveals = buildPackReveals(lojaPool, simulatedUserStickers, albumTotal, packUsed);
+        reveals.forEach((reveal) => addToSimulatedInventory(simulatedUserStickers, reveal.number));
 
         packs.push({
           id: `${purchaseId}-pack-${packs.length + 1}`,
-          title: item.id === "pack-combo" ? "10x Pacotes" : "1x Pacote",
+          title: "1x Pacote",
           date,
           status: "pending",
           sourcePurchaseId: purchaseId,
@@ -242,13 +257,14 @@ export const purchaseStorage = {
 
       if (item.kind === "single") {
         for (let i = 0; i < item.qty; i += 1) {
-          const packUsed = new Set<number>(globalUsed);
+          const packUsed = new Set<number>();
           const unowned = lojaPool.filter(
-            (s) => !packUsed.has(s.number) && !userStickers.some((us) => us.sticker_number === s.number && us.copies > 0),
+            (s) => !packUsed.has(s.number) && !simulatedUserStickers.some((us) => us.sticker_number === s.number && us.copies > 0),
           );
           const pool = unowned.length > 0 ? unowned : lojaPool.filter((s) => !packUsed.has(s.number));
           const sticker = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : lojaPool[0];
-          if (sticker) globalUsed.add(sticker.number);
+          const reveal = stickerToReveal(sticker, simulatedUserStickers, false);
+          if (sticker) addToSimulatedInventory(simulatedUserStickers, sticker.number);
 
           packs.push({
             id: `${purchaseId}-single-${i + 1}`,
@@ -256,7 +272,7 @@ export const purchaseStorage = {
             date,
             status: "pending",
             sourcePurchaseId: purchaseId,
-            reveals: [stickerToReveal(sticker, userStickers, false)],
+            reveals: [reveal],
           });
         }
       }

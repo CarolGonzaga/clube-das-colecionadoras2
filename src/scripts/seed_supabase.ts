@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import { SEED_QUESTIONS, SEED_REDEEM_CODES, SEED_REDEEM_POOLS } from "../lib/seeds.js";
+import {
+  SEED_QUESTIONS,
+  SEED_REDEEM_CODES,
+  SEED_REDEEM_POOLS,
+  SEED_STICKERS,
+} from "../lib/seeds.js";
 
 // Load env variables
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -54,7 +59,26 @@ async function seed() {
       console.warn("Alerta ao configurar app_settings:", settingsError.message);
     }
 
-    // 1. Seed Quiz Questions
+    // 1. Seed Stickers
+    console.log(`Atualizando ${SEED_STICKERS.length} figurinhas...`);
+    const chunkSize = 50;
+    for (let i = 0; i < SEED_STICKERS.length; i += chunkSize) {
+      const chunk = SEED_STICKERS.slice(i, i + chunkSize).map((sticker) => ({
+        number: sticker.number,
+        slug: sticker.slug,
+        name: sticker.name,
+        author: sticker.author,
+        type: sticker.type,
+        cover_url: sticker.cover_url,
+        amazon_url: sticker.amazon_url ?? null,
+        category: sticker.type,
+      }));
+      const { error } = await supabase.from("stickers").upsert(chunk, { onConflict: "number" });
+      if (error) throw new Error(`Falha ao atualizar stickers: ${error.message}`);
+    }
+    console.log("Figurinhas atualizadas com sucesso.");
+
+    // 2. Seed Quiz Questions
     console.log(`Limpando tabela quiz_questions...`);
     const { error: clearQError } = await supabase
       .from("quiz_questions")
@@ -66,7 +90,6 @@ async function seed() {
 
     console.log(`Inserindo ${SEED_QUESTIONS.length} perguntas de quiz...`);
     // Insert in chunks of 50 to avoid any request limit size constraints
-    const chunkSize = 50;
     for (let i = 0; i < SEED_QUESTIONS.length; i += chunkSize) {
       const chunk = SEED_QUESTIONS.slice(i, i + chunkSize).map((q) => ({
         sticker_number: q.sticker_number,
@@ -80,7 +103,7 @@ async function seed() {
     }
     console.log("Perguntas de quiz inseridas com sucesso.");
 
-    // 2. Seed Redeem Codes
+    // 3. Seed Redeem Codes
     console.log(`Limpando tabela redeem_codes...`);
     const { error: clearCError } = await supabase.from("redeem_codes").delete().neq("code", "");
     if (clearCError) {
@@ -98,7 +121,7 @@ async function seed() {
     if (codesError) throw new Error(`Falha ao inserir redeem_codes: ${codesError.message}`);
     console.log("Códigos de resgate inseridos com sucesso.");
 
-    // 3. Seed Redeem Pools
+    // 4. Seed Redeem Pools
     console.log(`Limpando tabela redeem_pools...`);
     const { error: clearPError } = await supabase
       .from("redeem_pools")

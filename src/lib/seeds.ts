@@ -2156,11 +2156,11 @@ export const SEED_STICKERS: SeedSticker[] = [
   },
   {
     number: 237,
-    slug: "sou-tudo-o-que-você-não-precisa",
+    slug: "sou-tudo-o-que-voce-nao-precisa",
     name: "Sou tudo o que você (não) precisa",
     author: "V.S. Vilela",
     type: "loja",
-    cover_url: "sou-tudo-o-que-você-não-precisa.jpg",
+    cover_url: "sou-tudo-o-que-voce-nao-precisa.jpg",
     amazon_url: "https://link.amazon/B06JTmSgt",
   },
   {
@@ -2291,11 +2291,11 @@ export const SEED_STICKERS: SeedSticker[] = [
   },
   {
     number: 252,
-    slug: "dona-do-meu-pecado-recomeço",
+    slug: "dona-do-meu-pecado-recomeco",
     name: "Dona do meu pecado - Recomeço",
     author: "Fernanda Moser",
     type: "loja",
-    cover_url: "dona-do-meu-pecado-recomeço.jpg",
+    cover_url: "dona-do-meu-pecado-recomeco.jpg",
     amazon_url: "https://link.amazon/B0a1btptN",
   },
   {
