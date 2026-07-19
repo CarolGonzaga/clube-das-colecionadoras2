@@ -4051,6 +4051,70 @@ html.theme-lilac .text-\[\#5c0d2b\] {
   white-space: nowrap;
 }
 
+.registry-order-card {
+  align-items: stretch;
+  flex-direction: column;
+  padding: 13px;
+}
+
+.registry-order-head,
+.registry-order-dates,
+.registry-order-total {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+}
+
+.registry-order-head {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.registry-order-head b {
+  color: var(--wine);
+  font-family: "Baloo 2", cursive;
+  font-size: 15px;
+}
+
+.registry-order-dates,
+.registry-order-total {
+  flex-wrap: wrap;
+}
+
+.registry-order-items {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.registry-order-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 11px;
+  background: rgba(255, 241, 247, 0.72);
+  padding: 8px 10px;
+}
+
+.registry-order-item small {
+  color: var(--magenta);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.registry-order-total {
+  border-top: 1px solid rgba(194, 24, 91, 0.12);
+  padding-top: 8px;
+}
+
+.registry-order-total span {
+  color: var(--wine);
+  font-weight: 900;
+}
+
 .registry-open-btn {
   min-width: 76px;
   padding: 10px 12px;

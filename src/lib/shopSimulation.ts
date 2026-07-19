@@ -11,6 +11,7 @@ export type SimPurchaseItem = {
 export type SimPurchaseRecord = {
   id: string;
   date: string;
+  paymentConfirmedDate?: string;
   status: "approved" | "pending";
   items: SimPurchaseItem[];
   total: number;
@@ -290,6 +291,7 @@ export const purchaseStorage = {
     const purchase: SimPurchaseRecord = {
       id: purchaseId,
       date,
+      paymentConfirmedDate: date,
       status: "approved",
       items,
       total: items.reduce((sum, item) => sum + item.price * item.qty, 0),
