@@ -28,33 +28,19 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       throw new Error("Unauthorized: No request headers available");
     }
 
-    let token = "";
     const authHeader = request.headers.get("authorization");
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      token = authHeader.replace("Bearer ", "").trim();
+    if (!authHeader) {
+      throw new Error("Unauthorized: No authorization header provided");
     }
 
-    if (!token && request.headers.get("x-supabase-auth")) {
-      token = (request.headers.get("x-supabase-auth") || "").trim();
+    if (!authHeader.startsWith("Bearer ")) {
+      throw new Error("Unauthorized: Only Bearer tokens are supported");
     }
 
-    if (!token && request.headers.get("cookie")) {
-      const cookieHeader = request.headers.get("cookie") || "";
-      const match = cookieHeader.match(/sb-[^=]+-auth-token=([^;]+)/);
-      if (match) {
-        try {
-          const raw = decodeURIComponent(match[1]);
-          const parsed = JSON.parse(raw);
-          token = parsed.access_token || (Array.isArray(parsed) ? parsed[0] : "") || "";
-        } catch {
-          token = decodeURIComponent(match[1]);
-        }
-      }
-    }
-
+    const token = authHeader.replace("Bearer ", "");
     if (!token) {
-      throw new Error("Unauthorized: No authorization token provided");
+      throw new Error("Unauthorized: No token provided");
     }
 
     const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
@@ -70,16 +56,20 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       },
     });
 
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !userData?.user) {
+    const { data, error } = await supabase.auth.getClaims(token);
+    if (error || !data?.claims) {
       throw new Error("Unauthorized: Invalid token");
+    }
+
+    if (!data.claims.sub) {
+      throw new Error("Unauthorized: No user ID found in token");
     }
 
     return next({
       context: {
         supabase,
-        userId: userData.user.id,
-        user: userData.user,
+        userId: data.claims.sub,
+        claims: data.claims,
       },
     });
   },

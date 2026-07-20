@@ -95,14 +95,7 @@ export async function handleMercadoPagoWebhook(request: Request) {
 
   const url = new URL(request.url);
   const rawBody = await request.text();
-  let payload: any = {};
-  try {
-    payload = rawBody ? JSON.parse(rawBody) : {};
-  } catch (err) {
-    console.error("[MercadoPago Webhook] Erro ao fazer parse do JSON do webhook:", err);
-    return jsonResponse({ error: "Invalid JSON body" }, 400);
-  }
-  
+  const payload = rawBody ? JSON.parse(rawBody) : {};
   const signatureDataId = url.searchParams.get("data.id") || url.searchParams.get("data_id") || "";
   const bodyDataId = payload?.data?.id ? String(payload.data.id) : "";
   const eventId = payload?.id ? String(payload.id) : "";
