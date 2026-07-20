@@ -302,7 +302,7 @@ export const dbService = {
 
     const mapped = (profiles || []).map((p: any) => {
       const owned = userStickers.filter((us) => us.user_id === p.id).length;
-      const pct = Math.round((owned / 100) * 100);
+      const pct = Math.round((owned / 360) * 100);
       return {
         id: p.id,
         nick: p.nick,
@@ -316,6 +316,22 @@ export const dbService = {
       if (b.pct !== a.pct) return b.pct - a.pct;
       return a.nick.localeCompare(b.nick);
     });
+  },
+
+  async getAlbumRewardClaimed(userId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from("album_completion_rewards")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) return false;
+    return !!data;
+  },
+
+  async claimAlbumCompletionReward(): Promise<{ claimed: boolean; rare_numbers: number[]; message: string }> {
+    const { data, error } = await supabase.rpc("claim_album_completion_reward");
+    if (error) throw new Error(error.message);
+    return data;
   },
 
   async getUserStyles(userId: string): Promise<UserStyle[]> {

@@ -149,7 +149,7 @@ export default function MuralClient({ profile, muralList, pct }: MuralClientProp
       <div className="bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 space-y-4">
         {list.length === 0 ? (
           <div className="py-8 text-center text-xs font-semibold text-[#9e1b4a]">
-            Ninguém no mural ainda. Seja a primeira! ✦
+            Ninguém no mural ainda. Seja a primeira!
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -177,6 +177,8 @@ export default function MuralClient({ profile, muralList, pct }: MuralClientProp
                   ? "bg-white border-amber-400 shadow-md ring-2 ring-pink-300 first-place-card"
                   : "bg-rose-50/50 border-pink-300 shadow-sm ring-1 ring-pink-300";
               }
+
+              const displayPct = Math.round((m.count / 360) * 100);
 
               return (
                 <div
@@ -217,18 +219,18 @@ export default function MuralClient({ profile, muralList, pct }: MuralClientProp
                       <div className="flex-1 h-1.5 bg-pink-100 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-pink-400 to-[#bf2a5e] rounded-full"
-                          style={{ width: `${Math.min(m.pct, 100)}%` }}
+                          style={{ width: `${Math.min(displayPct, 100)}%` }}
                         />
                       </div>
                       <span className="text-[10px] text-[#bf2a5e] font-bold whitespace-nowrap flex-shrink-0">
-                        {m.count}/100
+                        {m.count}/360
                       </span>
                     </div>
                   </div>
 
                   {/* Percentage Column */}
                   <div className="flex-shrink-0 text-right">
-                    <span className="text-sm font-extrabold text-berry">{m.pct}%</span>
+                    <span className="text-sm font-extrabold text-berry">{displayPct}%</span>
                   </div>
                 </div>
               );
@@ -241,8 +243,7 @@ export default function MuralClient({ profile, muralList, pct }: MuralClientProp
       <div className="mt-4 px-2 text-center">
         <p className="text-[10px] text-berry/60 leading-relaxed">
           Tire suas dúvidas ou troque figurinhas repetidas com outras colecionadoras. Em caso de
-          empate no progresso, o desempate prioriza quem registrou a conta mais recentemente (maior
-          eficiência).
+          empate no progresso, o desempate prioriza a quantidade de figurinhas raras e respostas corretas no quiz.
         </p>
       </div>
     </div>

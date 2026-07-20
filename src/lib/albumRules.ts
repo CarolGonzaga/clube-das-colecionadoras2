@@ -13,12 +13,14 @@ export function isExclusiveSticker(stickerOrNumber: Sticker | number) {
   return getStickerCategory(stickerOrNumber) === "exclusiva";
 }
 
+export const ALL_RARE_STICKER_NUMBERS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+  45, 47, 79, 112, 164, 167, 194, 258, 292, 298,
+];
+
 export function canHaveRareVersion(stickerOrNumber: Sticker | number) {
   const number = typeof stickerOrNumber === "number" ? stickerOrNumber : stickerOrNumber.number;
-  const isLegacyRare = number >= 1 && number <= 20;
-  const isNewRareLoja = [194, 258, 292, 298].includes(number);
-  const isNewRareSorteio = [45, 47, 79, 112, 164, 167].includes(number);
-  return isLegacyRare || isNewRareLoja || isNewRareSorteio;
+  return ALL_RARE_STICKER_NUMBERS.includes(number);
 }
 
 export function isRareStickerVersion(stickerOrNumber: Sticker | number, info?: UserSticker | null) {

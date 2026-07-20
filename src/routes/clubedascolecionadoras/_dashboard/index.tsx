@@ -58,6 +58,7 @@ function DashboardIndex() {
       releaseDayNumber={parentData.releaseDayNumber}
       userRank={parentData.userRank}
       donations={parentData.donations}
+      albumRewardClaimed={parentData.albumRewardClaimed}
     />
   );
 }

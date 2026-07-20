@@ -4,11 +4,12 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { Donation, Profile, Sticker, UserStyle, RevealItem } from "@/lib/types";
 import { getClubAssetUrl, getPublicAlbumUrl } from "@/lib/urls";
-import { isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
+import { ALL_RARE_STICKER_NUMBERS, isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
 import { dbService, getLocalDateStr } from "@/lib/db";
 import { useUI } from "@/components/UIProvider";
 import { claimDailyElementAction, completeMissionAction, logoutAction } from "@/lib/actions";
 import PosterModal from "./PosterModal";
+import PackOpener from "./PackOpener";
 import {
   Instagram,
   Twitter,
@@ -22,6 +23,7 @@ import {
   Link2,
   Trophy,
   Gift,
+  Sparkles,
   MessageCircleHeart,
   CircleFadingPlus,
   Book,
@@ -60,6 +62,7 @@ interface HomeClientProps {
   allElementsClaimed: boolean;
   userRank: number | null;
   donations: Donation[];
+  albumRewardClaimed?: boolean;
 }
 
 const HOME =
@@ -274,6 +277,7 @@ export default function HomeClient({
   allElementsClaimed,
   userRank: propUserRank,
   donations: initialDonations,
+  albumRewardClaimed: initialAlbumRewardClaimed = false,
 }: HomeClientProps) {
   const ui = useUI();
   const router = useRouter();
@@ -284,6 +288,44 @@ export default function HomeClient({
   const [activeCountdown, setActiveCountdown] = useState<{ id: string; label: string; url: string; count: number } | null>(null);
   const [showPoster, setShowPoster] = useState(false);
   const [posterMode, setPosterMode] = useState<"final" | "progress">("progress");
+
+  const [albumRewardClaimed, setAlbumRewardClaimed] = useState(initialAlbumRewardClaimed);
+  const [claimingAlbumReward, setClaimingAlbumReward] = useState(false);
+  const [packReveals, setPackReveals] = useState<RevealItem[]>([]);
+  const [packTitle, setPackTitle] = useState("");
+  const [showPackOpener, setShowPackOpener] = useState(false);
+
+  const handleClaimAlbumReward = async () => {
+    setClaimingAlbumReward(true);
+    try {
+      const res = await dbService.claimAlbumCompletionReward();
+      setAlbumRewardClaimed(true);
+
+      const rareNumbers = res.rare_numbers || ALL_RARE_STICKER_NUMBERS;
+      const reveals: RevealItem[] = rareNumbers.map((num: number) => {
+        const st = stickers.find((s: any) => s.number === num);
+        return {
+          number: num,
+          name: st?.name || `Figurinha Rara #${num}`,
+          slug: st?.slug || `rare-${num}`,
+          author: st?.author || null,
+          wasNew: true,
+          isRare: true,
+          repeat: false,
+          reward: null,
+        };
+      });
+
+      setPackReveals(reveals);
+      setPackTitle("Recompensa de 100% do Álbum: 30 Raras");
+      setShowPackOpener(true);
+      ui.toast("Recompensa resgatada com sucesso! Todas as Raras foram coladas no seu álbum.");
+    } catch (err: any) {
+      ui.toast(err?.message || "Erro ao resgatar recompensa de 100% do álbum.");
+    } finally {
+      setClaimingAlbumReward(false);
+    }
+  };
 
   const ownedCount = ownedSlugs.length;
   const albumTotal = Math.max(stickers.length, TOTAL_ALBUM_STICKERS);
@@ -1341,6 +1383,36 @@ export default function HomeClient({
 
       {/* ===== ELEMENT OF THE DAY ===== */}
       <div className="home-dashboard-daily mx-4 mb-4">
+        {ownedCount >= 360 && !albumRewardClaimed && (
+          <div className="bg-gradient-to-r from-amber-500/10 via-pink-500/10 to-purple-500/10 rounded-2xl border-2 border-amber-400 p-4 mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0 border border-amber-300">
+                <Sparkles className="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-[#9e1b4a]">
+                  Recompensa do Álbum Completo (100%)
+                </h3>
+                <p className="text-[11px] text-[#bf2a5e] font-medium">
+                  Parabéns! Você completou 100% do álbum (360/360). Resgate o seu pacote especial de Raras do Álbum!
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleClaimAlbumReward}
+              disabled={claimingAlbumReward}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-full text-[11px] font-bold text-white flex-shrink-0 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer transition-transform active:scale-95 disabled:opacity-75"
+              style={{
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+              }}
+            >
+              <Gift className="w-4 h-4" />
+              {claimingAlbumReward ? "Resgatando Raras..." : "Resgatar Pacote de Raras"}
+            </button>
+          </div>
+        )}
+
         <p className="text-[11px] font-semibold text-[#9e1b4a] mb-1.5 flex items-center gap-1">
           <img src={STAR} alt="" className="w-3 h-3" />
           Elemento do dia
@@ -1791,6 +1863,16 @@ export default function HomeClient({
             </div>
           </div>
         </div>
+      )}
+      {showPackOpener && (
+        <PackOpener
+          reveals={packReveals}
+          title={packTitle}
+          onClose={() => {
+            setShowPackOpener(false);
+            router.invalidate();
+          }}
+        />
       )}
     </div>
   );
