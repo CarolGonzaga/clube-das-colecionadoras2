@@ -91,11 +91,15 @@ function CartPage() {
     }
     setLoading(true);
     try {
+      const { data: sessionData } = await dbService.supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
       const result = await createMercadoPagoCheckout({
         data: {
           items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
           requestedPoints: appliedPoints,
         },
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
 
       if (appliedPoints > 0) {

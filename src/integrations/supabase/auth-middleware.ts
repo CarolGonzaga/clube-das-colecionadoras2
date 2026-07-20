@@ -28,19 +28,33 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       throw new Error("Unauthorized: No request headers available");
     }
 
+    let token = "";
     const authHeader = request.headers.get("authorization");
 
-    if (!authHeader) {
-      throw new Error("Unauthorized: No authorization header provided");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.replace("Bearer ", "").trim();
     }
 
-    if (!authHeader.startsWith("Bearer ")) {
-      throw new Error("Unauthorized: Only Bearer tokens are supported");
+    if (!token && request.headers.get("x-supabase-auth")) {
+      token = (request.headers.get("x-supabase-auth") || "").trim();
     }
 
-    const token = authHeader.replace("Bearer ", "");
+    if (!token && request.headers.get("cookie")) {
+      const cookieHeader = request.headers.get("cookie") || "";
+      const match = cookieHeader.match(/sb-[^=]+-auth-token=([^;]+)/);
+      if (match) {
+        try {
+          const raw = decodeURIComponent(match[1]);
+          const parsed = JSON.parse(raw);
+          token = parsed.access_token || (Array.isArray(parsed) ? parsed[0] : "") || "";
+        } catch {
+          token = decodeURIComponent(match[1]);
+        }
+      }
+    }
+
     if (!token) {
-      throw new Error("Unauthorized: No token provided");
+      throw new Error("Unauthorized: No authorization token provided");
     }
 
     const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
