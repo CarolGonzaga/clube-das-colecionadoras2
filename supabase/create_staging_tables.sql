@@ -62,6 +62,20 @@ create table public.v1_staging_daily_claims (
   primary key (user_id, day)
 );
 
+create table public.v1_staging_reward_grants (
+  user_id uuid,
+  reward_key text,
+  granted_at timestamptz,
+  primary key (user_id, reward_key)
+);
+
+create table public.v1_staging_completed_tags (
+  user_id uuid,
+  tag_name text,
+  completed_at timestamptz,
+  primary key (user_id, tag_name)
+);
+
 -- Habilitar RLS apenas para segurança, mas deixar acesso livre para service_role
 alter table public.v1_staging_profiles enable row level security;
 alter table public.v1_staging_user_stickers enable row level security;
@@ -69,6 +83,8 @@ alter table public.v1_staging_quiz_answers enable row level security;
 alter table public.v1_staging_user_styles enable row level security;
 alter table public.v1_staging_mission_completions enable row level security;
 alter table public.v1_staging_daily_claims enable row level security;
+alter table public.v1_staging_reward_grants enable row level security;
+alter table public.v1_staging_completed_tags enable row level security;
 
 grant all on public.v1_staging_profiles to service_role;
 grant all on public.v1_staging_user_stickers to service_role;
@@ -76,3 +92,5 @@ grant all on public.v1_staging_quiz_answers to service_role;
 grant all on public.v1_staging_user_styles to service_role;
 grant all on public.v1_staging_mission_completions to service_role;
 grant all on public.v1_staging_daily_claims to service_role;
+grant all on public.v1_staging_reward_grants to service_role;
+grant all on public.v1_staging_completed_tags to service_role;

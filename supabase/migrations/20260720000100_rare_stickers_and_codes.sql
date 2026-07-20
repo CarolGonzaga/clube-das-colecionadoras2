@@ -1,5 +1,21 @@
 -- Migração para configurar as novas figurinhas raras, regras de substituição de raras e gerar os códigos de resgate.
 
+-- 0. Garantir tabelas de redeem_codes
+create table if not exists public.redeem_codes (
+  code text primary key,
+  element text,
+  active boolean default true,
+  release_day integer not null default 1
+);
+
+create table if not exists public.redeem_pools (
+  code text references public.redeem_codes on delete cascade,
+  sticker_number integer not null,
+  primary key (code, sticker_number)
+);
+
+alter table public.redeem_codes enable row level security;
+alter table public.redeem_pools enable row level security;
 -- 1. Atualizar o trigger para não limitar cópias de figurinhas da Loja/Sorteio raras a 1 (apenas Quiz 1-20 e Exclusivas 320-360)
 create or replace function public.enforce_no_duplicate_rare_or_exclusive()
 returns trigger as $$
@@ -328,6 +344,8 @@ $$ language plpgsql security definer;
 
 -- 4. Gerar os 20 códigos normais (CLUB-...) e o especial
 -- Códigos normais
+update public.redeem_codes set active = false;
+
 insert into public.redeem_codes (code, element, active, release_day)
 values 
   ('K9P2X5Y1', null, true, 1),

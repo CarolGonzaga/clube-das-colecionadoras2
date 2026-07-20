@@ -3,7 +3,7 @@ export interface SeedSticker {
   slug: string;
   name: string;
   author: string | null;
-  type: "quiz" | "sorteio" | "ls" | "frase" | "loja" | "exclusiva";
+  type: "quiz" | "sorteio" | "ls" | "frase" | "loja" | "exclusiva" | "bonus";
   cover_url: string | null;
   amazon_url?: string | null;
   ilustrator?: string | null;
@@ -1240,10 +1240,10 @@ export const SEED_STICKERS: SeedSticker[] = [
     number: 135,
     slug: "presas",
     name: "Presas",
-    author: "Debora Carvalho",
+    author: "Rebecca Nobre",
     type: "sorteio",
     cover_url: "presas.jpg",
-    amazon_url: "https://link.amazon/B08aRNkvU",
+    amazon_url: "https://link.amazon/B06YMSklm",
   },
   {
     number: 136,
@@ -2345,12 +2345,12 @@ export const SEED_STICKERS: SeedSticker[] = [
   },
   {
     number: 258,
-    slug: "salik-amor-ruina",
-    name: "Salik: Amor & Ruína",
-    author: "Bia R.D. Ramos",
+    slug: "antes-que-o-verao-acabe",
+    name: "Antes que o verão acabe",
+    author: "Aureliano Medeiros, Cristina Bomfim, G.B. Baldassari, Júlia Maizman, Mark Miller, Mary C. Müller, Victor Marques",
     type: "loja",
-    cover_url: "salik-amor-ruina.jpg",
-    amazon_url: "https://link.amazon/B0aqpV1y5",
+    cover_url: "antes-que-o-verao-acabe.jpg",
+    amazon_url: "https://link.amazon/B01VniZcc",
   },
   {
     number: 259,
@@ -3309,6 +3309,14 @@ export const SEED_STICKERS: SeedSticker[] = [
     cover_url: "operacao-conves-ilustracao.jpg",
     amazon_url: "https://link.amazon/B080YKbsw",
   },
+  {
+    number: 361,
+    slug: "extra",
+    name: "Agradecimentos",
+    author: null,
+    type: "bonus",
+    cover_url: "card story/extra.png",
+  },
 ]
 
 export const SEED_QUESTIONS: SeedQuestion[] = [
@@ -3788,92 +3796,218 @@ export const SEED_REDEEM_CODES: SeedRedeemCode[] = [
   {
     code: "WE34ER4T",
     element: null,
-    active: true,
+    active: false,
     release_day: 1,
   },
   {
     code: "324RFS31",
     element: null,
-    active: true,
+    active: false,
     release_day: 1,
   },
   {
     code: "B7K9P2X5",
     element: null,
-    active: true,
+    active: false,
     release_day: 1,
   },
   {
     code: "H4M8N5Q1",
     element: null,
-    active: true,
+    active: false,
     release_day: 2,
   },
   {
     code: "C3D6E9F2",
     element: null,
-    active: true,
+    active: false,
     release_day: 2,
   },
   {
     code: "J1K4L7M8",
     element: null,
-    active: true,
+    active: false,
     release_day: 2,
   },
   {
     code: "P3Q6R9S2",
     element: null,
-    active: true,
+    active: false,
     release_day: 3,
   },
   {
     code: "T1U4V7W2",
     element: null,
-    active: true,
+    active: false,
     release_day: 3,
   },
   {
     code: "X8Y1Z4A2",
     element: null,
-    active: true,
+    active: false,
     release_day: 3,
   },
   {
     code: "F3G6H9J2",
     element: null,
-    active: true,
+    active: false,
     release_day: 4,
   },
   {
     code: "K1L4M7N2",
     element: null,
-    active: true,
+    active: false,
     release_day: 4,
   },
   {
     code: "P8Q1R4S2",
     element: null,
-    active: true,
+    active: false,
     release_day: 4,
   },
   {
     code: "V3W6X9Y2",
     element: null,
-    active: true,
+    active: false,
     release_day: 5,
   },
   {
     code: "Z1A4B7C2",
     element: null,
-    active: true,
+    active: false,
     release_day: 5,
   },
   {
     code: "D8E1F4G2",
     element: null,
-    active: true,
+    active: false,
     release_day: 5,
+  },
+  {
+    code: "K9P2X5Y1",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "M8N5Q1R7",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "D6E9F2G8",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "J1K4L7M3",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "P3Q6R9S5",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "B2V8C5X1",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "F9H4J7K2",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "W3E6R9T1",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "Y5U8I1O4",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "Z2X5C8V1",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "N7M3L9K2",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "G8F4D2S6",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "H1J4K7L3",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "Q9W5E1R8",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "T2Y5U8I1",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "A6S3D9F2",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "P8O4I2U7",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "V2B5N8M1",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "C9X5Z1A7",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "K3L7J9H2",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "X8Y2Z5W1",
+    element: null,
+    active: true,
+    release_day: 1,
   },
 ];
 
@@ -7488,7 +7622,23 @@ const redeemPoolKeys = new Set(
 );
 
 for (const { code } of SEED_REDEEM_CODES) {
-  for (let sticker_number = 21; sticker_number <= 100; sticker_number += 1) {
+  let minSticker = 21;
+  let maxSticker = 100;
+
+  if ([
+    "K9P2X5Y1", "M8N5Q1R7", "D6E9F2G8", "J1K4L7M3", "P3Q6R9S5",
+    "B2V8C5X1", "F9H4J7K2", "W3E6R9T1", "Y5U8I1O4", "Z2X5C8V1",
+    "N7M3L9K2", "G8F4D2S6", "H1J4K7L3", "Q9W5E1R8", "T2Y5U8I1",
+    "A6S3D9F2", "P8O4I2U7", "V2B5N8M1", "C9X5Z1A7", "K3L7J9H2"
+  ].includes(code)) {
+    minSticker = 21;
+    maxSticker = 193;
+  } else if (code === "X8Y2Z5W1") {
+    minSticker = 101;
+    maxSticker = 193;
+  }
+
+  for (let sticker_number = minSticker; sticker_number <= maxSticker; sticker_number += 1) {
     const key = `${code}:${sticker_number}`;
     if (!redeemPoolKeys.has(key)) {
       SEED_REDEEM_POOLS.push({ code, sticker_number });

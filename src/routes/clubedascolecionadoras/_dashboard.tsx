@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { dbService, supabase } from "../../lib/db";
+import { isUserAllowedInMaintenance } from "../../lib/maintenance";
 import { UIProvider, useUI } from "../../components/UIProvider";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import TopBar from "../../components/TopBar";
@@ -20,6 +21,9 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
           redirect: location.href,
         },
       });
+    }
+    if (!isUserAllowedInMaintenance(user.id)) {
+      throw redirect({ to: "/clubedascolecionadoras/manutencao" as any });
     }
   },
   loader: async () => {
@@ -54,6 +58,9 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
     const user = await dbService.getCurrentUser();
     if (!user) {
       throw redirect({ to: "/clubedascolecionadoras/login" });
+    }
+    if (!isUserAllowedInMaintenance(user.id)) {
+      throw redirect({ to: "/clubedascolecionadoras/manutencao" as any });
     }
     const profile = await dbService.getProfile(user.id);
     const stickers = await dbService.getStickers();
@@ -126,8 +133,7 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
     if (typeof window === "undefined" || !data.profile?.id) return;
     if (data.profile.needs_username_update) {
       ui.toast(
-        "✨ Bem-vinda à V2 do Clube! Seu progresso foi migrado com sucesso. Geramos um apelido temporário para você. Por favor, vá em Configurações para definir seu apelido único definitivo!",
-        { duration: 15000 },
+        "Boas vindas a versão 2.0 do Clube! Seu progresso foi migrado com sucesso. Geramos um apelido temporário para você. Por favor, vá em Configurações para definir seu apelido único definitivo!",
       );
     }
   }, [data.profile, ui]);
@@ -296,7 +302,8 @@ function DashboardLayout() {
 
   // Compute values for TopBar
   const ownedCount = data.userStickers.filter((us) => us.copies > 0).length;
-  const albumTotal = Math.max(data.stickers.length, TOTAL_ALBUM_STICKERS);
+  const baseStickersCount = data.stickers.filter((s: any) => s.type !== "bonus").length;
+  const albumTotal = Math.max(baseStickersCount, TOTAL_ALBUM_STICKERS);
   const pct = Math.round((ownedCount / albumTotal) * 100);
 
   // Status phrases mapping

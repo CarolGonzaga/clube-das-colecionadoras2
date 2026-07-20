@@ -196,7 +196,7 @@ interface AlbumClientProps {
 export default function AlbumClient({ profile, stickers, userStickers }: AlbumClientProps) {
   const ui = useUI();
   const router = useRouter();
-  type AlbumFilter = "todas" | "faltam" | "coladas" | "repetidas" | "raras" | "exclusivas";
+  type AlbumFilter = "todas" | "faltam" | "coladas" | "repetidas" | "raras" | "exclusivas" | "bonus";
   const [filter, setFilter] = useState<AlbumFilter>("todas");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [itemsChoice, setItemsChoice] = useState<number | null>(null);
@@ -291,6 +291,12 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   const filteredStickers = stickers.filter((s) => {
     const info = getOwnedInfo(s.number);
     const copies = getCopiesCount(s.number);
+    
+    // Hide bonus stickers (like 361) from the general views if not owned
+    if (s.type === "bonus" && !info) {
+      return false;
+    }
+
     if (filter === "faltam") {
       return !info;
     }
@@ -305,6 +311,9 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     }
     if (filter === "exclusivas") {
       return isExclusiveSticker(s);
+    }
+    if (filter === "bonus") {
+      return s.type === "bonus" && !!info;
     }
     return true;
   });
@@ -370,11 +379,17 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     return stickers.filter((s) => {
       const info = getOwnedInfo(s.number);
       const copies = getCopiesCount(s.number);
+
+      if (s.type === "bonus" && !info) {
+        return false;
+      }
+
       if (type === "faltam") return !info;
       if (type === "coladas") return !!info;
       if (type === "repetidas") return copies > 1;
       if (type === "raras") return isRareVersion(s.number);
       if (type === "exclusivas") return isExclusiveSticker(s);
+      if (type === "bonus") return s.type === "bonus" && !!info;
       return true;
     }).length;
   };
@@ -397,11 +412,40 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   };
 
   const families = [
-    { tag: "Baldaverso", stickers: [1, 53, 54] },
-    { tag: "Frutaverso", stickers: [5, 59, 60] },
-    { tag: "Bright Falls", stickers: [22, 51, 52] },
-    { tag: "HQ", stickers: [84, 85, 87] },
-    { tag: "Opostos Co.", stickers: [19, 73, 74] },
+    { tag: "Coleção fã Zey Shelsea", stickers: [14, 130, 212, 149, 198, 205, 225] },
+    { tag: "Coleção fã Victoria Mendes", stickers: [4, 70, 181, 166, 315, 238, 281] },
+    { tag: "Coleção fã V.S. Vilela", stickers: [115, 264, 237, 9, 68] },
+    { tag: "Coleção fã Mariana Rosa", stickers: [6, 287, 172, 179, 319, 236] },
+    { tag: "Coleção fã Victoria Moon", stickers: [251, 256, 15, 80, 177] },
+    { tag: "Coleção fã Tessa Reis", stickers: [30, 160, 176, 200, 269, 295, 300, 314] },
+    { tag: "Coleção fã Carol Barra", stickers: [27, 182, 206, 221] },
+    { tag: "Coleção fã D.Barreto", stickers: [8, 272, 288] },
+    { tag: "Coleção fã Danda Odeleci", stickers: [123, 199, 246] },
+    { tag: "Coleção fã Elayne Baeta", stickers: [25, 125, 146] },
+    { tag: "Coleção fã Emely Luiza Curcio", stickers: [129, 162, 195, 239, 263] },
+    { tag: "Coleção fã Englantine", stickers: [12, 124, 215, 253, 273] },
+    { tag: "Coleção fã Helena Nolasco", stickers: [16, 127, 285, 299, 308] },
+    { tag: "Coleção fã Ingrid Paranhos", stickers: [37, 197, 282] },
+    { tag: "Coleção fã Ju Mesquita", stickers: [7, 63, 240] },
+    { tag: "Coleção fã Lari Alcantara", stickers: [42, 254, 303] },
+    { tag: "Coleção fã Carol e Liliane", stickers: [155, 210, 291] },
+    { tag: "Coleção fã Lis Selwyn", stickers: [112, 163, 222, 293] },
+    { tag: "Coleção fã Luisa Landre", stickers: [164, 219, 229, 301] },
+    { tag: "Coleção fã Raquel Alves", stickers: [40, 189, 233, 304, 317] },
+    { tag: "Coleção fã Sarah Oliveira", stickers: [11, 227, 249] },
+    { tag: "Coleção fã Vanessa Freitas", stickers: [39, 118, 165, 262, 270, 290] },
+    { tag: "Coleção fã Yasmim Mahmud Kader", stickers: [17, 153, 211, 234] },
+    { tag: "Coleção Destinos Entrelaçados", stickers: [106, 224, 313] },
+    { tag: "Coleção Bruxas", stickers: [141, 231] },
+    { tag: "Coleção Sereia", stickers: [259, 207, 250] },
+    { tag: "Coleção Amores Possíveis", stickers: [305, 235, 79] },
+    { tag: "Coleção Sáficas de Verão", stickers: [170, 309, 312] },
+    { tag: "Coleção Sementes", stickers: [26, 271] },
+    { tag: "Coleção Bright Falls", stickers: [22, 51, 52] },
+    { tag: "Coleção Opostos Co.", stickers: [19, 73, 74] },
+    { tag: "Coleção Baldaverso", stickers: [1, 53, 54, 111, 122, 156, 274, 284, 318] },
+    { tag: "Coleção Frutaverso", stickers: [5, 59, 60] },
+    { tag: "Coleção HQ", stickers: [84, 85, 87] },
   ];
 
   const getStickerFamily = (number: number) => families.find((family) => family.stickers.includes(number));
@@ -795,68 +839,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
           </p>
         )}
 
-        {stickerFamily && (
-          <div
-            style={{
-              background: "#FFF0F5",
-              border: "1px solid #FFE4E1",
-              borderRadius: "12px",
-              padding: "10px",
-              margin: "12px auto 4px",
-              maxWidth: "360px",
-              width: "100%",
-              textAlign: "left",
-            }}
-          >
-            <span
-              className="text-[#c2185b]"
-              style={{
-                fontSize: "10px",
-                textTransform: "uppercase",
-                fontWeight: "bold",
-                letterSpacing: "1px",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                marginBottom: "4px",
-              }}
-            >
-              <Tag size={11} /> Coleção Família: {stickerFamily.tag}
-            </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
-              {stickerFamily.stickers.map((num) => {
-                const isCurrent = num === sticker.number;
-                const famSticker = stickers.find((s) => s.number === num);
-                const isOwned = !!getOwnedInfo(num);
-                return (
-                  <div
-                    key={num}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px" }}
-                  >
-                    {isOwned ? (
-                      <CheckCircle size={14} color="#2e7d32" />
-                    ) : (
-                      <Circle size={14} color="#a0a0a0" />
-                    )}
-                    <span
-                      style={{
-                        fontWeight: isCurrent ? "800" : "normal",
-                        color: isOwned ? "#5c0d2b" : "#a0a0a0",
-                        textDecoration: isCurrent ? "underline" : "none",
-                      }}
-                    >
-                      #{String(num).padStart(3, "0")}
-                      {isOwned ? ` · ${famSticker?.name || "Figurinha"}` : ""}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="note" style={{ marginTop: "8px", fontSize: "9px", lineHeight: "1.2" }}>
-              Ao colecionar os 3 livros da família {stickerFamily.tag}, você ganha um pacote extra!
-            </p>
-          </div>
-        )}
+
         <a
           className="btn sm soft"
           style={{
@@ -1023,32 +1006,32 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                     })}
                   </div>
 
-                  {/* Manual claim button when family is complete */}
-                  {isCompleted && (
-                    <div style={{ marginTop: "12px", borderTop: "1px dashed var(--blush)", paddingTop: "12px", display: "flex", justifyContent: "center" }}>
-                      {isClaimed ? (
-                        <span style={{ color: "#22c55e", fontWeight: "bold", fontSize: "13px", display: "flex", alignItems: "center", gap: "4px" }}>
-                          ✓ Prêmio Resgatado
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isClaiming}
-                          onClick={handleClaim}
-                          className="btn"
-                          style={{
-                            margin: 0,
-                            padding: "8px 16px",
-                            fontSize: "13px",
-                            background: "var(--gradient-berry)",
-                            borderRadius: "10px",
-                          }}
-                        >
-                          {isClaiming ? "Resgatando..." : "Resgatar Prêmio 🎁"}
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  {/* Manual claim button */}
+                  <div style={{ marginTop: "12px", borderTop: "1px dashed var(--blush)", paddingTop: "12px", display: "flex", justifyContent: "center" }}>
+                    {isCompleted && isClaimed ? (
+                      <span style={{ color: "#22c55e", fontWeight: "bold", fontSize: "13px", display: "flex", alignItems: "center", gap: "4px" }}>
+                        ✓ Prêmio Resgatado
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={!isCompleted || isClaiming}
+                        onClick={handleClaim}
+                        className="btn"
+                        style={{
+                          margin: 0,
+                          padding: "8px 16px",
+                          fontSize: "13px",
+                          background: isCompleted ? "var(--gradient-berry)" : "#e0e0e0",
+                          color: isCompleted ? "#fff" : "#999",
+                          borderRadius: "10px",
+                          cursor: isCompleted ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        {isClaiming ? "Resgatando..." : (isCompleted ? "Resgatar Prêmio" : "Incompleto")}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Seal Container */}
@@ -1094,6 +1077,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               <option value="repetidas">Repetidas</option>
               <option value="raras">Raras</option>
               <option value="exclusivas">Exclusivas</option>
+              {getFilterCount("bonus") > 0 && <option value="bonus">Bônus</option>}
             </select>
             {/* Count badge shown outside dropdown */}
             <span style={{

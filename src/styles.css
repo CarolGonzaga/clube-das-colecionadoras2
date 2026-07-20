@@ -7319,3 +7319,77 @@ html.theme-lilac .trade-flow-search-btn svg {
     font-size: 12.75px; /* 15px × 0.85 */
   }
 }
+
+/* ── Maintenance Screen ── */
+.maintenance-screen {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.72), transparent 28%),
+    radial-gradient(circle at 84% 12%, rgba(247, 168, 203, 0.46), transparent 24%),
+    linear-gradient(180deg, #fff5fa 0%, #fce0ec 100%);
+  color: var(--wine);
+}
+
+.maintenance-card {
+  width: min(100%, 440px);
+  padding: 34px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 22px 58px rgba(194, 24, 91, 0.16);
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.maintenance-logo {
+  width: 210px;
+  max-width: 78%;
+  margin: 0 auto 22px;
+  filter: drop-shadow(0 6px 16px rgba(194, 24, 91, 0.16));
+}
+
+.maintenance-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #fce0ec;
+  color: var(--magenta);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.maintenance-card h1 {
+  margin: 0;
+  color: var(--wine);
+  font-family: var(--font-display);
+  font-size: clamp(28px, 8vw, 42px);
+  line-height: 0.98;
+}
+
+.maintenance-card p {
+  margin: 18px 0 0;
+  color: rgba(90, 19, 49, 0.78);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+
+.maintenance-note {
+  margin-top: 22px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #fff4f9;
+  color: var(--magenta);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+

@@ -154,6 +154,20 @@ begin
   where user_id = target_user_id
   on conflict (user_id, day) do nothing;
 
+  -- 8. Migrar recompensas e códigos resgatados (reward_grants)
+  insert into public.reward_grants (user_id, reward_key, granted_at)
+  select user_id, reward_key, granted_at
+  from public.v1_staging_reward_grants
+  where user_id = target_user_id
+  on conflict (user_id, reward_key) do nothing;
+
+  -- 9. Migrar famílias de tags completadas (completed_tags)
+  insert into public.completed_tags (user_id, tag_name, completed_at)
+  select user_id, tag_name, completed_at
+  from public.v1_staging_completed_tags
+  where user_id = target_user_id
+  on conflict (user_id, tag_name) do nothing;
+
   -- Registrar sucesso da migração
   update public.v2_migration_claims
   set status = 'completed',
