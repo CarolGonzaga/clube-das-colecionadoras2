@@ -313,5 +313,191 @@ BEGIN
   VALUES ('f8721040-035f-414a-8153-b5e12fec64d7'::uuid, to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD'), 0, 1, v_pool)
   ON CONFLICT (user_id) DO UPDATE
   SET perguntas_pendentes = v_pool,
+      tentativas_hoje_count = 0,
       ultimo_dia_acesso = to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD');
 END $$;
+
+-- Override answer_quiz_legacy para não barrar a usuária f8721040-035f-414a-8153-b5e12fec64d7 no limite de 4 tentativas
+CREATE OR REPLACE FUNCTION public.answer_quiz_legacy(
+  sticker_number_param integer,
+  q_index_param integer,
+  chosen_index_param integer
+)
+RETURNS jsonb AS $$
+DECLARE
+  user_id_param uuid;
+  current_day text;
+  attempt_count integer;
+  correct_idx_val integer;
+  is_correct boolean;
+  new_is_rare boolean;
+  was_new boolean;
+  final_is_rare boolean;
+  reveals jsonb := '[]'::jsonb;
+  reveal_item jsonb;
+  new_errors integer;
+  target_slug text;
+BEGIN
+  user_id_param := auth.uid();
+  IF user_id_param IS NULL THEN
+    RAISE EXCEPTION 'Não autorizado.';
+  END IF;
+
+  SELECT ultimo_dia_acesso, tentativas_hoje_count
+  INTO current_day, attempt_count
+  FROM public.quiz_attempts
+  WHERE user_id = user_id_param;
+
+  IF current_day IS NULL THEN
+    current_day := to_char(now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD');
+    attempt_count := 0;
+  END IF;
+
+  -- Para a usuária f8721040-035f-414a-8153-b5e12fec64d7, ignora a trava de 4 tentativas
+  IF user_id_param <> 'f8721040-035f-414a-8153-b5e12fec64d7'::uuid AND attempt_count >= 4 THEN
+    RAISE EXCEPTION 'Você já esgotou suas 4 tentativas de hoje! Volte amanhã ⏳';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.quiz_attempts
+    WHERE user_id = user_id_param AND sticker_number_param = ANY(perguntas_pendentes)
+  ) THEN
+    RAISE EXCEPTION 'Esta pergunta não está disponível para ser respondida hoje.';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.quiz_answers
+    WHERE user_id = user_id_param
+      AND sticker_number = sticker_number_param
+      AND q_index = q_index_param
+      AND attempt_day = current_day::date
+  ) THEN
+    RAISE EXCEPTION 'Você já respondeu a esta pergunta hoje.';
+  END IF;
+
+  SELECT correct_index INTO correct_idx_val
+  FROM public.quiz_questions
+  WHERE sticker_number = sticker_number_param AND q_index = q_index_param;
+
+  IF correct_idx_val IS NULL THEN
+    RAISE EXCEPTION 'Pergunta não encontrada.';
+  END IF;
+
+  DECLARE
+    h integer;
+    perm0 integer; perm1 integer; perm2 integer; perm3 integer;
+    tmp_int integer;
+    shuffled_correct_index integer;
+  BEGIN
+    h := abs(hashtext(user_id_param::text || sticker_number_param::text || current_day));
+    perm0 := 0; perm1 := 1; perm2 := 2; perm3 := 3;
+
+    CASE (h % 4)
+      WHEN 0 THEN tmp_int := perm0; perm0 := perm3; perm3 := tmp_int;
+      WHEN 1 THEN tmp_int := perm1; perm1 := perm3; perm3 := tmp_int;
+      WHEN 2 THEN tmp_int := perm2; perm2 := perm3; perm3 := tmp_int;
+      ELSE null;
+    END CASE;
+    h := h / 4;
+    CASE (h % 3)
+      WHEN 0 THEN tmp_int := perm0; perm0 := perm2; perm2 := tmp_int;
+      WHEN 1 THEN tmp_int := perm1; perm1 := perm2; perm2 := tmp_int;
+      ELSE null;
+    END CASE;
+    h := h / 3;
+    IF (h % 2) = 0 THEN
+      tmp_int := perm0; perm0 := perm1; perm1 := tmp_int;
+    END IF;
+
+    IF perm0 = correct_idx_val THEN shuffled_correct_index := 0;
+    ELSIF perm1 = correct_idx_val THEN shuffled_correct_index := 1;
+    ELSIF perm2 = correct_idx_val THEN shuffled_correct_index := 2;
+    ELSE shuffled_correct_index := 3;
+    END IF;
+
+    is_correct := (chosen_index_param <> -1 AND chosen_index_param = shuffled_correct_index);
+  END;
+
+  UPDATE public.quiz_attempts
+  SET tentativas_hoje_count = tentativas_hoje_count + 1
+  WHERE user_id = user_id_param;
+
+  INSERT INTO public.quiz_answers (
+    user_id,
+    sticker_number,
+    q_index,
+    chosen_index,
+    correct,
+    attempt_day
+  )
+  VALUES (
+    user_id_param,
+    sticker_number_param,
+    q_index_param,
+    chosen_index_param,
+    is_correct,
+    current_day::date
+  );
+
+  SELECT 
+    CASE sticker_number_param
+      WHEN 1 THEN 'amor-fati' WHEN 2 THEN 'cupidos-nao-se-apaixonam' WHEN 3 THEN 'eu-minha-crush-e-minha-irma'
+      WHEN 4 THEN 'liz-flores-e-uma-farsa' WHEN 5 THEN 'segundo-cliche' WHEN 6 THEN 'desejos-ocultos-das-violetas'
+      WHEN 7 THEN 'o-casamento' WHEN 8 THEN 'como-nao-se-apaixonar' WHEN 9 THEN 'ela-e-mais-do-que-voce-imagina'
+      WHEN 10 THEN 'manual-da-garota-falsa' WHEN 11 THEN 'os-27-desafios-de-valentina' WHEN 12 THEN 'em-busca-do-felizes-para-sempre'
+      WHEN 13 THEN 'o-duelo' WHEN 14 THEN 'a-garota-do-patins' WHEN 15 THEN 'o-comeco'
+      WHEN 16 THEN 'conselho-de-classe' WHEN 17 THEN 'garota-maravilha' WHEN 18 THEN 'a-promessa'
+      WHEN 19 THEN 'a-aposta' WHEN 20 THEN 'as-duas'
+      ELSE 'amor-fati'
+    END INTO target_slug;
+
+  IF is_correct THEN
+    SELECT NOT EXISTS (
+      SELECT 1 FROM public.user_stickers WHERE user_id = user_id_param AND sticker_number = sticker_number_param AND copies > 0
+    ) INTO was_new;
+
+    SELECT (random() < 0.1) INTO new_is_rare;
+
+    INSERT INTO public.user_stickers (user_id, sticker_number, copies, is_rare, first_unlocked_at)
+    VALUES (user_id_param, sticker_number_param, 1, new_is_rare, now())
+    ON CONFLICT (user_id, sticker_number) DO UPDATE
+    SET copies = public.user_stickers.copies + 1,
+        is_rare = CASE WHEN new_is_rare THEN true ELSE public.user_stickers.is_rare END;
+
+    SELECT is_rare INTO final_is_rare
+    FROM public.user_stickers
+    WHERE user_id = user_id_param AND sticker_number = sticker_number_param;
+
+    reveal_item := jsonb_build_object(
+      'slug', target_slug,
+      'number', sticker_number_param,
+      'wasNew', was_new,
+      'isRare', new_is_rare,
+      'repeat', NOT was_new,
+      'reward', null
+    );
+    reveals := reveals || reveal_item;
+
+    INSERT INTO public.point_transactions (user_id, amount, reason, sticker_number)
+    VALUES (user_id_param, 10, 'Quiz Respondido Corretamente', sticker_number_param);
+
+    UPDATE public.profiles
+    SET points_balance = coalesce(points_balance, 0) + 10
+    WHERE id = user_id_param;
+  ELSE
+    SELECT count(*) INTO new_errors
+    FROM public.quiz_answers
+    WHERE user_id = user_id_param AND sticker_number = sticker_number_param AND correct = false;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'isCorrect', is_correct,
+    'reveals', reveals,
+    'errorsCount', coalesce(new_errors, 0)
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+GRANT EXECUTE ON FUNCTION public.answer_quiz_legacy(integer, integer, integer) TO authenticated;
+
