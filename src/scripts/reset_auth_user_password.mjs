@@ -8,17 +8,17 @@ const supabaseServiceKey =
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
-  process.exit(1);
+  throw new Error("Missing Supabase environment variables.");
 }
 
 if (!emailArg) {
   console.error("Usage: node src/scripts/reset_auth_user_password.mjs email@example.com 1234");
-  process.exit(1);
+  throw new Error("Missing email argument.");
 }
 
 if (!/^\d{4,}$/.test(pinArg)) {
   console.error("The PIN must contain at least 4 digits.");
-  process.exit(1);
+  throw new Error("Invalid PIN.");
 }
 
 const email = emailArg.trim().toLowerCase();
@@ -31,18 +31,32 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   },
 });
 
-const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+async function findUserByEmail(targetEmail) {
+  const perPage = 1000;
+  let page = 1;
 
-if (listError) {
-  console.error(`Could not list users: ${listError.message}`);
-  process.exit(1);
+  while (true) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) {
+      throw new Error(`Could not list users: ${error.message}`);
+    }
+
+    const user = data.users.find((item) => item.email?.trim().toLowerCase() === targetEmail);
+    if (user) return user;
+
+    if (data.users.length < perPage) return null;
+    page += 1;
+  }
 }
 
-const user = usersData.users.find((item) => item.email?.toLowerCase() === email);
+const user = await findUserByEmail(email);
 
 if (!user) {
-  console.error(`User not found: ${email}`);
-  process.exit(1);
+  throw new Error(`User not found through Supabase Admin API: ${email}`);
 }
 
 const { data, error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
@@ -54,8 +68,7 @@ const { data, error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
 });
 
 if (error) {
-  console.error(`Could not update user password: ${error.message}`);
-  process.exit(1);
+  throw new Error(`Could not update user password: ${error.message}`);
 }
 
 console.log(`Password reset through Supabase Admin API for ${data.user.email} (${data.user.id}).`);
