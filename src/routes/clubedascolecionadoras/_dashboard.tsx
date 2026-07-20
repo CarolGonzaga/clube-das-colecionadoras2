@@ -132,11 +132,22 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
   useEffect(() => {
     if (typeof window === "undefined" || !data.profile?.id) return;
     if (data.profile.needs_username_update) {
-      ui.toast(
-        "Boas vindas a versão 2.0 do Clube! Seu progresso foi migrado com sucesso. Geramos um apelido temporário para você. Por favor, vá em Configurações para definir seu apelido único definitivo!",
-      );
+      const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
+      const notifId = `welcome_username_${data.profile.id}`;
+      if (!savedNotifs.some((n: any) => n.id === notifId)) {
+        const welcomeNotif = {
+          id: notifId,
+          type: "welcome_username",
+          message:
+            "Boas vindas a versão 2.0 do Clube! Seu progresso foi migrado com sucesso. Geramos um apelido temporário para você. Por favor, vá em Configurações para definir seu apelido único definitivo!",
+          date: new Date().toISOString(),
+          seen: false,
+        };
+        localStorage.setItem("trade_notifications", JSON.stringify([welcomeNotif, ...savedNotifs]));
+        window.dispatchEvent(new Event("trade_notifications_change"));
+      }
     }
-  }, [data.profile, ui]);
+  }, [data.profile]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !data.profile?.id) return;

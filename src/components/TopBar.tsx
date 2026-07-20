@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
-import { Bell, Crown, LogOut, Settings } from "lucide-react";
+import { Bell, Crown, LogOut, Settings, X } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
 import { useUI } from "@/components/UIProvider";
 
@@ -45,6 +45,17 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
     }
   };
 
+  const removeNotification = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const stored = localStorage.getItem("trade_notifications");
+    const notifications = stored ? JSON.parse(stored) : [];
+    const updated = notifications.filter((n: any) => n.id !== id);
+    localStorage.setItem("trade_notifications", JSON.stringify(updated));
+    setHasUnseenNotifs(updated.some((n: any) => !n.seen));
+    window.dispatchEvent(new Event("trade_notifications_change"));
+    ui.closeModal();
+  };
+
   const handleNotifications = () => {
     const stored = localStorage.getItem("trade_notifications");
     const notifications = stored ? JSON.parse(stored) : [];
@@ -81,42 +92,70 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
               display: "flex",
               flexDirection: "column",
               gap: "8px",
-              maxHeight: "260px",
+              maxHeight: "280px",
               overflowY: "auto",
               paddingRight: "4px",
             }}
           >
             {notifications.map((n: any) => {
-              const isClickable = n.type === "trade_claim" || n.type === "collection_completed";
+              const isClickable =
+                n.type === "trade_claim" ||
+                n.type === "collection_completed" ||
+                n.type === "welcome_username";
               return (
                 <div
                   key={n.id}
                   onClick={() => {
                     if (isClickable) {
                       ui.closeModal();
-                      if (n.type === "collection_completed") {
+                      if (n.type === "welcome_username") {
+                        router.navigate({ to: "/clubedascolecionadoras/config" });
+                      } else if (n.type === "collection_completed") {
                         router.navigate({
                           to: "/clubedascolecionadoras/album",
-                          search: { tab: "colecoes" }
+                          search: { tab: "colecoes" },
                         });
                       } else {
                         router.navigate({
                           to: "/clubedascolecionadoras/trocas",
-                          search: { tab: "history" }
+                          search: { tab: "history" },
                         });
                       }
                     }
                   }}
                   style={{
+                    position: "relative",
                     border: "1px solid rgba(194, 24, 91, 0.12)",
                     background: isClickable ? "#fff0f7" : "#fafafa",
                     borderRadius: "12px",
-                    padding: "10px 12px",
+                    padding: "10px 32px 10px 12px",
                     textAlign: "left",
                     cursor: isClickable ? "pointer" : "default",
                     transition: "transform 0.1s ease",
                   }}
                 >
+                  <button
+                    type="button"
+                    onClick={(e) => removeNotification(n.id, e)}
+                    title="Excluir notificação"
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      background: "transparent",
+                      border: "none",
+                      color: "#999",
+                      cursor: "pointer",
+                      padding: "2px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "50%",
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+
                   <p
                     style={{
                       fontSize: "12px",
@@ -132,8 +171,20 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
                     {new Date(n.date).toLocaleString("pt-BR")}
                   </div>
                   {isClickable && (
-                    <span style={{ fontSize: "10px", color: "#C2185B", fontWeight: "bold", display: "block", marginTop: "4px" }}>
-                      {n.type === "collection_completed" ? "Clique para ver ➔" : "Clique para resgatar ➔"}
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: "#C2185B",
+                        fontWeight: "bold",
+                        display: "block",
+                        marginTop: "4px",
+                      }}
+                    >
+                      {n.type === "welcome_username"
+                        ? "Ir para Configurações ➔"
+                        : n.type === "collection_completed"
+                          ? "Clique para ver ➔"
+                          : "Clique para resgatar ➔"}
                     </span>
                   )}
                 </div>
