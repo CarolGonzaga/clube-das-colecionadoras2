@@ -73,7 +73,7 @@ async function fetchMercadoPagoPayment(paymentId: string) {
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || process.env.VITE_MERCADO_PAGO_ACCESS_TOKEN;
   if (!accessToken) throw new Error("MERCADO_PAGO_ACCESS_TOKEN não configurado.");
 
-  const cleanId = String(paymentId).replace(/^["']|["']$/g, "").trim();
+  const cleanId = decodeURIComponent(String(paymentId || "")).replace(/[^0-9]/g, "");
 
   const response = await fetch(`https://api.mercadopago.com/v1/payments/${cleanId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
