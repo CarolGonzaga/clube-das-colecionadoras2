@@ -37,7 +37,7 @@ function getMercadoPagoAccessToken() {
   if (!token) {
     throw new Error("MERCADO_PAGO_ACCESS_TOKEN não configurado.");
   }
-  return token;
+  return token.trim().replace(/^["']|["']$/g, "");
 }
 
 function centsToMoney(cents: number) {
@@ -101,6 +101,11 @@ async function createMercadoPagoPreference({
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
+    console.error("[MercadoPago Checkout Error]", {
+      status: response.status,
+      statusText: response.statusText,
+      payload,
+    });
     throw new Error(payload?.message || "Erro ao criar preferência no Mercado Pago.");
   }
 
