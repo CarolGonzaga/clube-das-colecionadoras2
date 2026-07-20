@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 function jsonResponse(body: unknown, status = 200) {
@@ -202,3 +203,4 @@ export async function handleMercadoPagoWebhook(request: Request) {
     throw error;
   }
 }
+

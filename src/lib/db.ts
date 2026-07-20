@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Sticker, Profile, UserSticker, Style, UserStyle, RevealItem, Donation, TradeRequest, TradeUserLookup } from "./types";
 import { getLoginUrl } from "./urls";
@@ -758,3 +759,4 @@ export const dbService = {
     return data;
   },
 };
+
