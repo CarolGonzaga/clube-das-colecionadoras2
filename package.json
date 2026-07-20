@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "auth:reset-pin": "node src/scripts/reset_auth_user_password.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

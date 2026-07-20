@@ -85,9 +85,10 @@ export const dbService = {
   },
 
   async login(email: string, pin: string) {
-    const normalizedPin = normalizePassword(pin);
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPin = normalizePassword(pin.trim());
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: normalizedEmail,
       password: normalizedPin,
     });
     if (error) throw new Error(error.message);
