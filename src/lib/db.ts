@@ -319,13 +319,17 @@ export const dbService = {
   },
 
   async getAlbumRewardClaimed(userId: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from("album_completion_rewards")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (error) return false;
-    return !!data;
+    try {
+      const { data, error } = await supabase
+        .from("album_completion_rewards")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) return false;
+      return !!data;
+    } catch {
+      return false;
+    }
   },
 
   async claimAlbumCompletionReward(): Promise<{ claimed: boolean; rare_numbers: number[]; message: string }> {

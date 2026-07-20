@@ -171,11 +171,11 @@ BEGIN
       ), coalesce((
         SELECT correct FROM public.quiz_answers
         WHERE user_id = user_id_param AND sticker_number = temp_sticker_number AND attempt_day = current_day::date
-        ORDER BY created_at DESC LIMIT 1
+        ORDER BY answered_at DESC LIMIT 1
       ), false), (
         SELECT chosen_index FROM public.quiz_answers
         WHERE user_id = user_id_param AND sticker_number = temp_sticker_number AND attempt_day = current_day::date
-        ORDER BY created_at DESC LIMIT 1
+        ORDER BY answered_at DESC LIMIT 1
       )
       INTO temp_answered, temp_correct, temp_chosen_index;
 
