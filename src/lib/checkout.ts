@@ -130,11 +130,10 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data) => createCheckoutSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase, userId, user } = context as any;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: userResult } = await supabase.auth.getUser();
-    const payerEmail = userResult.user?.email ?? null;
+    const payerEmail = user?.email ?? null;
 
     const { data: createdOrder, error: createError } = await supabase.rpc(
       "create_purchase_order_from_cart",
