@@ -3,7 +3,7 @@ import { Minus, Plus, ShoppingBag, ShoppingCart, Sparkles, Trash2, X } from "luc
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { dbService } from "@/lib/db";
-import { writeCheckoutCart } from "@/lib/cartStorage";
+import { readCheckoutCart, writeCheckoutCart } from "@/lib/cartStorage";
 import { POINTS_BALANCE_CHANGED, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
@@ -131,39 +131,73 @@ function LojaPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const saved = readCheckoutCart();
+    if (saved.length > 0) {
+      setCart(
+        saved.map((item) => ({
+          id: item.productId,
+          name: item.name,
+          description: "",
+          price: item.unitPriceCents / 100,
+          pointsPrice: item.unitPointPrice,
+          image: item.image || "/verso-card.png",
+          tag: item.productId.startsWith("exclusive-") ? "exclusiva" : "pacotes",
+          section: item.productId.startsWith("exclusive-") ? "exclusivas" : "pacotes",
+          qty: item.quantity,
+        })),
+      );
+    }
+  }, []);
+
   const getQty = (id: string) => quantities[id] || 1;
 
   const setQty = (id: string, next: number) => {
     setQuantities((current) => ({ ...current, [id]: Math.max(1, Math.min(20, next)) }));
   };
 
+  const persistCart = (nextCart: CartLine[]) => {
+    setCart(nextCart);
+    writeCheckoutCart(
+      nextCart.map((item) => ({
+        productId: item.id,
+        name: item.name,
+        quantity: item.qty,
+        unitPriceCents: toCents(item.price),
+        unitPointPrice: item.pointsPrice,
+        image: item.image,
+      })),
+    );
+  };
+
   const addToCart = (item: StoreItem) => {
     const qty = getQty(item.id);
-    setCart((current) => {
-      const existing = current.find((line) => line.id === item.id);
-      if (existing) {
-        return current.map((line) =>
-          line.id === item.id ? { ...line, qty: Math.min(20, line.qty + qty) } : line,
-        );
-      }
-      return [...current, { ...item, qty }];
-    });
+    const existing = cart.find((line) => line.id === item.id);
+    let nextCart: CartLine[];
+    if (existing) {
+      nextCart = cart.map((line) =>
+        line.id === item.id ? { ...line, qty: Math.min(20, line.qty + qty) } : line,
+      );
+    } else {
+      nextCart = [...cart, { ...item, qty }];
+    }
+    persistCart(nextCart);
     setCartOpen(true);
     ui.toast("Item adicionado ao carrinho.");
   };
 
   const updateCartQty = (id: string, next: number) => {
     if (next <= 0) {
-      setCart((current) => current.filter((item) => item.id !== id));
+      persistCart(cart.filter((item) => item.id !== id));
       return;
     }
-    setCart((current) =>
-      current.map((item) => (item.id === id ? { ...item, qty: Math.min(20, next) } : item)),
+    persistCart(
+      cart.map((item) => (item.id === id ? { ...item, qty: Math.min(20, next) } : item)),
     );
   };
 
   const removeItem = (id: string) => {
-    setCart((current) => current.filter((item) => item.id !== id));
+    persistCart(cart.filter((item) => item.id !== id));
   };
 
   const handleCheckout = async () => {

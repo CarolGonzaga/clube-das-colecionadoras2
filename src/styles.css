@@ -7396,16 +7396,21 @@ html.theme-lilac .trade-flow-search-btn svg {
 /* ── Coupon UI ── */
 .checkout-coupon {
   margin: 16px 0;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px dashed var(--magenta-border, #f8bbd0);
-  border-radius: 16px;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .coupon-input-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  width: 40%;
+  min-width: 260px;
+  max-width: 100%;
 }
 
 .coupon-input-group svg {
@@ -7415,6 +7420,7 @@ html.theme-lilac .trade-flow-search-btn svg {
 
 .coupon-input-group input {
   flex: 1;
+  min-width: 0;
   padding: 8px 12px;
   border: 1px solid rgba(194, 24, 91, 0.2);
   border-radius: 10px;
@@ -7432,16 +7438,20 @@ html.theme-lilac .trade-flow-search-btn svg {
 }
 
 .coupon-input-group .btn.compact {
-  padding: 8px 14px;
-  font-size: 12px;
+  padding: 8px 18px;
+  font-size: 13px;
   border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: auto;
 }
 
 .coupon-success-msg {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-size: 12px;
   color: #2e7d32;
   font-weight: 600;
+  text-align: right;
 }
 
 .discount-text {
