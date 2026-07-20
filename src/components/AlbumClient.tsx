@@ -988,7 +988,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                     {family.stickers.map((num) => {
                       const sticker = stickers.find((s) => s.number === num);
                       const info = getOwnedInfo(num);
-                      const isRare = isRareStickerVersion(sticker, info);
+                      const isRare = sticker ? isRareStickerVersion(sticker, info) : false;
                       return (
                         <div
                           key={num}

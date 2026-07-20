@@ -6,6 +6,7 @@ import { PackageOpen, ArrowRight, Check, Sparkles } from "lucide-react";
 import Stamp from "./Stamp";
 import { dbService } from "@/lib/db";
 import { canHaveRareVersion, isExclusiveSticker } from "@/lib/albumRules";
+import type { RevealItem, Sticker } from "@/lib/types";
 
 interface PackOpenerProps {
   reveals: RevealItem[];

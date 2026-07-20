@@ -158,7 +158,7 @@ export default function MuralClient({ profile, muralList, pct }: MuralClientProp
               const displayAvatar =
                 isImageAvatar(m.avatar) ? (
                   <img
-                    src={m.avatar}
+                    src={m.avatar || undefined}
                     alt={m.nick}
                     className="rounded-full w-full h-full object-cover"
                   />

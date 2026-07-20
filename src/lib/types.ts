@@ -5,9 +5,9 @@ export interface Sticker {
   slug: string;
   name: string;
   author: string | null;
-  type: "quiz" | "sorteio" | "ls" | "frase" | "loja" | "exclusiva";
+  type: "quiz" | "sorteio" | "ls" | "frase" | "loja" | "exclusiva" | "bonus";
   cover_url: string | null;
-  category?: "quiz" | "comum" | "exclusiva" | null;
+  category?: "quiz" | "comum" | "exclusiva" | "bonus" | null;
   amazon_url?: string | null;
   ilustrator?: string | null;
 }

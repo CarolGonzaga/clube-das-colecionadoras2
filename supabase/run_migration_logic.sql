@@ -83,7 +83,10 @@ begin
   )
   values (
     target_user_id,
-    coalesce(staging_profile_row.nick, 'Colecionadora'),
+    case
+      when staging_profile_row.nick ~ '^[a-z0-9]+$' then staging_profile_row.nick
+      else 'user' || lower(substring(replace(target_user_id::text, '-', '') from 1 for 8))
+    end,
     temp_username,
     staging_profile_row.avatar_url,
     staging_profile_row.avatar_emoji,
@@ -105,7 +108,12 @@ begin
 
   -- 3. Migrar figurinhas coladas e repetidas
   insert into public.user_stickers (user_id, sticker_number, copies, is_rare, first_unlocked_at)
-  select user_id, sticker_number, copies, is_rare, first_unlocked_at
+  select
+    user_id,
+    sticker_number,
+    greatest(coalesce(copies, 0), 0),
+    coalesce(is_rare, false),
+    coalesce(first_unlocked_at, now())
   from public.v1_staging_user_stickers
   where user_id = target_user_id
   on conflict (user_id, sticker_number) do update set
@@ -117,11 +125,29 @@ begin
   where user_id = target_user_id;
 
   -- 4. Migrar respostas de quiz
-  insert into public.quiz_answers (user_id, sticker_number, q_index, chosen_index, correct, answered_at)
-  select user_id, sticker_number, q_index, chosen_index, correct, answered_at
+  insert into public.quiz_answers (
+    user_id,
+    sticker_number,
+    q_index,
+    chosen_index,
+    correct,
+    answered_at,
+    attempt_day
+  )
+  select
+    user_id,
+    sticker_number,
+    q_index,
+    chosen_index,
+    coalesce(correct, false),
+    coalesce(answered_at, now()),
+    (coalesce(answered_at, now()) at time zone 'America/Sao_Paulo')::date
   from public.v1_staging_quiz_answers
   where user_id = target_user_id
-  on conflict (user_id, sticker_number, q_index) do nothing;
+  -- A V2 permite novas tentativas diarias e a chave antiga
+  -- (user_id, sticker_number, q_index) deixou de ser unica.
+  -- Sem alvo explicito, qualquer restricao unica vigente e respeitada.
+  on conflict do nothing;
 
   select count(*) into quiz_count
   from public.quiz_answers
@@ -129,7 +155,7 @@ begin
 
   -- 5. Migrar estilos resgatados
   insert into public.user_styles (user_id, style_id, unlocked, enabled)
-  select user_id, style_id, unlocked, enabled
+  select user_id, style_id, coalesce(unlocked, false), coalesce(enabled, false)
   from public.v1_staging_user_styles
   where user_id = target_user_id
   on conflict (user_id, style_id) do update set
@@ -142,28 +168,28 @@ begin
 
   -- 6. Migrar missões concluídas
   insert into public.mission_completions (user_id, mission_id, completed_at)
-  select user_id, mission_id, completed_at
+  select user_id, mission_id, coalesce(completed_at, now())
   from public.v1_staging_mission_completions
   where user_id = target_user_id
   on conflict (user_id, mission_id) do nothing;
 
   -- 7. Migrar logins diários (daily claims)
   insert into public.daily_claims (user_id, day, style_id, created_at)
-  select user_id, day, style_id, created_at
+  select user_id, day, style_id, coalesce(created_at, day::timestamptz, now())
   from public.v1_staging_daily_claims
   where user_id = target_user_id
   on conflict (user_id, day) do nothing;
 
   -- 8. Migrar recompensas e códigos resgatados (reward_grants)
   insert into public.reward_grants (user_id, reward_key, granted_at)
-  select user_id, reward_key, granted_at
+  select user_id, reward_key, coalesce(granted_at, now())
   from public.v1_staging_reward_grants
   where user_id = target_user_id
   on conflict (user_id, reward_key) do nothing;
 
   -- 9. Migrar famílias de tags completadas (completed_tags)
   insert into public.completed_tags (user_id, tag_name, completed_at)
-  select user_id, tag_name, completed_at
+  select user_id, tag_name, coalesce(completed_at, now())
   from public.v1_staging_completed_tags
   where user_id = target_user_id
   on conflict (user_id, tag_name) do nothing;

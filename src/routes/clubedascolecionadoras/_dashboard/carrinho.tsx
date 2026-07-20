@@ -1,9 +1,9 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, Coins, CreditCard, ShoppingBag, Trash2 } from "lucide-react";
+import { ArrowLeft, Coins, CreditCard, ShoppingBag, Tag, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { clearCheckoutCart, readCheckoutCart, writeCheckoutCart, type CheckoutCartItem } from "@/lib/cartStorage";
-import { createMercadoPagoCheckout } from "@/lib/checkout";
+import { createMercadoPagoCheckout, validateCoupon } from "@/lib/checkout";
 import { dbService } from "@/lib/db";
 import { POINTS_BALANCE_CHANGED, emitPointsBalanceChanged, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 
@@ -22,6 +22,10 @@ function CartPage() {
   const [walletPoints, setWalletPoints] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; percent: number; cents: number } | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
 
   useEffect(() => {
     setItems(readCheckoutCart());
@@ -60,8 +64,48 @@ function CartPage() {
     () => items.reduce((sum, item) => sum + item.unitPointPrice * item.quantity, 0),
     [items],
   );
-  const appliedPoints = usePoints ? Math.min(walletPoints, totalPoints, totalCents) : 0;
-  const amountDueCents = Math.max(0, totalCents - appliedPoints);
+
+  const couponDiscountCents = useMemo(() => {
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.percent > 0) {
+      return Math.round((totalCents * appliedCoupon.percent) / 100);
+    }
+    if (appliedCoupon.cents > 0) {
+      return Math.min(totalCents, appliedCoupon.cents);
+    }
+    return 0;
+  }, [appliedCoupon, totalCents]);
+
+  const afterCouponCents = Math.max(0, totalCents - couponDiscountCents);
+  const appliedPoints = usePoints ? Math.min(walletPoints, totalPoints, afterCouponCents) : 0;
+  const amountDueCents = Math.max(0, afterCouponCents - appliedPoints);
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setValidatingCoupon(true);
+    try {
+      const res = await validateCoupon({ data: { code: couponInput } });
+      if (res.valid) {
+        setAppliedCoupon({
+          code: res.code!,
+          percent: res.discount_percent || 0,
+          cents: res.discount_cents || 0,
+        });
+        ui.toast(res.message);
+      } else {
+        ui.toast(res.message);
+      }
+    } catch (err: any) {
+      ui.toast(err?.message || "Erro ao validar cupom.");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+  };
 
   const persist = (nextItems: CheckoutCartItem[]) => {
     setItems(nextItems);
@@ -95,6 +139,7 @@ function CartPage() {
         data: {
           items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
           requestedPoints: appliedPoints,
+          couponCode: appliedCoupon?.code,
         },
       });
 
@@ -174,6 +219,42 @@ function CartPage() {
 
         {items.length > 0 && (
           <>
+            <div className="checkout-coupon">
+              <div className="coupon-input-group">
+                <Tag size={16} />
+                <input
+                  type="text"
+                  placeholder="Cupom de desconto (ex: LENDOSAFICOS10)"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  disabled={!!appliedCoupon || validatingCoupon}
+                />
+                {appliedCoupon ? (
+                  <button type="button" className="btn muted compact" onClick={handleRemoveCoupon}>
+                    Remover
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn compact"
+                    disabled={validatingCoupon || !couponInput.trim()}
+                    onClick={handleApplyCoupon}
+                  >
+                    {validatingCoupon ? "..." : "Aplicar"}
+                  </button>
+                )}
+              </div>
+              {appliedCoupon && (
+                <p className="coupon-success-msg">
+                  Cupom <b>{appliedCoupon.code}</b> aplicado! (
+                  {appliedCoupon.percent > 0
+                    ? `${appliedCoupon.percent}% OFF`
+                    : `-${formatMoneyFromCents(appliedCoupon.cents)}`}
+                  )
+                </p>
+              )}
+            </div>
+
             <div className="checkout-wallet">
               <label>
                 <input
@@ -192,8 +273,18 @@ function CartPage() {
             <div className="checkout-summary">
               <span>Total dos itens</span>
               <b>{formatMoneyFromCents(totalCents)}</b>
-              <span>Pontos usados</span>
-              <b>{appliedPoints.toLocaleString("pt-BR")} pts</b>
+              {couponDiscountCents > 0 && (
+                <>
+                  <span>Desconto do cupom</span>
+                  <b className="discount-text">-{formatMoneyFromCents(couponDiscountCents)}</b>
+                </>
+              )}
+              {appliedPoints > 0 && (
+                <>
+                  <span>Pontos usados</span>
+                  <b>{appliedPoints.toLocaleString("pt-BR")} pts</b>
+                </>
+              )}
               <span>Diferença a pagar</span>
               <strong>{formatMoneyFromCents(amountDueCents)}</strong>
             </div>

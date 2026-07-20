@@ -7393,3 +7393,59 @@ html.theme-lilac .trade-flow-search-btn svg {
   line-height: 1.45;
 }
 
+/* ── Coupon UI ── */
+.checkout-coupon {
+  margin: 16px 0;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px dashed var(--magenta-border, #f8bbd0);
+  border-radius: 16px;
+}
+
+.coupon-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.coupon-input-group svg {
+  color: var(--magenta, #c2185b);
+  flex-shrink: 0;
+}
+
+.coupon-input-group input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid rgba(194, 24, 91, 0.2);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #fff;
+  color: var(--wine, #5a1331);
+}
+
+.coupon-input-group input:focus {
+  outline: none;
+  border-color: var(--magenta, #c2185b);
+  box-shadow: 0 0 0 2px rgba(194, 24, 91, 0.15);
+}
+
+.coupon-input-group .btn.compact {
+  padding: 8px 14px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+.coupon-success-msg {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.discount-text {
+  color: #2e7d32 !important;
+}
+
+

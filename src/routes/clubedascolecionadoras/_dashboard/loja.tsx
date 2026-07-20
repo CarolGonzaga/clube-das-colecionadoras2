@@ -1,4 +1,4 @@
-﻿import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-router";
 import { Minus, Plus, ShoppingBag, ShoppingCart, Sparkles, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
@@ -402,43 +402,12 @@ function LojaPage() {
               <b>{formatMoney(cartTotal)}</b>
             </div>
 
-            {cart.length > 0 && (
-              <div className="shop-points-payment">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={useWalletPoints}
-                    onChange={(event) => setUseWalletPoints(event.target.checked)}
-                  />
-                  <span>Usar pontos da carteira</span>
-                </label>
-                <div className="shop-points-summary">
-                  <span>Saldo disponível</span>
-                  <b>{availablePoints.toLocaleString("pt-BR")} pts</b>
-                  <span>Usados neste pedido</span>
-                  <b>{appliedPoints.toLocaleString("pt-BR")} pts</b>
-                  <span>Desconto em pontos</span>
-                  <b>-{formatMoney(pointsDiscountCents / 100)}</b>
-                  <span>Diferença a pagar</span>
-                  <b>{formatMoney(amountDue)}</b>
-                </div>
-              </div>
-            )}
-
-            {checkoutStatus === "pending" && (
-              <p className="shop-checkout-note">
-                {amountDueCents > 0
-                  ? "O Mercado Pago será aberto para pagar a diferença. Se o pagamento não for aprovado na hora, a confirmação chegará por email assim que o webhook liberar os itens."
-                  : "Este pedido será quitado com pontos da carteira e os itens serão liberados sem Mercado Pago."}
-              </p>
-            )}
-
             <div className="shop-modal-actions">
               <button type="button" className="btn muted" onClick={() => setCartOpen(false)}>
                 Continuar comprando
               </button>
               <button type="button" className="btn" onClick={handleCheckout}>
-                Finalizar compra
+                Ir para o checkout
               </button>
             </div>
           </div>
