@@ -70,10 +70,12 @@ function verifyMercadoPagoSignature({
 }
 
 async function fetchMercadoPagoPayment(paymentId: string) {
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || process.env.VITE_MERCADO_PAGO_ACCESS_TOKEN;
   if (!accessToken) throw new Error("MERCADO_PAGO_ACCESS_TOKEN não configurado.");
 
-  const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+  const cleanId = String(paymentId).replace(/^["']|["']$/g, "").trim();
+
+  const response = await fetch(`https://api.mercadopago.com/v1/payments/${cleanId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
@@ -200,7 +202,8 @@ export async function handleMercadoPagoWebhook(request: Request) {
           ? { provider_event_id: providerEventId }
           : { x_request_id: xRequestId, provider_payment_id: paymentId },
       );
-    throw error;
+    console.error("[MercadoPago Webhook Error]", error);
+    return jsonResponse({ error: error?.message || "Erro ao processar webhook." }, 500);
   }
 }
 

@@ -28,8 +28,9 @@ function PaymentSuccessPage() {
       try {
         if (!reconciled && search.payment_id) {
           reconciled = true;
+          const cleanPaymentId = String(search.payment_id).replace(/^["']|["']$/g, "").trim();
           await reconcileMercadoPagoPayment({
-            data: { orderId: search.order!, paymentId: search.payment_id },
+            data: { orderId: search.order!, paymentId: cleanPaymentId },
           });
           if (alive) setConfirmationError(null);
         }
