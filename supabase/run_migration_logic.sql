@@ -84,8 +84,22 @@ begin
   values (
     target_user_id,
     case
-      when staging_profile_row.nick ~ '^[a-z0-9]+$' then staging_profile_row.nick
-      else 'user' || lower(substring(replace(target_user_id::text, '-', '') from 1 for 8))
+      when staging_profile_row.nick ~ '^[a-z0-9]+$'
+        and not exists (
+          select 1
+          from public.profiles existing_profile
+          where existing_profile.nick = staging_profile_row.nick
+            and existing_profile.id <> target_user_id
+        )
+      then staging_profile_row.nick
+      else coalesce(
+        (
+          select current_profile.nick
+          from public.profiles current_profile
+          where current_profile.id = target_user_id
+        ),
+        'user' || lower(replace(target_user_id::text, '-', ''))
+      )
     end,
     temp_username,
     staging_profile_row.avatar_url,
