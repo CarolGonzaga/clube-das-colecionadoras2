@@ -15,7 +15,10 @@ export function isExclusiveSticker(stickerOrNumber: Sticker | number) {
 
 export function canHaveRareVersion(stickerOrNumber: Sticker | number) {
   const number = typeof stickerOrNumber === "number" ? stickerOrNumber : stickerOrNumber.number;
-  return number >= 1 && number <= 20;
+  const isLegacyRare = number >= 1 && number <= 20;
+  const isNewRareLoja = [194, 258, 292, 298].includes(number);
+  const isNewRareSorteio = [45, 47, 79, 112, 164, 167].includes(number);
+  return isLegacyRare || isNewRareLoja || isNewRareSorteio;
 }
 
 export function isRareStickerVersion(stickerOrNumber: Sticker | number, info?: UserSticker | null) {

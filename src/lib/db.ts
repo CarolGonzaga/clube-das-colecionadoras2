@@ -131,12 +131,28 @@ export const dbService = {
   },
 
   async getProfile(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
+
+    if (!data) {
+      // Lazy-trigger migration from V1 to V2 if the profile does not exist yet
+      const { data: migrationResult, error: migError } = await supabase.rpc("trigger_my_migration");
+      if (!migError && (migrationResult as any)?.success) {
+        const { data: refetched, error: refetchError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+        if (!refetchError && refetched) {
+          data = refetched;
+        }
+      }
+    }
+
     return data as Profile | null;
   },
 

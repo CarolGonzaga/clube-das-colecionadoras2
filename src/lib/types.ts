@@ -15,6 +15,8 @@ export interface Sticker {
 export interface Profile {
   id: string;
   nick: string;
+  username?: string | null;
+  needs_username_update?: boolean | null;
   avatar_url: string | null;
   avatar_emoji: string | null;
   mural_opt_in: boolean;

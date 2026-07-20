@@ -29,6 +29,8 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
         profile: {
           id: "",
           nick: "Colecionadora",
+          username: null,
+          needs_username_update: false,
           avatar_url: null,
           avatar_emoji: "📷",
           mural_opt_in: true,
@@ -75,6 +77,8 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
       profile: profile || {
         id: user.id,
         nick: "Colecionadora",
+        username: null,
+        needs_username_update: false,
         avatar_url: null,
         avatar_emoji: "📷",
         mural_opt_in: true,
@@ -117,6 +121,16 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
     window.addEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
     return () => window.removeEventListener(POINTS_BALANCE_CHANGED, handlePointsChange);
   }, [router]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !data.profile?.id) return;
+    if (data.profile.needs_username_update) {
+      ui.toast(
+        "✨ Bem-vinda à V2 do Clube! Seu progresso foi migrado com sucesso. Geramos um apelido temporário para você. Por favor, vá em Configurações para definir seu apelido único definitivo!",
+        { duration: 15000 },
+      );
+    }
+  }, [data.profile, ui]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !data.profile?.id) return;
