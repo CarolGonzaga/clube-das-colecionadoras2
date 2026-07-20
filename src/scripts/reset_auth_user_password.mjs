@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-const [, , emailArg, pinArg = "1234"] = process.argv;
+const [, , emailArg, pinArg = "1234", userIdArg] = process.argv;
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey =
@@ -12,7 +12,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 if (!emailArg) {
-  console.error("Usage: node src/scripts/reset_auth_user_password.mjs email@example.com 1234");
+  console.error("Usage: node src/scripts/reset_auth_user_password.mjs email@example.com 1234 [user-id]");
   throw new Error("Missing email argument.");
 }
 
@@ -53,17 +53,32 @@ async function findUserByEmail(targetEmail) {
   }
 }
 
-const user = await findUserByEmail(email);
+async function findUserIdByDiagnostic(targetEmail) {
+  const { data, error } = await supabaseAdmin.rpc("admin_auth_login_diagnostic", {
+    target_email: targetEmail,
+    plain_pin: pinArg.trim(),
+  });
 
-if (!user) {
+  if (error) {
+    console.warn(`Could not run diagnostic fallback: ${error.message}`);
+    return null;
+  }
+
+  return data?.[0]?.user_id || null;
+}
+
+const user = await findUserByEmail(email);
+const userId = user?.id || userIdArg || (await findUserIdByDiagnostic(email));
+
+if (!userId) {
   throw new Error(`User not found through Supabase Admin API: ${email}`);
 }
 
-const { data, error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
   email_confirm: true,
   password,
   user_metadata: {
-    ...(user.user_metadata || {}),
+    ...(user?.user_metadata || {}),
   },
 });
 
