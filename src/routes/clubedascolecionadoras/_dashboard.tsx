@@ -6,7 +6,7 @@ import { UIProvider, useUI } from "../../components/UIProvider";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import TopBar from "../../components/TopBar";
 import Navigation from "../../components/Navigation";
-import { TOTAL_ALBUM_STICKERS } from "../../lib/albumRules";
+import { getCollectionStatus, TOTAL_ALBUM_STICKERS } from "../../lib/albumRules";
 import { POINTS_BALANCE_CHANGED } from "../../lib/walletEvents";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
@@ -316,25 +316,7 @@ function DashboardLayout() {
 
   // Compute values for TopBar
   const ownedCount = data.userStickers.filter((us) => us.copies > 0).length;
-  const baseStickersCount = data.stickers.filter((s: any) => s.type !== "bonus").length;
-  const albumTotal = Math.max(baseStickersCount, TOTAL_ALBUM_STICKERS);
-  const pct = Math.round((ownedCount / albumTotal) * 100);
-
-  // Status phrases mapping
-  const statusPhrases = [
-    [1, "Coleção começando"],
-    [16, "Coleção Bronze"],
-    [41, "Coleção Prata"],
-    [66, "Coleção Ouro"],
-    [100, "Coleção Purpurina"],
-  ];
-  let statusText = "Coleção começando";
-  for (const [min, txt] of statusPhrases) {
-    if (pct >= (min as number)) {
-      statusText = txt as string;
-    }
-  }
-  if (pct === 0) statusText = "Coleção começando";
+  const { pct, statusText } = getCollectionStatus(ownedCount);
 
   return (
     <ThemeProvider initialStyles={initialStyles}>

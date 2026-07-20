@@ -32,3 +32,32 @@ export function getVisibleStickerTag(sticker: Sticker, info?: UserSticker | null
   if (isRareStickerVersion(sticker, info)) return "rara";
   return "comum";
 }
+
+export function getCollectionStatus(ownedCount: number) {
+  const isComplete = ownedCount >= TOTAL_ALBUM_STICKERS;
+  const pct = isComplete
+    ? 100
+    : Math.min(99, Math.floor((ownedCount / TOTAL_ALBUM_STICKERS) * 100));
+
+  let statusText = "Coleção começando";
+  let titleIcon = "/icons/iniciante.png";
+
+  if (isComplete || pct >= 100) {
+    statusText = "Coleção Purpurina";
+    titleIcon = "/icons/purpurina.png";
+  } else if (pct >= 66) {
+    statusText = "Coleção Ouro";
+    titleIcon = "/icons/ouro.png";
+  } else if (pct >= 41) {
+    statusText = "Coleção Prata";
+    titleIcon = "/icons/prata.png";
+  } else if (pct >= 16) {
+    statusText = "Coleção Bronze";
+    titleIcon = "/icons/bronze.png";
+  } else {
+    statusText = "Coleção começando";
+    titleIcon = "/icons/iniciante.png";
+  }
+
+  return { pct, statusText, titleIcon };
+}

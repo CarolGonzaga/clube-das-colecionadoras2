@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { User2, BookOpen, Star, Trophy, Sparkles, Layers } from "lucide-react";
 import { Profile, Sticker, UserSticker } from "../lib/types";
 import { dbService } from "../lib/db";
-import { isRareStickerVersion } from "../lib/albumRules";
+import { isRareStickerVersion, getCollectionStatus } from "../lib/albumRules";
 
 interface PublicProfileClientProps {
   profile: Profile;
@@ -74,11 +74,7 @@ export default function PublicProfileClient({
     themeGradient = "linear-gradient(135deg, #9b59b6, #8e44ad)";
   }
 
-  let statusText = "Coleção começando";
-  if (pct >= 100) statusText = "Coleção Purpurina";
-  else if (pct >= 66) statusText = "Coleção Ouro";
-  else if (pct >= 41) statusText = "Coleção Prata";
-  else if (pct >= 16) statusText = "Coleção Bronze";
+  const { statusText } = getCollectionStatus(ownedUniqueStickers);
 
   if (!isMounted) return null;
 

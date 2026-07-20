@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { Donation, Profile, Sticker, UserStyle, RevealItem } from "@/lib/types";
 import { getClubAssetUrl, getPublicAlbumUrl } from "@/lib/urls";
-import { ALL_RARE_STICKER_NUMBERS, isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
+import { ALL_RARE_STICKER_NUMBERS, getCollectionStatus, isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
 import { dbService, getLocalDateStr } from "@/lib/db";
 import { useUI } from "@/components/UIProvider";
 import { claimDailyElementAction, completeMissionAction, logoutAction } from "@/lib/actions";
@@ -328,8 +328,7 @@ export default function HomeClient({
   };
 
   const ownedCount = ownedSlugs.length;
-  const albumTotal = Math.max(stickers.length, TOTAL_ALBUM_STICKERS);
-  const pct = Math.round((ownedCount / albumTotal) * 100);
+  const { pct, statusText, titleIcon } = getCollectionStatus(ownedCount);
   const exclusiveCount = ownedSlugs.filter((slug) => {
     const sticker = stickers.find((item) => item.slug === slug);
     return sticker ? isExclusiveSticker(sticker) : false;
@@ -399,7 +398,7 @@ export default function HomeClient({
     if (ownedCount >= 16 && !acknowledged.includes("bronze")) active.push("bronze");
     if (ownedCount >= 41 && !acknowledged.includes("prata")) active.push("prata");
     if (ownedCount >= 66 && !acknowledged.includes("ouro")) active.push("ouro");
-    if (ownedCount >= albumTotal && !acknowledged.includes("purpurina")) active.push("purpurina");
+    if (ownedCount >= TOTAL_ALBUM_STICKERS && !acknowledged.includes("purpurina")) active.push("purpurina");
     setActiveAchievements(active);
   }, [ownedCount]);
 
@@ -442,26 +441,6 @@ export default function HomeClient({
     }
     return slots;
   })();
-
-  // Status text and title icon mapping
-  let statusText = "Coleção começando";
-  let titleIcon = "/icons/iniciante.png";
-  if (pct >= 100) {
-    statusText = "Coleção Purpurina";
-    titleIcon = "/icons/purpurina.png";
-  } else if (pct >= 66) {
-    statusText = "Coleção Ouro";
-    titleIcon = "/icons/ouro.png";
-  } else if (pct >= 41) {
-    statusText = "Coleção Prata";
-    titleIcon = "/icons/prata.png";
-  } else if (pct >= 16) {
-    statusText = "Coleção Bronze";
-    titleIcon = "/icons/bronze.png";
-  } else {
-    statusText = "Coleção começando";
-    titleIcon = "/icons/iniciante.png";
-  }
 
   const claimDaily = async () => {
     if (claiming || claimedToday) return;
@@ -700,7 +679,7 @@ export default function HomeClient({
   // Check active styles for UI theme and visual overrides
   const isNeonEnabled = userStyles?.find((s) => s.style_id === "avatar-neon-frame" && s.enabled);
   const isDarkEnabled = userStyles?.find((s) => s.style_id === "theme-dark" && s.enabled);
-  const isStoryPremiumEnabled = ownedCount >= albumTotal;
+  const isStoryPremiumEnabled = ownedCount >= TOTAL_ALBUM_STICKERS;
   const isLilacEnabled = userStyles?.find((s) => s.style_id === "lilac" && s.enabled);
 
   // Discover next available reward based on what is unlocked
@@ -1356,7 +1335,7 @@ export default function HomeClient({
 
           {/* Progress info */}
           <div className="pc-right">
-            <p className="pc-count">{ownedCount}/{albumTotal} figurinhas</p>
+            <p className="pc-count">{ownedCount}/{TOTAL_ALBUM_STICKERS} figurinhas</p>
             <div className="pc-progress-row">
               <div className="bar">
                 <i style={{ width: `${pct}%` }} />

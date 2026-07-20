@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getCollectionStatus } from "@/lib/albumRules";
 import { Profile, Sticker, UserSticker } from "@/lib/types";
 import Stamp from "./Stamp";
 import AutographSeal from "./AutographSeal";
@@ -66,23 +67,7 @@ export default function PublicAlbumClient({
   });
 
   const ownedCount = userStickers.filter((us) => us.copies > 0).length;
-  const pct = Math.round((ownedCount / 100) * 100);
-
-  // Status phrases mapping
-  const statusPhrases = [
-    [1, "Coleção começando"],
-    [16, "Coleção Bronze"],
-    [41, "Coleção Prata"],
-    [66, "Coleção Ouro"],
-    [100, "Coleção Purpurina"],
-  ];
-  let statusText = "Coleção começando";
-  for (const [min, txt] of statusPhrases) {
-    if (pct >= (min as number)) {
-      statusText = txt as string;
-    }
-  }
-  if (pct === 0) statusText = "Coleção começando";
+  const { pct, statusText } = getCollectionStatus(ownedCount);
 
   const itemsPerPage = 9;
   const totalPages = Math.ceil(filteredStickers.length / itemsPerPage) || 1;

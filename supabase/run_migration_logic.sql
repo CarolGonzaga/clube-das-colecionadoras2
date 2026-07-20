@@ -218,12 +218,20 @@ begin
 
 exception when others then
   get stacked diagnostics err_msg = message_text;
-  
-  update public.v2_migration_claims
-  set status = 'failed',
-      completed_at = now(),
-      error_message = err_msg
-  where user_id = target_user_id;
+
+  -- O bloco que falhou e revertido pelo PostgreSQL, inclusive o primeiro
+  -- insert de auditoria. Por isso a falha precisa ser registrada com upsert.
+  insert into public.v2_migration_claims (
+    user_id,
+    status,
+    completed_at,
+    error_message
+  )
+  values (target_user_id, 'failed', now(), err_msg)
+  on conflict (user_id) do update set
+    status = 'failed',
+    completed_at = excluded.completed_at,
+    error_message = excluded.error_message;
 
   return jsonb_build_object(
     'success', false,

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Profile } from "@/lib/types";
 import { Trophy, Medal, Star, Heart, Crown } from "lucide-react";
 import { dbService } from "../lib/db";
+import { getCollectionStatus } from "../lib/albumRules";
 
 interface MuralUser {
   id: string;
@@ -65,24 +66,8 @@ export default function MuralClient({ profile, muralList, pct }: MuralClientProp
     };
   }, []);
   // Status text and title icon mapping
-  let statusText = "Coleção começando";
-  let titleIcon = "/icons/iniciante.png";
-  if (pct >= 100) {
-    statusText = "Coleção Purpurina";
-    titleIcon = "/icons/purpurina.png";
-  } else if (pct >= 66) {
-    statusText = "Coleção Ouro";
-    titleIcon = "/icons/ouro.png";
-  } else if (pct >= 41) {
-    statusText = "Coleção Prata";
-    titleIcon = "/icons/prata.png";
-  } else if (pct >= 16) {
-    statusText = "Coleção Bronze";
-    titleIcon = "/icons/bronze.png";
-  } else {
-    statusText = "Coleção começando";
-    titleIcon = "/icons/iniciante.png";
-  }
+  const currentCount = list.find((m) => m.id === profile.id)?.count || 0;
+  const { statusText, titleIcon } = getCollectionStatus(currentCount);
 
   // Get Rank Icon/Color
   const getRankBadge = (index: number) => {

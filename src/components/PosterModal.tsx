@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { getCollectionStatus } from "@/lib/albumRules";
 import { Sticker, UserStyle } from "@/lib/types";
 import { getClubAssetUrl } from "@/lib/urls";
 import { isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
@@ -228,11 +229,7 @@ export default function PosterModal({
         // 4. CONTENT INNER
         const cx = W / 2;
 
-        let statusText = "Coleção Começando";
-        if (pct >= 100) statusText = "Coleção Purpurina";
-        else if (pct >= 66) statusText = "Coleção Ouro";
-        else if (pct >= 41) statusText = "Coleção Prata";
-        else if (pct >= 16) statusText = "Coleção Bronze";
+        const { statusText } = getCollectionStatus(ownedCount);
 
         ctx.save();
         ctx.fillStyle = "#E8C1CD";
