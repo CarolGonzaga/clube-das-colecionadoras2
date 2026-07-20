@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Coins, CreditCard, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
+import { supabase } from "@/integrations/supabase/client";
 import { clearCheckoutCart, readCheckoutCart, writeCheckoutCart, type CheckoutCartItem } from "@/lib/cartStorage";
 import { createMercadoPagoCheckout } from "@/lib/checkout";
 import { dbService } from "@/lib/db";
@@ -91,7 +92,7 @@ function CartPage() {
     }
     setLoading(true);
     try {
-      const { data: sessionData } = await dbService.supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
       const result = await createMercadoPagoCheckout({
