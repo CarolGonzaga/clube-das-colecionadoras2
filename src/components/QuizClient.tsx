@@ -41,6 +41,7 @@ interface QuizClientProps {
   diaAtual: number;
   tentativasHojeCount: number;
   perguntasRespondidasCorretasCount: number;
+  quizUnlimited?: boolean;
   initialQuestions: Question[];
 }
 
@@ -48,6 +49,7 @@ export default function QuizClient({
   diaAtual,
   tentativasHojeCount,
   perguntasRespondidasCorretasCount,
+  quizUnlimited = false,
   initialQuestions,
 }: QuizClientProps) {
   const ui = useUI();
@@ -324,7 +326,7 @@ export default function QuizClient({
   // LANDING PAGE SCREEN
   if (!activeSession || questions.length === 0) {
     const isCompleted = perguntasRespondidasCorretasCount >= 20;
-    const isTodayBlocked = tentativasHojeCount >= 4;
+    const isTodayBlocked = !quizUnlimited && tentativasHojeCount >= 4;
     const hasNoPendingQuestions = questions.length === 0 && !isCompleted;
 
     return (
@@ -365,7 +367,9 @@ export default function QuizClient({
                 Desbloqueios hoje
               </span>
               <span className="text-sm font-extrabold text-[#9e1b4a] dark:text-pink-300">
-                {Math.max(0, 4 - tentativasHojeCount)} de 4 restantes hoje
+                {quizUnlimited
+                  ? `${questions.filter((question) => !question.answered).length} questões liberadas`
+                  : `${Math.max(0, 4 - tentativasHojeCount)} de 4 restantes hoje`}
               </span>
             </div>
           </div>
