@@ -7758,3 +7758,57 @@ html.dark .shop-remove-btn svg {
   color: #ffd6e8 !important;
   stroke: #ffd6e8 !important;
 }
+
+/* Checkout uses its own card hierarchy and form controls. */
+html.dark .checkout-screen {
+  color: #fff7fb !important;
+}
+
+html.dark .checkout-card {
+  background: #1d0b22 !important;
+  border-color: #5f1b43 !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34) !important;
+}
+
+html.dark .checkout-line,
+html.dark .checkout-wallet,
+html.dark .checkout-summary {
+  background: #2a102c !important;
+  border: 1px solid #5f1b43 !important;
+}
+
+html.dark .checkout-line img {
+  background: #32142f !important;
+  border: 1px solid #6f2850 !important;
+}
+
+html.dark .checkout-coupon {
+  color: #ffd6e8 !important;
+}
+
+html.dark .checkout-coupon .coupon-input-group input {
+  background: #2a102c !important;
+  color: #fff7fb !important;
+  border-color: #6f2850 !important;
+  color-scheme: dark;
+}
+
+html.dark .checkout-coupon .coupon-input-group input::placeholder {
+  color: #d99ab8 !important;
+  opacity: 0.82;
+}
+
+html.dark .checkout-coupon .coupon-input-group input:focus {
+  border-color: #f06ba8 !important;
+  box-shadow: 0 0 0 3px rgba(240, 107, 168, 0.18) !important;
+}
+
+html.dark .checkout-wallet input[type="checkbox"] {
+  accent-color: #f06ba8;
+}
+
+html.dark .checkout-back,
+html.dark .checkout-head,
+html.dark .checkout-head svg {
+  color: #ffd6e8 !important;
+}
