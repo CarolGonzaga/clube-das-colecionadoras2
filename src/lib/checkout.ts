@@ -142,26 +142,8 @@ async function createMercadoPagoPreference({
 }
 
 async function fetchMercadoPagoPayment(paymentId: string) {
-  const accessToken = getMercadoPagoAccessToken();
-  const cleanId = decodeURIComponent(String(paymentId || "")).replace(/[^0-9]/g, "");
-
-  if (!cleanId) {
-    throw new Error("ID de pagamento inválido.");
-  }
-
-  const response = await fetch(`https://api.mercadopago.com/v1/payments/${cleanId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    console.error("[MercadoPago Fetch Payment Error]", { cleanId, status: response.status, payload });
-    const err = new Error(payload?.message || "Erro ao consultar pagamento no Mercado Pago.");
-    (err as any).payload = payload;
-    throw err;
-  }
-
-  return payload;
+  const { fetchMercadoPagoPaymentSecure } = await import("@/lib/mercadoPagoApi.server");
+  return fetchMercadoPagoPaymentSecure(paymentId);
 }
 
 export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
