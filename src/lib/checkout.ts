@@ -361,29 +361,10 @@ export const reconcileMercadoPagoPayment = createServerFn({ method: "POST" })
 
     const cleanPaymentId = decodeURIComponent(String(data.paymentId || "")).replace(/[^0-9]/g, "");
 
-    let payment: any = null;
-    try {
-      payment = await fetchMercadoPagoPayment(cleanPaymentId);
-    } catch (err: any) {
-      console.warn("[Reconcile Warning] Could not fetch payment via API:", err?.message);
-      // Fallback: If Mercado Pago returned with a numeric payment ID for this order, construct synthetic payment payload
-      if (cleanPaymentId && cleanPaymentId.length >= 6) {
-        payment = {
-          id: cleanPaymentId,
-          status: "approved",
-          status_detail: "accredited",
-          external_reference: data.orderId,
-          transaction_amount: (order.amount_due_cents || 0) / 100,
-          date_approved: new Date().toISOString(),
-          payment_method_id: "mercado_pago",
-        };
-      } else {
-        throw err;
-      }
-    }
+    const payment = await fetchMercadoPagoPayment(cleanPaymentId);
 
     if (String(payment?.external_reference || "") !== data.orderId) {
-      payment.external_reference = data.orderId;
+      throw new Error("O pagamento não pertence a este pedido.");
     }
 
     const { data: result, error: processError } = await supabaseAdmin.rpc(
