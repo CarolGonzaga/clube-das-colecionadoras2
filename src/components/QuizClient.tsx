@@ -60,10 +60,12 @@ export default function QuizClient({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answering, setAnswering] = useState<{ [key: number]: boolean }>({});
   const [timeLeft, setTimeLeft] = useState(180);
+  const [timerStatus, setTimerStatus] = useState<"idle" | "starting" | "running" | "stopped" | "error">("idle");
 
   const activeSessionRef = React.useRef(activeSession);
   const currentIndexRef = React.useRef(currentIndex);
   const questionsRef = React.useRef(questions);
+  const answeringRef = React.useRef<{ [key: number]: boolean }>({});
 
   React.useEffect(() => {
     activeSessionRef.current = activeSession;
@@ -104,11 +106,9 @@ export default function QuizClient({
   const currentQ = questions[currentIndex];
   const isCurrentQActive = currentQ && !currentQ.answered;
 
-  const handleExitSession = async () => {
-    if (isCurrentQActive) {
-      // Mark as incorrect before exiting
-      await handleAnswer(currentQ.sticker_number, currentQ.q_index, -1, currentQ.title);
-    }
+  const handleExitSession = () => {
+    // Leaving the round is not a wrong answer. The database deadline remains
+    // active and the question resumes with its remaining time when reopened.
     setActiveSession(false);
   };
 
@@ -138,11 +138,27 @@ export default function QuizClient({
     // If already answered, do not tick
     if (currentQ.answered) {
       setTimeLeft(0);
+      setTimerStatus("stopped");
+      return;
+    }
+
+    const contentIsReady =
+      typeof currentQ.text === "string" &&
+      currentQ.text.trim().length > 0 &&
+      Array.isArray(currentQ.options) &&
+      currentQ.options.length === 4 &&
+      currentQ.options.every((option) => typeof option === "string" && option.trim().length > 0);
+
+    if (!contentIsReady) {
+      setTimerStatus("error");
+      ui.toast("A pergunta não foi carregada corretamente. Atualize a página para tentar novamente.");
       return;
     }
 
     let cancelled = false;
     let timerId: ReturnType<typeof setInterval> | undefined;
+    setTimeLeft(180);
+    setTimerStatus("starting");
 
     const syncDeadline = async () => {
       const res = await startQuizQuestionTimerAction({
@@ -152,12 +168,14 @@ export default function QuizClient({
       if (cancelled) return;
 
       if (!res.success || !res.data) {
+        setTimerStatus("error");
         ui.toast(res.message || "Não foi possível iniciar o cronômetro.");
         return;
       }
 
       if (res.data.expired) {
         setTimeLeft(0);
+        setTimerStatus("stopped");
         setQuestions((prev) =>
           prev.map((q) =>
             q.sticker_number === currentQ.sticker_number
@@ -171,11 +189,20 @@ export default function QuizClient({
       }
 
       const deadline = new Date(res.data.expires_at).getTime();
+      if (!Number.isFinite(deadline)) {
+        setTimerStatus("error");
+        ui.toast("O prazo desta pergunta não foi carregado corretamente.");
+        return;
+      }
+
+      setTimerStatus("running");
       const tick = () => {
+        if (answeringRef.current[currentQ.sticker_number]) return;
         const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
         setTimeLeft(remaining);
         if (remaining === 0 && timerId) {
           clearInterval(timerId);
+          setTimerStatus("stopped");
           handleAnswer(currentQ.sticker_number, currentQ.q_index, -1, currentQ.title);
         }
       };
@@ -190,7 +217,14 @@ export default function QuizClient({
       cancelled = true;
       if (timerId) clearInterval(timerId);
     };
-  }, [currentIndex, activeSession, questions.length]);
+  }, [
+    currentIndex,
+    activeSession,
+    questions.length,
+    currentQ?.sticker_number,
+    currentQ?.q_index,
+    currentQ?.answered,
+  ]);
 
   const handleAnswer = async (
     stickerNumber: number,
@@ -198,13 +232,15 @@ export default function QuizClient({
     chosenIndex: number,
     stickerTitle: string,
   ) => {
-    if (answering[stickerNumber]) return;
+    if (answeringRef.current[stickerNumber]) return;
 
     // Check if this question is already answered (prevents double submits)
     const currentQState = questions.find((q) => q.sticker_number === stickerNumber);
     if (currentQState?.answered) return;
 
+    answeringRef.current[stickerNumber] = true;
     setAnswering((prev) => ({ ...prev, [stickerNumber]: true }));
+    setTimerStatus("stopped");
 
     const res = await answerQuizAction({
       stickerNumber,
@@ -212,6 +248,7 @@ export default function QuizClient({
       chosenIndex,
     });
 
+    answeringRef.current[stickerNumber] = false;
     setAnswering((prev) => ({ ...prev, [stickerNumber]: false }));
 
     if (res.success && res.data) {
@@ -251,6 +288,7 @@ export default function QuizClient({
         router.invalidate();
       }
     } else {
+      setTimerStatus("running");
       ui.toast(res.message || "Erro ao enviar resposta.");
     }
   };
@@ -506,6 +544,10 @@ export default function QuizClient({
               ) : (
                 <span className="text-rose-500 font-bold font-sans">ERRO</span>
               )
+            ) : timerStatus === "starting" || timerStatus === "idle" ? (
+              <span className="text-[9px] font-bold font-sans">CARREGANDO</span>
+            ) : timerStatus === "error" ? (
+              <span className="text-rose-500 text-[9px] font-bold font-sans">INDISPONÍVEL</span>
             ) : (
               formatTime(timeLeft)
             )}
@@ -574,7 +616,7 @@ export default function QuizClient({
               <button
                 key={oi}
                 className={`py-4 px-3.5 rounded-2xl border text-center font-bold text-xs transition-all flex flex-col items-center justify-center gap-1.5 min-h-[82px] shadow-sm cursor-pointer ${btnClass}`}
-                disabled={q.answered || answering[q.sticker_number]}
+                disabled={q.answered || answering[q.sticker_number] || timerStatus !== "running"}
                 onClick={() => handleAnswer(q.sticker_number, q.q_index, oi, q.title)}
               >
                 <span className="text-[9px] uppercase tracking-wider opacity-65 font-sans">

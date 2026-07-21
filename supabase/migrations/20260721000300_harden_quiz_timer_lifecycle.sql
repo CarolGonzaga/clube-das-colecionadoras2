@@ -158,4 +158,15 @@ REVOKE ALL ON FUNCTION public.record_quiz_timeout(uuid, integer, integer) FROM p
 REVOKE ALL ON FUNCTION public.expire_quiz_question_timers() FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.expire_quiz_question_timers() TO authenticated;
 
+-- Clean legacy rows immediately at deploy time. The runtime function above
+-- continues enforcing the same rule for future day/session transitions.
+DELETE FROM public.quiz_question_timers t
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public.quiz_attempts qa
+  WHERE qa.user_id = t.user_id
+    AND qa.ultimo_dia_acesso = ((now() AT TIME ZONE 'America/Sao_Paulo')::date)::text
+    AND t.sticker_number = ANY(coalesce(qa.perguntas_pendentes, '{}'::integer[]))
+);
+
 NOTIFY pgrst, 'reload schema';
