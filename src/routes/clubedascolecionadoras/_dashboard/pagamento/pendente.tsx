@@ -31,9 +31,10 @@ function PaymentPendingPage() {
     if (!search.order) return;
     let alive = true;
     let checking = false;
+    let permanentFailure = false;
 
     const reconcileAndLoad = async () => {
-      if (checking) return;
+      if (checking || permanentFailure) return;
       checking = true;
       try {
         if (search.payment_id) {
@@ -49,8 +50,10 @@ function PaymentPendingPage() {
           setConfirmationError(null);
         }
       } catch (error: any) {
+        const message = error?.message || "Ainda não conseguimos confirmar o pagamento.";
+        permanentFailure = /unauthorized use of live credentials/i.test(message);
         if (alive) {
-          setConfirmationError(error?.message || "Ainda não conseguimos confirmar o pagamento.");
+          setConfirmationError(message);
         }
       } finally {
         checking = false;
