@@ -50,9 +50,9 @@ function DashboardCodigos() {
           ui.toast(`Estilização liberada: ${name}! Ative em Ajustes.`);
         }
 
-        // Keep the same ordering used by purchased packages: mount the
-        // animation first, then refresh the route-backed album data.
-        await router.invalidate();
+        // The global pack stage refreshes route-backed album data when the
+        // reveal is closed. Invalidating here can remount the V2 dashboard
+        // before React commits the package modal.
       } else {
         setPromoError(res.message || "Código inválido ou já utilizado.");
       }

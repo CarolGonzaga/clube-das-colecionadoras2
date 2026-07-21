@@ -198,7 +198,7 @@ function RegistrosPage() {
               if (Array.isArray(res.data) && res.data.length > 0) ui.showReveals(res.data, "Figurinhas do Código");
               else if (res.data.reveals && Array.isArray(res.data.reveals)) ui.showReveals(res.data.reveals, "Figurinhas do Código");
               refreshOrders();
-              await router.invalidate();
+              // UIProvider refreshes the dashboard after the reveal closes.
             } else {
               ui.toast(res.message || "Erro ao resgatar código.");
             }

@@ -47,6 +47,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
     return [];
   });
+  const queueRef = useRef(queue);
 
   // Toast auto-hide
   useEffect(() => {
@@ -67,7 +68,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         if (!profile) return;
 
         // Restore pending_pack if present in DB
-        if (profile.pending_pack) {
+        if (profile.pending_pack && !isPackActiveRef.current) {
           localStorage.setItem("pending_pack", JSON.stringify(profile.pending_pack));
           const pendingReveals = Array.isArray(profile.pending_pack.reveals)
             ? profile.pending_pack.reveals
@@ -76,7 +77,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           setReveals(pendingReveals);
           if (profile.pending_pack.title) setRevealsTitle(profile.pending_pack.title);
           isPackActiveRef.current = pendingReveals.length > 0;
-        } else {
+        } else if (!isPackActiveRef.current) {
           // The database is the source of truth. Never restore a package left
           // in this browser by a different account.
           localStorage.removeItem("pending_pack");
@@ -127,6 +128,24 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     rewardMsg?: string;
     rewardTag?: string;
   }) => {
+    // Persist before mounting PackOpener. This makes code redemptions follow
+    // the same durable flow as purchased/mission packs and prevents a route
+    // remount or a late profile hydration from losing the animation.
+    const pendingPack = {
+      reveals: pack.items,
+      title: pack.title,
+      flippedCards: [],
+      isOpened: false,
+      rewardTag: pack.rewardTag,
+      rewardMsg: pack.rewardMsg,
+    };
+    localStorage.setItem("pending_pack", JSON.stringify(pendingPack));
+    dbService.syncPendingPack(pendingPack).catch((error) => {
+      console.warn("Could not persist package reveal", error);
+    });
+    window.dispatchEvent(new Event("pending_pack_change"));
+
+    isPackActiveRef.current = true;
     activePackItemsRef.current = pack.items;
     setReveals(pack.items);
     setRevealsTitle(pack.title);
@@ -231,6 +250,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     rewardMsg?: string;
     rewardTag?: string;
   }) => {
+    isPackActiveRef.current = true;
     if (pack.rewardMsg) {
       showFamilyCompletionModal(pack);
       return;
@@ -330,28 +350,21 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    setQueue((prev) => {
-      const newQueue = [...prev, ...incomingPacks];
+    const newQueue = [...queueRef.current, ...incomingPacks];
 
-      // Start only one pack at a time. The synchronous lock avoids stale React
-      // state when the user completes two missions almost simultaneously.
-      if (!isPackActiveRef.current) {
-        isPackActiveRef.current = true;
-        const nextPack = newQueue[0];
-        const restQueue = newQueue.slice(1);
+    // Starting a pack is a UI side effect, so it must not happen inside a
+    // React state-updater callback. React may replay those callbacks.
+    if (!isPackActiveRef.current) {
+      const nextPack = newQueue[0];
+      const restQueue = newQueue.slice(1);
+      queueRef.current = restQueue;
+      setQueue(restQueue);
+      presentQueuedPack(nextPack);
+      return;
+    }
 
-        if (nextPack.rewardMsg) {
-          presentQueuedPack(nextPack);
-          return restQueue;
-        } else {
-          startPackAnimation(nextPack);
-        }
-
-        return restQueue;
-      }
-
-      return newQueue;
-    });
+    queueRef.current = newQueue;
+    setQueue(newQueue);
   };
 
   const triggerHearts = () => {
@@ -398,27 +411,26 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
     activePackItemsRef.current = [];
     setReveals([]);
-    setQueue((currentQueue) => {
-      if (currentQueue.length > 0) {
-        const nextPack = currentQueue[0];
-        const restQueue = currentQueue.slice(1);
-
-        if (nextPack.rewardMsg) {
-          presentQueuedPack(nextPack);
-          return restQueue;
-        } else {
-          startPackAnimation(nextPack);
-        }
-
-        return restQueue;
-      }
+    if (queueRef.current.length > 0) {
+      const [nextPack, ...restQueue] = queueRef.current;
+      queueRef.current = restQueue;
+      setQueue(restQueue);
+      presentQueuedPack(nextPack);
+    } else {
       isPackActiveRef.current = false;
-      return currentQueue;
+    }
+
+    // Refresh only after the package stage has been dismissed. In the V2
+    // dashboard an eager invalidation can race the modal state update and make
+    // a successful redemption look as if it went straight to the album.
+    router.invalidate().catch((error) => {
+      console.warn("Could not refresh dashboard after package reveal", error);
     });
   };
 
   // Save reveals_queue to localStorage and DB whenever it changes
   useEffect(() => {
+    queueRef.current = queue;
     if (queue.length > 0) {
       localStorage.setItem("reveals_queue", JSON.stringify(queue));
       dbService.syncRevealsQueue(queue);
@@ -450,24 +462,14 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Try fallback to queue
-    setQueue((currentQueue) => {
-      if (currentQueue.length > 0) {
-        isPackActiveRef.current = true;
-        const nextPack = currentQueue[0];
-        const restQueue = currentQueue.slice(1);
-
-        if (nextPack.rewardMsg) {
-          presentQueuedPack(nextPack);
-          return restQueue;
-        } else {
-          startPackAnimation(nextPack);
-        }
-
-        return restQueue;
-      }
-      isPackActiveRef.current = false;
-      return currentQueue;
-    });
+    if (queueRef.current.length > 0) {
+      const [nextPack, ...restQueue] = queueRef.current;
+      queueRef.current = restQueue;
+      setQueue(restQueue);
+      presentQueuedPack(nextPack);
+      return;
+    }
+    isPackActiveRef.current = false;
   };
 
   return (
