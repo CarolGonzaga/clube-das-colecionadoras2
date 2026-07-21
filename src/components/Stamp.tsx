@@ -2,6 +2,7 @@
 
 import React from "react";
 import { SEED_STICKERS } from "../lib/seeds";
+import { getClubAssetUrl } from "../lib/urls";
 
 interface StampProps {
   number: number;
@@ -71,6 +72,26 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
 
   const coverFilename = getCoverFilename(number);
   const hasCover = !!coverFilename && owned;
+  const baseCoverUrl = coverFilename ? getClubAssetUrl(`/covers/${coverFilename}`) : "";
+  const [coverUrl, setCoverUrl] = React.useState(baseCoverUrl);
+  const [coverFailures, setCoverFailures] = React.useState(0);
+
+  React.useEffect(() => {
+    setCoverUrl(baseCoverUrl);
+    setCoverFailures(0);
+  }, [baseCoverUrl]);
+
+  const handleCoverError = () => {
+    if (coverFailures === 0 && baseCoverUrl) {
+      setCoverFailures(1);
+      const separator = baseCoverUrl.includes("?") ? "&" : "?";
+      setCoverUrl(`${baseCoverUrl}${separator}retry=1`);
+      return;
+    }
+
+    setCoverFailures(2);
+    setCoverUrl(getClubAssetUrl("/verso-card.webp"));
+  };
 
   const sparkPath = (cx: number, cy: number, s: number) => {
     return `M${cx} ${cy - s} L${cx + s * 0.22} ${cy - s * 0.22} L${cx + s} ${cy} L${cx + s * 0.22} ${cy + s * 0.22} L${cx} ${cy + s} L${cx - s * 0.22} ${cy + s * 0.22} L${cx - s} ${cy} L${cx - s * 0.22} ${cy - s * 0.22} Z`;
@@ -143,13 +164,14 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
           />
           {/* Cover image embedded */}
           <image
-            href={`/covers/${coverFilename}`}
+            href={coverUrl}
             x="14"
             y="14"
             width="172"
             height="252"
             preserveAspectRatio="xMidYMid slice"
             clipPath={`url(#c-img-${id})`}
+            onError={handleCoverError}
           />
           {(auto || exclusive) && (
             <rect

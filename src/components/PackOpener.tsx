@@ -6,7 +6,9 @@ import { PackageOpen, ArrowRight, Check, Sparkles } from "lucide-react";
 import Stamp from "./Stamp";
 import { dbService } from "@/lib/db";
 import { canHaveRareVersion, isExclusiveSticker } from "@/lib/albumRules";
+import { SEED_STICKERS } from "@/lib/seeds";
 import type { RevealItem, Sticker } from "@/lib/types";
+import { getClubAssetUrl } from "@/lib/urls";
 
 interface PackOpenerProps {
   reveals: RevealItem[];
@@ -191,6 +193,26 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
       notifyPendingPackChange();
     };
   }, []);
+
+  // Warm only the covers used by this pack. The browser reuses its HTTP cache
+  // when Stamp renders them, so this adds no database work and very little traffic.
+  useEffect(() => {
+    const coverByNumber = new Map(
+      SEED_STICKERS.map((sticker) => [sticker.number, sticker.cover_url]),
+    );
+    const coverUrls = new Set(
+      reveals
+        .map((item) => coverByNumber.get(item.number))
+        .filter((coverUrl): coverUrl is string => Boolean(coverUrl))
+        .map((coverUrl) => getClubAssetUrl(`/covers/${coverUrl}`)),
+    );
+
+    coverUrls.forEach((coverUrl) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = coverUrl;
+    });
+  }, [reveals]);
 
   useEffect(() => {
     if (!reveals.some((item) => item.isRare && canHaveRareVersion(item.number) && !item.author)) return;
