@@ -1016,8 +1016,8 @@ button {
   line-height: 1.35;
 }
 .cell.exclusive-cell {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold) inset;
+  border-color: #ab3292;
+  box-shadow: 0 0 0 2px #ab3292 inset;
   position: relative;
 }
 .cell.exclusive-cell::after {
@@ -1038,15 +1038,15 @@ button {
   position: absolute;
   top: 3px;
   right: 3px;
-  background: linear-gradient(135deg, #fff9c4, #fbc02d);
-  color: #78350f;
+  background: linear-gradient(135deg, #e08bcb, #ab3292);
+  color: #ffffff;
   font-size: 8px;
   font-weight: 900;
   padding: 2px 4px;
   border-radius: 6px;
   font-family: "Baloo 2";
   border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 4px 10px rgba(245, 127, 23, 0.22);
+  box-shadow: 0 4px 10px rgba(171, 50, 146, 0.3);
   z-index: 3;
 }
 .album.album-list {
