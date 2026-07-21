@@ -199,6 +199,8 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   const router = useRouter();
   type AlbumFilter = "todas" | "faltam" | "coladas" | "repetidas" | "raras" | "exclusivas" | "bonus";
   const [filter, setFilter] = useState<AlbumFilter>("todas");
+  type CollectionFilter = "todas" | "resgatar" | "incompletas" | "concluidas";
+  const [collectionFilter, setCollectionFilter] = useState<CollectionFilter>("todas");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [itemsChoice, setItemsChoice] = useState<number | null>(null);
@@ -486,6 +488,15 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   ];
 
   const getStickerFamily = (number: number) => families.find((family) => family.stickers.includes(number));
+
+  const filteredFamilies = families.filter((family) => {
+    const isCompleted = family.stickers.every((number) => !!getOwnedInfo(number));
+    const isClaimed = completedTags.some((tag) => tag.tag_name === family.tag && tag.claimed);
+    if (collectionFilter === "resgatar") return isCompleted && !isClaimed;
+    if (collectionFilter === "incompletas") return !isCompleted;
+    if (collectionFilter === "concluidas") return isClaimed;
+    return true;
+  });
 
   const openZoomedAutograph = (sticker: Sticker) => {
     const filename = getAutographFilename(sticker.author);
@@ -987,7 +998,29 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
 
       {activeTab === "colecoes" ? (
         <div className="collections-container" style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}>
-          {families.map((family) => {
+          <div className="album-filter-row collection-filter-row">
+            <label htmlFor="collection-filter">Filtrar:</label>
+            <select
+              id="collection-filter"
+              value={collectionFilter}
+              onChange={(event) => setCollectionFilter(event.target.value as CollectionFilter)}
+              aria-label="Filtrar coleções por situação"
+            >
+              <option value="todas">Todas as coleções</option>
+              <option value="resgatar">A resgatar</option>
+              <option value="incompletas">Incompletas</option>
+              <option value="concluidas">Concluídas</option>
+            </select>
+            <span className="album-count-badge">{filteredFamilies.length} coleções</span>
+          </div>
+
+          {filteredFamilies.length === 0 && (
+            <div className="trade-empty">
+              <p>Nenhuma coleção encontrada neste filtro.</p>
+            </div>
+          )}
+
+          {filteredFamilies.map((family) => {
             const ownedInFamilyCount = family.stickers.filter((num) => !!getOwnedInfo(num)).length;
             const isCompleted = ownedInFamilyCount === family.stickers.length;
             const completedTagInfo = completedTags.find((t) => t.tag_name === family.tag);

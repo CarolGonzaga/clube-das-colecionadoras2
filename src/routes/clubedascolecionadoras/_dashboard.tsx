@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { dbService, supabase } from "../../lib/db";
-import { isUserAllowedInMaintenance } from "../../lib/maintenance";
 import { UIProvider, useUI } from "../../components/UIProvider";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import TopBar from "../../components/TopBar";
@@ -21,9 +20,6 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
           redirect: location.href,
         },
       });
-    }
-    if (!isUserAllowedInMaintenance(user.id)) {
-      throw redirect({ to: "/clubedascolecionadoras/manutencao" as any });
     }
   },
   loader: async () => {
@@ -59,9 +55,6 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
     const user = await dbService.getCurrentUser();
     if (!user) {
       throw redirect({ to: "/clubedascolecionadoras/login" });
-    }
-    if (!isUserAllowedInMaintenance(user.id)) {
-      throw redirect({ to: "/clubedascolecionadoras/manutencao" as any });
     }
     const profile = await dbService.getProfile(user.id);
     const stickers = await dbService.getStickers();
