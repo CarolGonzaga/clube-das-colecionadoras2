@@ -10,16 +10,35 @@ DECLARE
   column_row record;
   constraint_row record;
   old_number integer;
+  needs_shift boolean;
+  needs_reference_shift boolean;
 BEGIN
-  IF NOT EXISTS (
+  needs_shift := EXISTS (
     SELECT 1 FROM public.stickers
     WHERE number = 331 AND slug = '24h-para-correr-ilustracao-1'
-  ) OR NOT EXISTS (
-    SELECT 1 FROM public.stickers WHERE number = 361 AND slug = 'extra'
+  ) AND (
+    EXISTS (SELECT 1 FROM public.stickers WHERE number = 361 AND slug = 'extra')
+    OR (
+      EXISTS (SELECT 1 FROM public.stickers WHERE number = 360 AND slug = 'operacao-conves-ilustracao')
+      AND NOT EXISTS (SELECT 1 FROM public.stickers WHERE slug = 'extra')
+    )
+  );
+
+  IF NOT needs_shift AND NOT (
+    NOT EXISTS (SELECT 1 FROM public.stickers WHERE slug = '24h-para-correr-ilustracao-1')
+    AND EXISTS (SELECT 1 FROM public.stickers WHERE number = 360 AND slug = 'extra')
+    AND NOT EXISTS (SELECT 1 FROM public.stickers WHERE number = 361)
   ) THEN
     RAISE EXCEPTION 'Unexpected sticker catalogue; migration cancelled without changes';
   END IF;
 
+  needs_reference_shift := needs_shift
+    OR EXISTS (SELECT 1 FROM public.user_stickers WHERE sticker_number = 361)
+    OR (to_regclass('public.redeem_pools') IS NOT NULL AND EXISTS (
+      SELECT 1 FROM public.redeem_pools WHERE sticker_number = 361
+    ));
+
+  IF needs_reference_shift THEN
   CREATE TEMP TABLE sticker_fk_backup ON COMMIT DROP AS
   SELECT conrelid, conname, pg_get_constraintdef(oid) AS definition
   FROM pg_constraint
@@ -55,11 +74,24 @@ BEGIN
     END LOOP;
   END IF;
 
-  DELETE FROM public.stickers WHERE number = 331;
-  FOR old_number IN 332..361 LOOP
-    UPDATE public.stickers SET number = old_number - 1 WHERE number = old_number;
-  END LOOP;
-  UPDATE public.stickers SET type = 'bonus' WHERE number = 360 AND slug = 'extra';
+  IF needs_shift THEN
+    DELETE FROM public.stickers WHERE number = 331;
+    FOR old_number IN 332..361 LOOP
+      UPDATE public.stickers SET number = old_number - 1 WHERE number = old_number;
+    END LOOP;
+    INSERT INTO public.stickers
+      (number, slug, name, author, ilustrator, type, cover_url, amazon_url)
+    VALUES
+      (360, 'extra', 'Agradecimentos', NULL, NULL, 'bonus', 'card story/extra.png', NULL)
+    ON CONFLICT (number) DO UPDATE SET
+      slug = excluded.slug,
+      name = excluded.name,
+      author = excluded.author,
+      ilustrator = excluded.ilustrator,
+      type = excluded.type,
+      cover_url = excluded.cover_url,
+      amazon_url = excluded.amazon_url;
+  END IF;
 
   -- Revoke the former early bonus. It will be revealed again only at 359/359.
   DELETE FROM public.user_stickers WHERE sticker_number = 360;
@@ -74,6 +106,21 @@ BEGIN
     EXECUTE format('ALTER TABLE %s ADD CONSTRAINT %I %s',
       constraint_row.conrelid::regclass, constraint_row.conname, constraint_row.definition);
   END LOOP;
+  END IF;
+
+  -- Remove only bonuses originating from the obsolete 193-sticker reward.
+  -- A legitimate collection_1_359 grant is preserved when this SQL is rerun.
+  DELETE FROM public.user_stickers us
+  WHERE us.sticker_number = 360
+    AND EXISTS (
+      SELECT 1 FROM public.reward_grants rg
+      WHERE rg.user_id = us.user_id AND rg.reward_key = 'collection_1_193'
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM public.reward_grants rg
+      WHERE rg.user_id = us.user_id AND rg.reward_key = 'collection_1_359'
+    );
+  DELETE FROM public.reward_grants WHERE reward_key = 'collection_1_193';
 END $$;
 
 DO $$

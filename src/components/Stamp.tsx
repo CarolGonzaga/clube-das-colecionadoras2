@@ -152,7 +152,7 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
               rx="12"
               fill={`url(#goldSheen-${id})`}
               clipPath={`url(#c-${id})`}
-              style={{ mixBlendMode: "color-dodge", pointerEvents: "none" }}
+              style={{ mixBlendMode: "screen", pointerEvents: "none" }}
             />
           )}
 
