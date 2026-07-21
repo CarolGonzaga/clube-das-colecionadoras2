@@ -9,6 +9,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/quiz")(
       diaAtual: data.diaAtual,
       tentativasHojeCount: data.tentativasHojeCount,
       perguntasRespondidasCorretasCount: data.perguntasRespondidasCorretasCount,
+      quizUnlimited: data.quizUnlimited === true,
       questions: data.questions,
     };
   },
@@ -22,6 +23,7 @@ function DashboardQuiz() {
       diaAtual={data.diaAtual}
       tentativasHojeCount={data.tentativasHojeCount}
       perguntasRespondidasCorretasCount={data.perguntasRespondidasCorretasCount}
+      quizUnlimited={data.quizUnlimited}
       initialQuestions={data.questions}
     />
   );
