@@ -1,5 +1,5 @@
--- Author packages keep their existing two-account redemption limit, but each
--- successful redemption now grants two copies of every listed sticker.
+-- Author packages keep their two-account redemption limit. Each successful
+-- redemption grants one copy of every listed sticker.
 
 ALTER TABLE public.redeem_codes
   ADD COLUMN IF NOT EXISTS copies_per_sticker integer NOT NULL DEFAULT 1;
@@ -18,7 +18,7 @@ BEGIN
 END $$;
 
 UPDATE public.redeem_codes
-SET copies_per_sticker = 2,
+SET copies_per_sticker = 1,
     max_redemptions = 2
 WHERE grant_all_pool = true
   AND label LIKE 'Pacote de %';

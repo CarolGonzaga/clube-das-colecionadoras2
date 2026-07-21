@@ -8,7 +8,7 @@ ALTER TABLE public.redeem_codes
 -- Corrige tambem bancos em que a migracao anterior tenha sido aplicada antes
 -- da revisao do valor de copias dos pacotes exclusivos de autoras.
 UPDATE public.redeem_codes
-SET copies_per_sticker = 2,
+SET copies_per_sticker = 1,
     max_redemptions = 2
 WHERE grant_all_pool = true
   AND label LIKE 'Pacote de %';
