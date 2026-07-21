@@ -500,4 +500,53 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 GRANT EXECUTE ON FUNCTION public.answer_quiz_legacy(integer, integer, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.answer_quiz_legacy(integer, integer, integer) TO anon;
+GRANT EXECUTE ON FUNCTION public.answer_quiz_legacy(integer, integer, integer) TO public;
+
+-- Wrapper function public.answer_quiz
+CREATE OR REPLACE FUNCTION public.answer_quiz(
+  sticker_number_param integer,
+  q_index_param integer,
+  chosen_index_param integer
+)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  uid uuid := auth.uid();
+  deadline timestamptz;
+  result jsonb;
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'Não autorizado.';
+  END IF;
+
+  SELECT expires_at INTO deadline
+  FROM public.quiz_question_timers
+  WHERE user_id = uid AND sticker_number = sticker_number_param AND q_index = q_index_param;
+
+  IF deadline IS NOT NULL AND deadline <= now() THEN
+    RETURN public.record_quiz_timeout(uid, sticker_number_param, q_index_param);
+  END IF;
+
+  IF deadline IS NULL THEN
+    INSERT INTO public.quiz_question_timers(user_id, sticker_number, q_index, expires_at)
+    VALUES (uid, sticker_number_param, q_index_param, now() + interval '3 minutes')
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  result := public.answer_quiz_legacy(sticker_number_param, q_index_param, chosen_index_param);
+
+  DELETE FROM public.quiz_question_timers
+  WHERE user_id = uid AND sticker_number = sticker_number_param AND q_index = q_index_param;
+
+  RETURN result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.answer_quiz(integer, integer, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.answer_quiz(integer, integer, integer) TO anon;
+GRANT EXECUTE ON FUNCTION public.answer_quiz(integer, integer, integer) TO public;
+
+-- Forçar recarregamento do cache do PostgREST (schema cache)
+NOTIFY pgrst, 'reload schema';
+
 
