@@ -32,6 +32,7 @@ import {
   Smartphone,
   LogOut,
   PartyPopper,
+  ShoppingBag,
 } from "lucide-react";
 
 const XIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -224,6 +225,13 @@ function StatBadge({ id, value, label, theme }: StatBadgeProps & { theme?: "lila
 }
 
 const MISSIONS = [
+  {
+    id: "promotions-group",
+    Icon: ShoppingBag,
+    platform: "WhatsApp",
+    label: "Entrar no grupo de promoções",
+    url: "https://chat.whatsapp.com/JyHk9xvhnYUG3Q6kSJLxYI?s=cl&p=i&ilr=4",
+  },
   {
     id: "whatsapp",
     Icon: MessageCircleHeart,
