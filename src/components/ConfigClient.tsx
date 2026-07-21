@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, Link } from "@tanstack/react-router";
 import { Profile, Style, UserStyle } from "@/lib/types";
 import { getPublicAlbumUrl } from "@/lib/urls";
 import { useUI } from "@/components/UIProvider";
@@ -304,98 +304,7 @@ export default function ConfigClient({ profile, styles, userStyles }: ConfigClie
     );
   };
 
-  const handleOpenUsageRules = () => {
-    ui.openModal(
-      <div
-        className="usage-rules-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="usage-rules-title"
-      >
-        <h2 id="usage-rules-title">Regras de uso da plataforma</h2>
-        <p>
-          Para garantir que o álbum seja justo e divertido para todas as pessoas, é necessário
-          seguir estas regras:
-        </p>
 
-        <ol>
-          <li>
-            <strong>É permitida apenas uma conta por pessoa.</strong>
-            <p>
-              Não crie contas adicionais nem utilize vários e-mails para receber novamente
-              pacotes, figurinhas, vantagens ou recompensas.
-            </p>
-          </li>
-          <li>
-            <strong>Não tente burlar o funcionamento da plataforma.</strong>
-            <p>
-              É proibido utilizar falhas, ferramentas automatizadas, bots, scripts ou qualquer
-              outro método para conseguir benefícios indevidos.
-            </p>
-          </li>
-          <li>
-            <strong>Não compartilhe ou comercialize contas.</strong>
-            <p>
-              Cada conta deve ser utilizada apenas pela pessoa que realizou o cadastro. Não
-              compartilhe sua senha ou seus dados de acesso.
-            </p>
-          </li>
-          <li>
-            <strong>Não utilize dados falsos para obter vantagens.</strong>
-            <p>
-              Cadastros criados com informações falsas ou com o objetivo de contornar limites
-              poderão ser identificados e penalizados.
-            </p>
-          </li>
-          <li>
-            <strong>Falhas devem ser comunicadas, não exploradas.</strong>
-            <p>
-              Caso encontre algum erro na plataforma, avise a equipe de desenvolvimento. Utilizar
-              uma falha repetidamente para conseguir vantagens será considerado violação das
-              regras.
-            </p>
-          </li>
-          <li>
-            <strong>Contas relacionadas também poderão ser analisadas.</strong>
-            <p>
-              Quando forem identificadas várias contas pertencentes à mesma pessoa, a conta
-              principal e as demais contas envolvidas poderão receber penalidades.
-            </p>
-          </li>
-          <li>
-            <strong>As penalidades dependerão da gravidade da situação.</strong>
-            <p>
-              As medidas podem incluir perda de benefícios obtidos de forma irregular, bloqueio
-              temporário, suspensão ou encerramento da conta.
-            </p>
-          </li>
-          <li>
-            <strong>A equipe poderá realizar verificações.</strong>
-            <p>
-              A equipe de desenvolvimento poderá analisar cadastros e atividades suspeitas para
-              garantir o cumprimento das regras e a segurança da plataforma.
-            </p>
-          </li>
-          <li>
-            <strong>É possível solicitar uma revisão.</strong>
-            <p>
-              Caso você acredite que uma penalidade foi aplicada por engano, envie um e-mail para{" "}
-              <a href="mailto:dev.carolgonzaga@gmail.com">dev.carolgonzaga@gmail.com</a>, explicando
-              a situação e anexando as provas necessárias para análise.
-            </p>
-          </li>
-        </ol>
-
-        <p className="usage-rules-agreement">
-          Ao utilizar a plataforma, você declara que leu e concorda com estas regras.
-        </p>
-
-        <button type="button" className="btn" onClick={() => ui.closeModal()}>
-          Fechar
-        </button>
-      </div>,
-    );
-  };
 
   const handleLoadComplete = async () => {
     setLoading(true);
@@ -616,9 +525,9 @@ export default function ConfigClient({ profile, styles, userStyles }: ConfigClie
         Seu link individual: {publicAlbumUrl}
       </div>
 
-      <button type="button" className="usage-rules-link" onClick={handleOpenUsageRules}>
-        Regras de uso
-      </button>
+      <Link to="/clubedascolecionadoras/termos" className="usage-rules-link">
+        Termos de uso
+      </Link>
     </div>
   );
 }
