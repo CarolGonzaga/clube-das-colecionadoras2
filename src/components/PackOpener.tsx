@@ -545,7 +545,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
           {/* Background Glow */}
           {["cards-emerging", "cards-ready", "card-flip"].includes(animState) && (
             <div
-              className="absolute inset-0 pointer-events-none animate-pulse opacity-50"
+              className="absolute inset-0 pointer-events-none animate-pulse opacity-50 pack-opener-glow"
               style={{
                 background: currentIsRare
                   ? "radial-gradient(circle, rgba(231, 181, 59, 0.5) 0%, transparent 60%)"

@@ -5530,6 +5530,12 @@ html.theme-lilac .focus\:ring-primary:focus {
 /* 9. App-specific component classes */
 html.theme-lilac .btn {
   background: var(--gradient-berry) !important;
+  color: #fff !important;
+}
+html.theme-lilac .btn .lucide,
+html.theme-lilac .shop-cart-button .lucide,
+html.theme-lilac .shop-add-btn .lucide {
+  color: #fff !important;
 }
 html.theme-lilac .btn.soft,
 html.theme-lilac .btn.sm.soft {
@@ -5639,9 +5645,20 @@ html.theme-lilac .first-place-card {
   box-shadow: 0 0 14px rgba(217, 70, 239, 0.2) !important;
 }
 
-/* 12. General Lucide icons override */
+/* 12. General Lucide icons override — purple for elements on light backgrounds */
 html.theme-lilac .lucide {
   color: #972c7e !important;
+}
+/* Icons inside dark/gradient buttons should stay white */
+html.theme-lilac .btn .lucide,
+html.theme-lilac .btn svg,
+html.theme-lilac .shop-cart-button .lucide,
+html.theme-lilac .shop-cart-button svg,
+html.theme-lilac .shop-add-btn .lucide,
+html.theme-lilac .shop-add-btn svg,
+html.theme-lilac .shop-filter-bar button.active .lucide,
+html.theme-lilac .shop-filter-bar button.active svg {
+  color: #fff !important;
 }
 
 /* 13. Inline style-driven pink → purple (SVG attribute selectors) */
@@ -6334,7 +6351,7 @@ html.theme-lilac .border-\[\#f7a8cb\]\/50 {
 }
 
 /* 20. PackOpener background glow (radial rosa → roxo) */
-html.theme-lilac [style*="rgba(194, 24, 91"] {
+html.theme-lilac .pack-opener-glow {
   background: radial-gradient(circle, rgba(171, 50, 146, 0.4) 0%, transparent 60%) !important;
 }
 
@@ -7080,6 +7097,55 @@ html.theme-lilac .trade-flow-search-btn svg {
   stroke: #ffffff !important;
   color: #ffffff !important;
 }
+/* ── Lilac: white text & icons on ALL dark/gradient backgrounds ──────────── */
+
+/* Shop cart button (already has color:#fff in base, but ensure) */
+html.theme-lilac .shop-cart-button {
+  color: #fff !important;
+}
+html.theme-lilac .shop-cart-button svg,
+html.theme-lilac .shop-cart-button .lucide {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+
+/* "10x" badge — inline style background is rgba(194,24,91,...), override via class added in loja */
+/* We use an attribute selector to catch the inline style for the badge span in .shop-card-media */
+html.theme-lilac .shop-card-media > span[style*="rgba(194"] {
+  background: rgba(106, 27, 89, 0.92) !important;
+  color: #fff !important;
+}
+
+/* Active filter bar buttons in the shop */
+html.theme-lilac .shop-filter-bar button.active {
+  background: var(--grad-brand) !important;
+  color: #fff !important;
+}
+html.theme-lilac .shop-filter-bar button.active svg,
+html.theme-lilac .shop-filter-bar button.active .lucide {
+  color: #fff !important;
+}
+
+/* Generic: any button with inline gradient-berry or dark bg */
+html.theme-lilac [style*="var(--gradient-berry)"],
+html.theme-lilac [style*="gradient(135deg, #d63384"],
+html.theme-lilac [style*="gradient(135deg, #ab3292"] {
+  color: #fff !important;
+}
+html.theme-lilac [style*="var(--gradient-berry)"] svg,
+html.theme-lilac [style*="var(--gradient-berry)"] .lucide,
+html.theme-lilac [style*="gradient(135deg, #d63384"] svg,
+html.theme-lilac [style*="gradient(135deg, #d63384"] .lucide {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+
+/* PackOpener bottom action buttons */
+html.theme-lilac .pack-opener-btn,
+html.theme-lilac .pack-opener-btn svg {
+  color: #fff !important;
+}
+
 
 /* ── Album Family Collections Styles ── */
 .collection-row {
