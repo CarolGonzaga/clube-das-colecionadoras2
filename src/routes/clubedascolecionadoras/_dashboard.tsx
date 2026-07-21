@@ -204,6 +204,13 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
         } catch {
           savedNotifs = [];
         }
+        let dismissedIds = new Set<string>();
+        try {
+          const parsed = JSON.parse(localStorage.getItem("dismissed_notifications") || "[]");
+          dismissedIds = new Set(Array.isArray(parsed) ? parsed : []);
+        } catch {
+          dismissedIds = new Set();
+        }
 
         const previousById = new Map(savedNotifs.map((notification) => [notification.id, notification]));
         const managedTypes = new Set([
@@ -214,6 +221,7 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
         ]);
         const next = savedNotifs.filter((notification) => !managedTypes.has(notification.type));
         const addSynced = (notification: any) => {
+          if (dismissedIds.has(notification.id)) return;
           const previous = previousById.get(notification.id);
           next.push({
             ...notification,

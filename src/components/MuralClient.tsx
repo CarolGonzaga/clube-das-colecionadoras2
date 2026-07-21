@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Profile } from "@/lib/types";
 import { Trophy, Medal, Star, Heart, Crown } from "lucide-react";
-import { dbService } from "../lib/db";
+import { dbService, supabase } from "../lib/db";
 import { getCollectionStatus } from "../lib/albumRules";
 
 interface MuralUser {
@@ -28,19 +28,24 @@ function isImageAvatar(avatar: string | null) {
 interface MuralClientProps {
   profile: Profile;
   muralList: MuralUser[];
-  pct: number;
+  ownedCount: number;
 }
 
-export default function MuralClient({ profile, muralList, pct }: MuralClientProps) {
-  const [list, setList] = useState<MuralUser[]>(muralList);
+export default function MuralClient({ profile, muralList, ownedCount }: MuralClientProps) {
+  const [list, setList] = useState<MuralUser[]>(muralList.slice(0, 20));
+  const [liveOwnedCount, setLiveOwnedCount] = useState(ownedCount);
 
   useEffect(() => {
     let active = true;
     const fetchMural = async () => {
       try {
-        const freshList = await dbService.getMural();
+        const [freshList, freshOwnedCount] = await Promise.all([
+          dbService.getMural(),
+          dbService.getOwnedStickerCount(profile.id),
+        ]);
         if (active) {
-          setList(freshList);
+          setList(freshList.slice(0, 20));
+          setLiveOwnedCount(freshOwnedCount);
         }
       } catch (e) {
         console.error("Error fetching fresh mural list:", e);
@@ -57,17 +62,30 @@ export default function MuralClient({ profile, muralList, pct }: MuralClientProp
     const interval = window.setInterval(refreshWhenVisible, 60_000);
     window.addEventListener("focus", refreshWhenVisible);
     document.addEventListener("visibilitychange", refreshWhenVisible);
+    const inventoryChannel = supabase
+      .channel(`mural-title-${profile.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_stickers",
+          filter: `user_id=eq.${profile.id}`,
+        },
+        fetchMural,
+      )
+      .subscribe();
 
     return () => {
       active = false;
       window.clearInterval(interval);
       window.removeEventListener("focus", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
+      supabase.removeChannel(inventoryChannel);
     };
-  }, []);
+  }, [profile.id]);
   // Status text and title icon mapping
-  const currentCount = list.find((m) => m.id === profile.id)?.count || 0;
-  const { statusText, titleIcon } = getCollectionStatus(currentCount);
+  const { statusText, titleIcon } = getCollectionStatus(liveOwnedCount);
 
   // Get Rank Icon/Color
   const getRankBadge = (index: number) => {

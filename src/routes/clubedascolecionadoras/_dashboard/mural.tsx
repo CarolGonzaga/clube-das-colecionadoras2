@@ -15,7 +15,5 @@ function DashboardMural() {
 
   // Calculate ownedCount & pct
   const ownedCount = parentData.userStickers.filter((us: any) => us.copies > 0).length;
-  const pct = Math.round((ownedCount / 100) * 100);
-
-  return <MuralClient profile={parentData.profile} muralList={muralList} pct={pct} />;
+  return <MuralClient profile={parentData.profile} muralList={muralList} ownedCount={ownedCount} />;
 }

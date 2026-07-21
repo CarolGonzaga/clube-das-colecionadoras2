@@ -230,6 +230,13 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
         notifications = [];
       }
       const previousById = new Map(notifications.map((notification) => [notification.id, notification]));
+      let dismissedIds = new Set<string>();
+      try {
+        const parsed = JSON.parse(localStorage.getItem("dismissed_notifications") || "[]");
+        dismissedIds = new Set(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        dismissedIds = new Set();
+      }
       const nextNotifications = notifications.filter(
         (notification) => notification.type !== "collection_completed",
       );
@@ -239,8 +246,9 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
           const canonicalName = tag.tag_name.startsWith("Coleção ")
             ? tag.tag_name
             : `Coleção ${tag.tag_name}`;
-          const id = `completed-tag-${canonicalName}`;
-          const previous = previousById.get(id);
+        const id = `completed-tag-${canonicalName}`;
+        if (dismissedIds.has(id)) return;
+        const previous = previousById.get(id);
           nextNotifications.push({
             id,
             type: "collection_completed",
@@ -1042,7 +1050,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                       type="button"
                       disabled={!isCompleted || isClaimed || isClaiming}
                       onClick={handleClaim}
-                      className="btn"
+                      className={`btn collection-claim-button ${!isCompleted && !isClaimed ? "incomplete" : ""}`}
                       style={{
                         margin: 0,
                         padding: "8px 16px",

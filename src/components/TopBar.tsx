@@ -20,6 +20,17 @@ function readNotifications(): any[] {
   }
 }
 
+function rememberDismissedNotification(id: string) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("dismissed_notifications") || "[]");
+    const dismissed = new Set(Array.isArray(parsed) ? parsed : []);
+    dismissed.add(id);
+    localStorage.setItem("dismissed_notifications", JSON.stringify([...dismissed]));
+  } catch {
+    localStorage.setItem("dismissed_notifications", JSON.stringify([id]));
+  }
+}
+
 export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   const ui = useUI();
   const router = useRouter();
@@ -50,13 +61,18 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   };
 
   const removeNotification = (id: string, e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    rememberDismissedNotification(id);
     const notifications = readNotifications();
     const updated = notifications.filter((n: any) => n.id !== id);
     localStorage.setItem("trade_notifications", JSON.stringify(updated));
     setHasUnseenNotifs(updated.some((n: any) => !n.seen));
     window.dispatchEvent(new Event("trade_notifications_change"));
     ui.closeModal();
+    // Reopen with the updated list so only the selected card disappears.
+    window.setTimeout(handleNotifications, 0);
   };
 
   const handleNotifications = () => {

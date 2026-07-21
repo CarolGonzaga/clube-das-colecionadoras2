@@ -242,7 +242,9 @@ export const dbService = {
     publicMuralRequest = (async () => {
       const { data, error } = await supabase.rpc("get_public_mural");
       if (error) throw new Error(error.message);
-      publicMuralCache = data || [];
+      // The SQL function is also capped, but keep this defensive limit so an
+      // older database definition can never render more than the top 20.
+      publicMuralCache = (data || []).slice(0, 20);
       publicMuralCachedAt = Date.now();
       return publicMuralCache;
     })();
@@ -252,6 +254,16 @@ export const dbService = {
     } finally {
       publicMuralRequest = null;
     }
+  },
+
+  async getOwnedStickerCount(userId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from("user_stickers")
+      .select("sticker_number", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gt("copies", 0);
+    if (error) throw new Error(error.message);
+    return count || 0;
   },
 
   async getCompletedMissions(userId: string): Promise<string[]> {

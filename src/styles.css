@@ -7173,6 +7173,19 @@ html.theme-lilac .pack-opener-btn svg {
   gap: 14px;
 }
 
+.collection-claim-button.incomplete,
+.collection-claim-button.incomplete:hover,
+.collection-claim-button.incomplete:focus {
+  background: #d1d5db !important;
+  background-image: none !important;
+  color: #6b7280 !important;
+  border-color: #c4c8ce !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
 .collection-header {
   display: flex;
   justify-content: space-between;
