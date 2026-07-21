@@ -15,6 +15,8 @@ const searchSchema = z.object({
   merchant_order_id: z.string().optional(),
   preference_id: z.string().optional(),
   site_id: z.string().optional(),
+  processing_mode: z.string().optional(),
+  merchant_account_id: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/pagamento/pendente")({
