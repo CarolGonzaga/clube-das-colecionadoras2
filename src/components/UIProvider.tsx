@@ -1,11 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "@tanstack/react-router";
 import { RevealItem } from "@/lib/types";
 import PackOpener from "./PackOpener";
 import { SEED_STICKERS } from "@/lib/seeds";
 import { dbService } from "@/lib/db";
+import { normalizeRevealItems } from "@/lib/reveals";
 
 interface UIContextType {
   toast: (msg: string) => void;
@@ -70,9 +72,15 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         // Restore pending_pack if present in DB
         if (profile.pending_pack && !isPackActiveRef.current) {
           localStorage.setItem("pending_pack", JSON.stringify(profile.pending_pack));
-          const pendingReveals = Array.isArray(profile.pending_pack.reveals)
-            ? profile.pending_pack.reveals
-            : [];
+          const pendingReveals = normalizeRevealItems(profile.pending_pack.reveals);
+          if (pendingReveals.length === 0) {
+            localStorage.removeItem("pending_pack");
+            dbService.syncPendingPack(null).catch(() => undefined);
+          } else if (pendingReveals.length !== profile.pending_pack.reveals?.length) {
+            const normalizedPendingPack = { ...profile.pending_pack, reveals: pendingReveals };
+            localStorage.setItem("pending_pack", JSON.stringify(normalizedPendingPack));
+            dbService.syncPendingPack(normalizedPendingPack).catch(() => undefined);
+          }
           activePackItemsRef.current = pendingReveals;
           setReveals(pendingReveals);
           if (profile.pending_pack.title) setRevealsTitle(profile.pending_pack.title);
@@ -128,11 +136,18 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     rewardMsg?: string;
     rewardTag?: string;
   }) => {
+    const validItems = normalizeRevealItems(pack.items);
+    if (validItems.length === 0) {
+      isPackActiveRef.current = false;
+      activePackItemsRef.current = [];
+      return;
+    }
+
     // Persist before mounting PackOpener. This makes code redemptions follow
     // the same durable flow as purchased/mission packs and prevents a route
     // remount or a late profile hydration from losing the animation.
     const pendingPack = {
-      reveals: pack.items,
+      reveals: validItems,
       title: pack.title,
       flippedCards: [],
       isOpened: false,
@@ -146,8 +161,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new Event("pending_pack_change"));
 
     isPackActiveRef.current = true;
-    activePackItemsRef.current = pack.items;
-    setReveals(pack.items);
+    activePackItemsRef.current = validItems;
+    setReveals(validItems);
     setRevealsTitle(pack.title);
     setOpenedPacks([]);
     setRevealedLabels([]);
@@ -259,7 +274,11 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   };
 
   const showReveals = (items: RevealItem[], title?: string) => {
-    if (!items || items.length === 0) return;
+    const safeItems = normalizeRevealItems(items);
+    if (safeItems.length === 0) {
+      toast("O resgate foi concluído, mas o pacote retornou sem figurinhas válidas.");
+      return;
+    }
 
     // A stale pending-pack lock must never hide a newly redeemed package. It
     // can happen after navigation or an interrupted close animation: the
@@ -279,7 +298,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       if (!Array.isArray(existing)) {
         existing = [];
       }
-      const newStickers = items.map((item) => item.number);
+      const newStickers = safeItems.map((item) => item.number);
       // Prepend, deduplicate, and limit to 10
       const updated = Array.from(new Set([...newStickers, ...existing])).slice(0, 10);
       localStorage.setItem(recentKey, JSON.stringify(updated));
@@ -299,7 +318,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }[] = [];
     let currentPackItems: RevealItem[] = [];
 
-    const normalizedItems = items.map((item) => {
+    const normalizedItems = safeItems.map((item) => {
       const sticker = SEED_STICKERS.find((seed) => seed.number === item.number);
       return sticker ? { ...item, slug: sticker.slug } : item;
     });
@@ -497,33 +516,19 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Interactive Reveals Stage Modal */}
-      {reveals.length > 0 && (
-        <div
-          className="modal-bg"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) handleCloseReveals(false);
-          }}
-        >
-          <div
-            className="modal"
-            style={{
-              maxHeight: "95vh",
-              padding: "16px 12px 12px",
-              width: "92%",
-              maxWidth: "440px",
-            }}
-          >
-            <div className="grab" onClick={() => handleCloseReveals(false)}></div>
-            <PackOpener
-              key={`${revealsTitle}-${reveals[0]?.slug || "empty"}-${reveals.length}`}
-              reveals={reveals}
-              onClose={handleCloseReveals}
-              title={revealsTitle}
-            />
-          </div>
-        </div>
-      )}
+      {/* PackOpener already owns a fullscreen fixed overlay. Portal it to the
+          body so dashboard transforms/overflow can never clip the animation. */}
+      {reveals.length > 0 &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <PackOpener
+            key={`${revealsTitle}-${reveals[0]?.slug || "empty"}-${reveals.length}`}
+            reveals={reveals}
+            onClose={handleCloseReveals}
+            title={revealsTitle}
+          />,
+          document.body,
+        )}
     </UIContext.Provider>
   );
 }

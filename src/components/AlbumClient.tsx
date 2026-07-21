@@ -316,11 +316,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       if (!matchesSearch) return false;
     }
     
-    // Hide bonus stickers (like 361) from the general views if not owned
-    if (s.type === "bonus" && !info) {
-      return false;
-    }
-
     if (filter === "faltam") {
       return !info;
     }
@@ -403,10 +398,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     return stickers.filter((s) => {
       const info = getOwnedInfo(s.number);
       const copies = getCopiesCount(s.number);
-
-      if (s.type === "bonus" && !info) {
-        return false;
-      }
 
       if (type === "faltam") return !info;
       if (type === "coladas") return !!info;

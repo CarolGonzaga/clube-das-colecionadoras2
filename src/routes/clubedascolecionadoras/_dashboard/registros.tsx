@@ -195,8 +195,8 @@ function RegistrosPage() {
             if (res.success && res.data) {
               e.currentTarget.reset();
               ui.toast("Código resgatado com sucesso!");
-              if (Array.isArray(res.data) && res.data.length > 0) ui.showReveals(res.data, "Figurinhas do Código");
-              else if (res.data.reveals && Array.isArray(res.data.reveals)) ui.showReveals(res.data.reveals, "Figurinhas do Código");
+              if (Array.isArray(res.data)) ui.showReveals(res.data, "Figurinhas do Código");
+              else ui.showReveals(res.data.reveals, "Figurinhas do Código");
               refreshOrders();
               // UIProvider refreshes the dashboard after the reveal closes.
             } else {

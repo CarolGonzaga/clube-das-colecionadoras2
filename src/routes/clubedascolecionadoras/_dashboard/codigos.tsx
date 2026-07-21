@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useUI } from "../../../components/UIProvider";
 import { redeemCodeAction, redeemDonationAction } from "../../../lib/actions";
@@ -10,8 +10,6 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/codigos
 
 function DashboardCodigos() {
   const ui = useUI();
-  const router = useRouter();
-
   // Promo Code State
   const [promoCode, setPromoCode] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
@@ -34,10 +32,10 @@ function DashboardCodigos() {
         setPromoCode("");
         ui.triggerHearts();
 
-        // Show reveals
-        if (res.data.reveals && res.data.reveals.length > 0) {
-          ui.showReveals(res.data.reveals, "Código resgatado! ✦");
-        }
+        // UIProvider validates the payload and reports an explicit error if a
+        // successful RPC ever returns without a usable reveal. Do not fail
+        // silently, which previously looked like a missing animation.
+        ui.showReveals(res.data.reveals, "Código resgatado! ✦");
 
         // Unlocked styling element toast
         if (res.data.element) {
@@ -75,11 +73,7 @@ function DashboardCodigos() {
         setDonationCode("");
         ui.triggerHearts();
 
-        if (res.data.reveals && res.data.reveals.length > 0) {
-          ui.showReveals(res.data.reveals, "Doação recebida! 💝");
-        }
-
-        router.invalidate();
+        ui.showReveals(res.data.reveals, "Doação recebida! 💝");
       } else {
         setDonationError(res.message || "Código de doação inválido, expirado ou já resgatado.");
       }

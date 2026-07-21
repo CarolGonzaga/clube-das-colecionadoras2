@@ -1,4 +1,5 @@
 import { dbService, validatePasswordOrPin } from "./db";
+import { normalizeRevealItems } from "./reveals";
 
 // Helper centralizado para traduzir e amigabilizar mensagens de erro
 function translateError(err: any): string {
@@ -161,11 +162,10 @@ export async function redeemCodeAction(codeRaw: string) {
     }
 
     if (Array.isArray(payload)) {
-      return { success: true, data: { reveals: payload.flat(), element: null } };
+      return { success: true, data: { reveals: normalizeRevealItems(payload), element: null } };
     }
 
-    const rawReveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
-    const reveals = rawReveals.flat();
+    const reveals = normalizeRevealItems(payload?.reveals);
     return {
       success: true,
       data: {
@@ -200,11 +200,10 @@ export async function redeemDonationAction(codeRaw: string) {
     }
 
     if (Array.isArray(payload)) {
-      return { success: true, data: { reveals: payload.flat() } };
+      return { success: true, data: { reveals: normalizeRevealItems(payload) } };
     }
 
-    const rawReveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
-    const reveals = rawReveals.flat();
+    const reveals = normalizeRevealItems(payload?.reveals);
     return {
       success: true,
       data: {

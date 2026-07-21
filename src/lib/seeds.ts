@@ -3011,18 +3011,9 @@ export const SEED_STICKERS: SeedSticker[] = [
     cover_url: "amor-imprevisivel-ilustracao.jpg",
     amazon_url: "https://link.amazon/B067XVJtk",
   },
+  
   {
     number: 331,
-    slug: "24h-para-correr-ilustracao-1",
-    name: "24h Para Correr",
-    author: "Marina Dutra",
-    ilustrator: "clarxmor",
-    type: "exclusiva",
-    cover_url: "24h-para-correr-ilustracao-1.jpg",
-    amazon_url: "https://link.amazon/B09LP2VIp",
-  },
-  {
-    number: 332,
     slug: "desarmonia-ilustracao",
     name: "Desarmonia",
     author: "Raquel Alves",
@@ -3032,7 +3023,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B06FsCyNJ",
   },
   {
-    number: 333,
+    number: 332,
     slug: "ultimo-romance-ilustracao",
     name: "Último Romance",
     author: "Thais Rodrigues",
@@ -3042,7 +3033,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0ggERHkt",
   },
   {
-    number: 334,
+    number: 333,
     slug: "romance-real-ilustracao",
     name: "Romance real",
     author: "Clara Alves",
@@ -3052,7 +3043,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B06KzJZ3U",
   },
   {
-    number: 335,
+    number: 334,
     slug: "traicao-segredos-e-mentiras-ilustracao",
     name: "Traição, Segredos e Mentiras",
     author: "Emely Luiza Curcio",
@@ -3062,7 +3053,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B079j6gRF",
   },
   {
-    number: 336,
+    number: 335,
     slug: "pink-lemonade-ilustracao",
     name: "Pink Lemonade",
     author: "G.B. Baldassari",
@@ -3072,7 +3063,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B07B0KfaK",
   },
   {
-    number: 337,
+    number: 336,
     slug: "quarto-119-ilustracao",
     name: "Quarto 119",
     author: "Raquel Alves",
@@ -3082,7 +3073,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B07wtbo3K",
   },
   {
-    number: 338,
+    number: 337,
     slug: "amor-fati-ilustracao",
     name: "Amor Fati",
     author: "G.B. Baldassari",
@@ -3092,7 +3083,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B01nxolvw",
   },
   {
-    number: 339,
+    number: 338,
     slug: "como-nao-se-apaixonar-ilustracao",
     name: "Como (não) se apaixonar",
     author: "D. Barreto",
@@ -3102,7 +3093,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B08EySi9l",
   },
   {
-    number: 340,
+    number: 339,
     slug: "cerejas-do-inferno-ilustracao",
     name: "Cerejas do Inferno",
     author: "Thaís Boito",
@@ -3112,7 +3103,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B09cPwtrj",
   },
   {
-    number: 341,
+    number: 340,
     slug: "a-conquistadora-de-estrelas-ilustracao-1",
     name: "A conquistadora de estrelas",
     author: "Natalia Avila",
@@ -3122,7 +3113,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B09d1H5Yw",
   },
   {
-    number: 342,
+    number: 341,
     slug: "reconstrucao-ilustracao",
     name: "Reconstrução",
     author: "Andremis",
@@ -3132,7 +3123,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B09iXvqKn",
   },
   {
-    number: 343,
+    number: 342,
     slug: "fogo-cruzado-ilustacao",
     name: "Fogo Cruzado",
     author: "Carol Barra",
@@ -3142,7 +3133,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B09JcmWWq",
   },
   {
-    number: 344,
+    number: 343,
     slug: "as-novas-romanticas-ilustracao",
     name: "As Novas Românticas",
     author: "Luisa Landre",
@@ -3152,7 +3143,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B05Ywfldr",
   },
   {
-    number: 345,
+    number: 344,
     slug: "24h-para-correr-ilustracao-2",
     name: "24h Para Correr",
     author: "Marina Dutra",
@@ -3162,7 +3153,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B09LP2VIp",
   },
   {
-    number: 346,
+    number: 345,
     slug: "25-de-outubro-ilustracao",
     name: "25 de Outubro: O preço de um único dia",
     author: "Emely Luiza Curcio",
@@ -3172,7 +3163,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0aUB5g8m",
   },
   {
-    number: 347,
+    number: 346,
     slug: "uma-mulher-pra-chamar-de-minha-ilustracao",
     name: "Uma mulher pra chamar de minha",
     author: "Thais Rodrigues",
@@ -3182,7 +3173,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0bGNchjo",
   },
   {
-    number: 348,
+    number: 347,
     slug: "lost-on-you-ilustracao",
     name: "Lost On You (Destinos Entrelaçados Livro 1)",
     author: "Swyanne Rodriguez",
@@ -3192,7 +3183,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0c1haJRt",
   },
   {
-    number: 349,
+    number: 348,
     slug: "conectadas-ilustracao",
     name: "Conectadas",
     author: "Clara Alves",
@@ -3202,7 +3193,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0cLLfn8I",
   },
   {
-    number: 350,
+    number: 349,
     slug: "a-pior-das-boas-ideias-ilustracao",
     name: "A pior das boas ideias",
     author: "V.S. Vilela",
@@ -3212,7 +3203,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0cV92ih3",
   },
   {
-    number: 351,
+    number: 350,
     slug: "nao-foi-o-destino-ilustracao",
     name: "Não foi o destino",
     author: "Graziela Santos",
@@ -3222,7 +3213,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0cZO4346",
   },
   {
-    number: 352,
+    number: 351,
     slug: "fora-de-campo-ilustracao",
     name: "Fora de campo",
     author: "D. Barreto",
@@ -3232,7 +3223,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0dFdKEsf",
   },
   {
-    number: 353,
+    number: 352,
     slug: "proibido-se-apaixonar-de-novo-ilustracao",
     name: "Proibido se apaixonar de novo",
     author: "V.S. Vilela",
@@ -3242,7 +3233,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0dQeLXYz",
   },
   {
-    number: 354,
+    number: 353,
     slug: "galaxia-desconhecida-ilustracao",
     name: "Galáxia desconhecida",
     author: "Raquel Alves",
@@ -3252,7 +3243,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0erWN7xB",
   },
   {
-    number: 355,
+    number: 354,
     slug: "o-encontro-dos-sois-2-ilustracao",
     name: "O encontro dos sóis",
     author: "Carol Barra",
@@ -3262,7 +3253,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B03QSC7A3",
   },
   {
-    number: 356,
+    number: 355,
     slug: "terceiro-croqui-ilustracao",
     name: "Terceiro Croqui",
     author: "Line Cunha",
@@ -3272,7 +3263,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0gSXsw14",
   },
   {
-    number: 357,
+    number: 356,
     slug: "crimes-do-amor-ilustracao",
     name: "Crimes do Amor",
     author: "Táttah Nascimento",
@@ -3282,7 +3273,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0gZLEgl8",
   },
   {
-    number: 358,
+    number: 357,
     slug: "um-fake-dating-quase-perfeito-ilustracao",
     name: "Um fake dating (quase) perfeito",
     author: "Thais Rodrigues",
@@ -3292,7 +3283,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0hMtCTyn",
   },
   {
-    number: 359,
+    number: 358,
     slug: "garotas-como-eu-ilustracao",
     name: "Garotas como eu",
     author: "Lis Selwyn",
@@ -3302,7 +3293,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B0hzm9p8I",
   },
   {
-    number: 360,
+    number: 359,
     slug: "operacao-conves-ilustracao",
     name: "Operação Convés",
     author: "Line Cunha",
@@ -3312,11 +3303,11 @@ export const SEED_STICKERS: SeedSticker[] = [
     amazon_url: "https://link.amazon/B080YKbsw",
   },
   {
-    number: 361,
+    number: 360,
     slug: "extra",
     name: "Agradecimentos",
     author: null,
-    type: "bonus",
+    type: "exclusiva",
     cover_url: "card story/extra.png",
   },
 ]
