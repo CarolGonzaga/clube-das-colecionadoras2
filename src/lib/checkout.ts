@@ -79,6 +79,8 @@ async function createMercadoPagoPreference({
   amountDueCents: number;
 }) {
   const baseUrl = getPublicBaseUrl();
+  const webhookUrl =
+    process.env.MERCADO_PAGO_WEBHOOK_URL || `${baseUrl}/api/webhooks/mercado-pago`;
   const accessToken = getMercadoPagoAccessToken();
 
   const preferenceItems =
@@ -118,7 +120,7 @@ async function createMercadoPagoPreference({
         failure: `${baseUrl}/clubedascolecionadoras/pagamento/falha?order=${orderId}`,
       },
       auto_return: "approved",
-      notification_url: `${baseUrl}/api/webhooks/mercado-pago`,
+      notification_url: webhookUrl,
     }),
   });
 

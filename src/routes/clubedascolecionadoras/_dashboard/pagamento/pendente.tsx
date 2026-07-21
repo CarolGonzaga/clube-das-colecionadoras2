@@ -12,7 +12,7 @@ const searchSchema = z.object({
   status: z.string().optional(),
   external_reference: z.string().optional(),
   payment_type: z.string().optional(),
-  merchant_order_id: z.string().optional(),
+  merchant_order_id: z.coerce.string().optional(),
   preference_id: z.string().optional(),
   site_id: z.string().optional(),
   processing_mode: z.string().optional(),
