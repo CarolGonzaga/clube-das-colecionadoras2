@@ -164,13 +164,22 @@ export const dbService = {
       .select("*")
       .order("number", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data || []).map((dbSticker: any) => {
+    const mappedStickers = (data || []).map((dbSticker: any) => {
       const seedSticker = SEED_STICKERS.find((s) => s.number === dbSticker.number);
       return {
         ...dbSticker,
         ilustrator: seedSticker?.ilustrator || null,
       } as Sticker;
     });
+
+    // Position 360 must always be visible as a locked album slot, even before
+    // the bonus is owned (or while PostgREST is still serving a stale schema cache).
+    if (!mappedStickers.some((sticker) => sticker.number === 360)) {
+      const bonusSticker = SEED_STICKERS.find((sticker) => sticker.number === 360);
+      if (bonusSticker) mappedStickers.push({ ...bonusSticker, ilustrator: null } as Sticker);
+    }
+
+    return mappedStickers.sort((a, b) => a.number - b.number);
   },
 
   async getUserStickers(userId: string): Promise<UserSticker[]> {

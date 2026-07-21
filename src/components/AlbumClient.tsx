@@ -311,7 +311,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       const matchesSearch =
         numericSearch !== null
           ? s.number === numericSearch
-          : normalizedName.includes(normalizedSearchQuery);
+          : !!info && normalizedName.includes(normalizedSearchQuery);
 
       if (!matchesSearch) return false;
     }
@@ -332,7 +332,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       return isExclusiveSticker(s);
     }
     if (filter === "bonus") {
-      return s.type === "bonus" && !!info;
+      return s.type === "bonus";
     }
     return true;
   });
@@ -404,7 +404,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       if (type === "repetidas") return copies > 1;
       if (type === "raras") return isRareVersion(s.number);
       if (type === "exclusivas") return isExclusiveSticker(s);
-      if (type === "bonus") return s.type === "bonus" && !!info;
+      if (type === "bonus") return s.type === "bonus";
       return true;
     }).length;
   };
