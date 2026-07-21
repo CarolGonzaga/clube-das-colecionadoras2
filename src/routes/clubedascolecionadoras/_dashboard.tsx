@@ -171,17 +171,6 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
           ui.toast(`Troca realizada! Abra o histórico de trocas para resgatar sua figurinha. 🎁`);
           router.invalidate();
 
-          const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
-          const filtered = savedNotifs.filter((n: any) => n.id !== newRow.id);
-          filtered.unshift({
-            id: newRow.id,
-            type: "trade_claim",
-            message: "Troca realizada! Abra o histórico de trocas para resgatar sua figurinha.",
-            date: new Date().toISOString(),
-            seen: false
-          });
-          localStorage.setItem("trade_notifications", JSON.stringify(filtered));
-          window.dispatchEvent(new Event("trade_notifications_change"));
         } else if (newRow.status === "rejected" && oldRow?.status === "pending") {
           if (isInitiator) {
             ui.toast(`Sua solicitação de troca foi recusada. ❌`);
@@ -194,54 +183,112 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
           }
         }
       }
+
+      await syncActionableNotifications();
     };
 
-    // Client-side synchronization to local storage notifications
-    const syncPendingClaims = async () => {
+    // Rebuild actionable notifications from the current database state. Local
+    // storage only keeps presentation state (seen/dismissed); it is no longer
+    // treated as the source of truth for collections or trades.
+    const syncActionableNotifications = async () => {
       try {
-        const resolved = await dbService.getResolvedTrades().catch(() => []);
-        if (!resolved || resolved.length === 0) return;
-
-        let hasNew = false;
-        const savedNotifs = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
-        
-        for (const tr of resolved) {
-          if (tr.status === "accepted") {
-            const isMeInitiator = tr.initiator_id === data.profile.id;
-            const isClaimed = isMeInitiator ? tr.initiator_claimed : tr.receiver_claimed;
-            
-            if (!isClaimed) {
-              const exists = savedNotifs.some((n: any) => n.id === tr.id);
-              if (!exists) {
-                savedNotifs.unshift({
-                  id: tr.id,
-                  type: "trade_claim",
-                  message: "Troca realizada! Abra o histórico de trocas para resgatar sua figurinha.",
-                  date: tr.resolved_at || new Date().toISOString(),
-                  seen: false
-                });
-                hasNew = true;
-              }
-            } else {
-              const notifIndex = savedNotifs.findIndex((n: any) => n.id === tr.id);
-              if (notifIndex !== -1 && !savedNotifs[notifIndex].seen) {
-                savedNotifs[notifIndex].seen = true;
-                hasNew = true;
-              }
-            }
-          }
+        const [resolved, incoming, completedTags] = await Promise.all([
+          dbService.getResolvedTrades().catch(() => []),
+          dbService.getIncomingTrades().catch(() => []),
+          dbService.getCompletedTags().catch(() => []),
+        ]);
+        let savedNotifs: any[] = [];
+        try {
+          const parsed = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
+          savedNotifs = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          savedNotifs = [];
         }
 
-        if (hasNew) {
-          localStorage.setItem("trade_notifications", JSON.stringify(savedNotifs));
+        const previousById = new Map(savedNotifs.map((notification) => [notification.id, notification]));
+        const managedTypes = new Set([
+          "collection_completed",
+          "trade_claim",
+          "trade_request",
+          "welcome_username",
+        ]);
+        const next = savedNotifs.filter((notification) => !managedTypes.has(notification.type));
+        const addSynced = (notification: any) => {
+          const previous = previousById.get(notification.id);
+          next.push({
+            ...notification,
+            date: previous?.date || notification.date,
+            seen: previous?.seen || false,
+          });
+        };
+
+        if (data.profile.needs_username_update) {
+          addSynced({
+            id: `welcome_username_${data.profile.id}`,
+            type: "welcome_username",
+            message:
+              "Boas-vindas à versão 2.0! Defina seu apelido definitivo na página de Configurações.",
+            date: new Date().toISOString(),
+          });
+        }
+
+        incoming
+          .filter((trade) => trade.status === "pending")
+          .forEach((trade) =>
+            addSynced({
+              id: `trade-request-${trade.id}`,
+              type: "trade_request",
+              message: `Você recebeu uma solicitação de troca de @${trade.initiator_nick || "colecionadora"}.`,
+              date: trade.created_at,
+            }),
+          );
+
+        resolved
+          .filter((trade) => {
+            if (trade.status !== "accepted") return false;
+            const isInitiator = trade.initiator_id === data.profile.id;
+            return !(isInitiator ? trade.initiator_claimed : trade.receiver_claimed);
+          })
+          .forEach((trade) =>
+            addSynced({
+              id: `trade-claim-${trade.id}`,
+              type: "trade_claim",
+              message: "Troca realizada! Abra o histórico de trocas para resgatar sua figurinha.",
+              date: trade.resolved_at || trade.created_at,
+            }),
+          );
+
+        const collectionByCanonicalName = new Map<string, (typeof completedTags)[number]>();
+        completedTags.forEach((tag) => {
+          if (tag.claimed) return;
+          const canonicalName = tag.tag_name.startsWith("Coleção ")
+            ? tag.tag_name
+            : `Coleção ${tag.tag_name}`;
+          collectionByCanonicalName.set(canonicalName, { ...tag, tag_name: canonicalName });
+        });
+        collectionByCanonicalName.forEach((tag) =>
+          addSynced({
+            id: `completed-tag-${tag.tag_name}`,
+            type: "collection_completed",
+            message: `Parabéns! Você completou a ${tag.tag_name}! Você possui um prêmio para resgatar.`,
+            date: tag.completed_at || new Date().toISOString(),
+          }),
+        );
+
+        next.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const serialized = JSON.stringify(next);
+        if (serialized !== JSON.stringify(savedNotifs)) {
+          localStorage.setItem("trade_notifications", serialized);
           window.dispatchEvent(new Event("trade_notifications_change"));
         }
       } catch (err) {
-        console.error("Error syncing pending claims:", err);
+        console.error("Error syncing notifications:", err);
       }
     };
 
-    syncPendingClaims();
+    syncActionableNotifications();
+    const notificationSyncInterval = window.setInterval(syncActionableNotifications, 180000);
+    window.addEventListener("focus", syncActionableNotifications);
 
     const channelInitiator = supabase
       .channel(`trades-initiator-${data.profile.id}`)
@@ -291,6 +338,8 @@ function DashboardInner({ data, ownedCount, pct, statusText }: any) {
     return () => {
       supabase.removeChannel(channelInitiator);
       supabase.removeChannel(channelReceiver);
+      window.clearInterval(notificationSyncInterval);
+      window.removeEventListener("focus", syncActionableNotifications);
       supabase.removeChannel(channelPoints);
     };
   }, [data.profile?.id, router, ui]);

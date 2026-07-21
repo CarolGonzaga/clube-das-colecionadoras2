@@ -621,10 +621,10 @@ export const dbService = {
     if (error) throw new Error(error.message);
   },
 
-  async getCompletedTags(): Promise<{ tag_name: string; claimed: boolean }[]> {
+  async getCompletedTags(): Promise<{ tag_name: string; claimed: boolean; completed_at: string }[]> {
     const { data, error } = await supabase
       .from("completed_tags")
-      .select("tag_name, claimed");
+      .select("tag_name, claimed, completed_at");
     if (error) throw new Error(error.message);
     return data || [];
   },

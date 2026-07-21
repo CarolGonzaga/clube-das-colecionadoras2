@@ -38,6 +38,7 @@ import {
   Send,
   Inbox,
   Gift,
+  ArrowLeft,
 } from "lucide-react";
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -742,7 +743,9 @@ export default function TrocasClient({
     if (flowStep === "enter-nick") {
       return (
         <div className="trade-flow-modal">
-          <button className="trade-flow-back" onClick={resetFlow}>â† Voltar</button>
+          <button className="trade-flow-back" onClick={resetFlow}>
+            <ArrowLeft size={15} /> Voltar
+          </button>
           <ArrowLeftRight className="w-8 h-8 text-pink-500 mx-auto mb-2" />
           <h2>Trocar com outra usuária</h2>
           <p className="note" style={{ margin: "4px 0 16px", textAlign: "center" }}>
@@ -778,7 +781,9 @@ export default function TrocasClient({
       const eligibleDupes = flowCategory === "free" ? flowLookup.free_dupes : flowLookup.shop_dupes;
       return (
         <div className="trade-flow-modal">
-          <button className="trade-flow-back" onClick={() => setFlowStep("enter-nick")}>â† Voltar</button>
+          <button className="trade-flow-back" onClick={() => setFlowStep("enter-nick")}>
+            <ArrowLeft size={15} /> Voltar
+          </button>
           <div className="trade-flow-user-header">
             {avatarDisplay(flowLookup.avatar_url, flowLookup.avatar_emoji, flowLookup.nick)}
             <div>
@@ -829,7 +834,7 @@ export default function TrocasClient({
       return (
         <div className="trade-flow-modal" style={{ textAlign: "center" }}>
           <button className="trade-flow-back" style={{ textAlign: "left" }} onClick={() => setFlowStep("confirm-user")}>
-            â† Voltar
+            <ArrowLeft size={15} /> Voltar
           </button>
           <ArrowLeftRight className="w-8 h-8 text-pink-500 mx-auto mb-2" />
           <h2>Confirmar troca?</h2>

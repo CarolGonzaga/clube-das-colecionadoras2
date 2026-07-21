@@ -210,7 +210,9 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     return "album";
   });
 
-  const [completedTags, setCompletedTags] = useState<{ tag_name: string; claimed: boolean }[]>([]);
+  const [completedTags, setCompletedTags] = useState<
+    { tag_name: string; claimed: boolean; completed_at: string }[]
+  >([]);
   const [claimingTags, setClaimingTags] = useState<Record<string, boolean>>({});
 
   const loadCompletedTags = async () => {
@@ -218,25 +220,37 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       const tags = await dbService.getCompletedTags();
       setCompletedTags(tags);
 
-      // Auto-populate notification for unclaimed completed collections
-      tags.forEach((tag) => {
-        if (!tag.claimed) {
-          const stored = localStorage.getItem("trade_notifications");
-          const notifications = stored ? JSON.parse(stored) : [];
-          const notifId = `completed-tag-${tag.tag_name}`;
-          if (!notifications.some((n: any) => n.id === notifId)) {
-            const newNotif = {
-              id: notifId,
-              type: "collection_completed",
-              message: `Parabéns! Você completou a coleção ${tag.tag_name}! Você possui prêmios a serem resgatados.`,
-              seen: false,
-              date: new Date().toISOString(),
-            };
-            localStorage.setItem("trade_notifications", JSON.stringify([newNotif, ...notifications]));
-            window.dispatchEvent(new Event("trade_notifications_change"));
-          }
-        }
-      });
+      // Rebuild collection notifications from the real claim state. This also
+      // removes legacy aliases and notifications whose reward was claimed.
+      let notifications: any[] = [];
+      try {
+        const parsed = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
+        notifications = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        notifications = [];
+      }
+      const previousById = new Map(notifications.map((notification) => [notification.id, notification]));
+      const nextNotifications = notifications.filter(
+        (notification) => notification.type !== "collection_completed",
+      );
+      tags
+        .filter((tag) => !tag.claimed)
+        .forEach((tag) => {
+          const canonicalName = tag.tag_name.startsWith("Coleção ")
+            ? tag.tag_name
+            : `Coleção ${tag.tag_name}`;
+          const id = `completed-tag-${canonicalName}`;
+          const previous = previousById.get(id);
+          nextNotifications.push({
+            id,
+            type: "collection_completed",
+            message: `Parabéns! Você completou a ${canonicalName}! Você possui um prêmio para resgatar.`,
+            seen: previous?.seen || false,
+            date: previous?.date || tag.completed_at || new Date().toISOString(),
+          });
+        });
+      localStorage.setItem("trade_notifications", JSON.stringify(nextNotifications));
+      window.dispatchEvent(new Event("trade_notifications_change"));
     } catch (e) {
       console.warn("Error loading completed tags:", e);
     }
@@ -979,7 +993,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               setClaimingTags((prev) => ({ ...prev, [family.tag]: false }));
               if (res.success && res.data) {
                 ui.toast("Prêmio resgatado com sucesso! 🎉");
-                ui.showReveals(res.data, `Prêmio da Coleção ${family.tag}`);
+                ui.showReveals(res.data, `Prêmio da ${family.tag}`);
                 await loadCompletedTags();
                 router.invalidate();
               } else {
@@ -1160,7 +1174,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                   const isRare = isRareStickerVersion(sticker, info);
                   const isExclusive = isExclusiveSticker(sticker);
                   const visibleTag = getVisibleStickerTag(sticker, info);
-                  const stickerFamily = getStickerFamily(sticker.number);
                   const copies = getCopiesCount(sticker.number);
                   const revealListData = !!info;
 
@@ -1217,19 +1230,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                               {sticker.author || "Autoria a definir"}
                               {sticker.ilustrator && ` (arte: ${sticker.ilustrator})`}
                             </small>
-                          )}
-                          {revealListData && stickerFamily && (
-                            <em>
-                              {stickerFamily.tag}: {stickerFamily.stickers.length} itens (
-                              {stickerFamily.stickers
-                                .map((num) => {
-                                  const owned = !!getOwnedInfo(num);
-                                  const famSticker = stickers.find((item) => item.number === num);
-                                  return owned ? `#${String(num).padStart(3, "0")} ${famSticker?.name || ""}` : `#${String(num).padStart(3, "0")}`;
-                                })
-                                .join(", ")}
-                              )
-                            </em>
                           )}
                         </div>
                       )}

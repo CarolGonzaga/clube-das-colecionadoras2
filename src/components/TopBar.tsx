@@ -10,6 +10,16 @@ interface TopBarProps {
   statusText: string;
 }
 
+function readNotifications(): any[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("trade_notifications") || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    localStorage.removeItem("trade_notifications");
+    return [];
+  }
+}
+
 export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   const ui = useUI();
   const router = useRouter();
@@ -18,13 +28,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const checkNotifs = () => {
-      const stored = localStorage.getItem("trade_notifications");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setHasUnseenNotifs(parsed.some((n: any) => !n.seen));
-      } else {
-        setHasUnseenNotifs(false);
-      }
+      setHasUnseenNotifs(readNotifications().some((n: any) => !n.seen));
     };
     checkNotifs();
     window.addEventListener("trade_notifications_change", checkNotifs);
@@ -47,8 +51,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
 
   const removeNotification = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const stored = localStorage.getItem("trade_notifications");
-    const notifications = stored ? JSON.parse(stored) : [];
+    const notifications = readNotifications();
     const updated = notifications.filter((n: any) => n.id !== id);
     localStorage.setItem("trade_notifications", JSON.stringify(updated));
     setHasUnseenNotifs(updated.some((n: any) => !n.seen));
@@ -57,8 +60,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
   };
 
   const handleNotifications = () => {
-    const stored = localStorage.getItem("trade_notifications");
-    const notifications = stored ? JSON.parse(stored) : [];
+    const notifications = readNotifications();
 
     // Mark all as seen
     const updated = notifications.map((n: any) => ({ ...n, seen: true }));
@@ -100,6 +102,7 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
             {notifications.map((n: any) => {
               const isClickable =
                 n.type === "trade_claim" ||
+                n.type === "trade_request" ||
                 n.type === "collection_completed" ||
                 n.type === "welcome_username";
               return (
@@ -114,6 +117,11 @@ export default function TopBar({ ownedCount, pct, statusText }: TopBarProps) {
                         router.navigate({
                           to: "/clubedascolecionadoras/album",
                           search: { tab: "colecoes" },
+                        });
+                      } else if (n.type === "trade_request") {
+                        router.navigate({
+                          to: "/clubedascolecionadoras/trocas",
+                          search: { tab: "requests" },
                         });
                       } else {
                         router.navigate({

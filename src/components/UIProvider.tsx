@@ -188,7 +188,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         const newNotif = {
           id: notifId,
           type: "collection_completed",
-          message: `Parabéns! Você completou a coleção ${tagName}! Você possui prêmios a serem resgatados.`,
+          message: `Parabéns! Você completou a ${tagName}! Você possui prêmios a serem resgatados.`,
           seen: false,
           date: new Date().toISOString(),
         };
