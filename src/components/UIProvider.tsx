@@ -418,14 +418,13 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       presentQueuedPack(nextPack);
     } else {
       isPackActiveRef.current = false;
+      // Refresh only after the final package stage has been dismissed. In the
+      // V2 dashboard an eager invalidation can race the modal state update and
+      // make a successful redemption look as if it went straight to the album.
+      router.invalidate().catch((error) => {
+        console.warn("Could not refresh dashboard after package reveal", error);
+      });
     }
-
-    // Refresh only after the package stage has been dismissed. In the V2
-    // dashboard an eager invalidation can race the modal state update and make
-    // a successful redemption look as if it went straight to the album.
-    router.invalidate().catch((error) => {
-      console.warn("Could not refresh dashboard after package reveal", error);
-    });
   };
 
   // Save reveals_queue to localStorage and DB whenever it changes
