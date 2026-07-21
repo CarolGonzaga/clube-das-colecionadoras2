@@ -50,7 +50,9 @@ function DashboardCodigos() {
           ui.toast(`Estilização liberada: ${name}! Ative em Ajustes.`);
         }
 
-        router.invalidate();
+        // Keep the same ordering used by purchased packages: mount the
+        // animation first, then refresh the route-backed album data.
+        await router.invalidate();
       } else {
         setPromoError(res.message || "Código inválido ou já utilizado.");
       }

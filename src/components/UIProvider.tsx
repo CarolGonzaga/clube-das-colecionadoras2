@@ -31,6 +31,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   // State updates are asynchronous. This ref is a synchronous lock that stops
   // two rapid rewards from both starting their pack animations at once.
   const isPackActiveRef = useRef(false);
+  const activePackItemsRef = useRef<RevealItem[]>([]);
   const [queue, setQueue] = useState<
     { items: RevealItem[]; title: string; rewardMsg?: string; rewardTag?: string }[]
   >(() => {
@@ -68,13 +69,19 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         // Restore pending_pack if present in DB
         if (profile.pending_pack) {
           localStorage.setItem("pending_pack", JSON.stringify(profile.pending_pack));
-          setReveals(profile.pending_pack.reveals);
+          const pendingReveals = Array.isArray(profile.pending_pack.reveals)
+            ? profile.pending_pack.reveals
+            : [];
+          activePackItemsRef.current = pendingReveals;
+          setReveals(pendingReveals);
           if (profile.pending_pack.title) setRevealsTitle(profile.pending_pack.title);
-          isPackActiveRef.current = true;
+          isPackActiveRef.current = pendingReveals.length > 0;
         } else {
           // The database is the source of truth. Never restore a package left
           // in this browser by a different account.
           localStorage.removeItem("pending_pack");
+          activePackItemsRef.current = [];
+          isPackActiveRef.current = false;
           setReveals([]);
         }
 
@@ -120,6 +127,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     rewardMsg?: string;
     rewardTag?: string;
   }) => {
+    activePackItemsRef.current = pack.items;
     setReveals(pack.items);
     setRevealsTitle(pack.title);
     setOpenedPacks([]);
@@ -233,6 +241,13 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const showReveals = (items: RevealItem[], title?: string) => {
     if (!items || items.length === 0) return;
 
+    // A stale pending-pack lock must never hide a newly redeemed package. It
+    // can happen after navigation or an interrupted close animation: the
+    // inventory succeeds, but the package used to remain queued invisibly.
+    if (isPackActiveRef.current && activePackItemsRef.current.length === 0) {
+      isPackActiveRef.current = false;
+    }
+
     // Save to recent stickers list
     try {
       const recentKey = activeUserId ? `recent_stickers:${activeUserId}` : "recent_stickers";
@@ -329,10 +344,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           presentQueuedPack(nextPack);
           return restQueue;
         } else {
-          setReveals(nextPack.items);
-          setRevealsTitle(nextPack.title);
-          setOpenedPacks([]);
-          setRevealedLabels([]);
+          startPackAnimation(nextPack);
         }
 
         return restQueue;
@@ -384,6 +396,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new Event("pending_pack_change"));
       }
     }
+    activePackItemsRef.current = [];
     setReveals([]);
     setQueue((currentQueue) => {
       if (currentQueue.length > 0) {
@@ -394,10 +407,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           presentQueuedPack(nextPack);
           return restQueue;
         } else {
-          setReveals(nextPack.items);
-          setRevealsTitle(nextPack.title);
-          setOpenedPacks([]);
-          setRevealedLabels([]);
+          startPackAnimation(nextPack);
         }
 
         return restQueue;
@@ -429,6 +439,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(saved);
         if (parsed.reveals && parsed.reveals.length > 0) {
           isPackActiveRef.current = true;
+          activePackItemsRef.current = parsed.reveals;
           setReveals(parsed.reveals);
           if (parsed.title) setRevealsTitle(parsed.title);
           return;
@@ -449,10 +460,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           presentQueuedPack(nextPack);
           return restQueue;
         } else {
-          setReveals(nextPack.items);
-          setRevealsTitle(nextPack.title);
-          setOpenedPacks([]);
-          setRevealedLabels([]);
+          startPackAnimation(nextPack);
         }
 
         return restQueue;
