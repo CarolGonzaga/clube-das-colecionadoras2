@@ -33,8 +33,8 @@ BEGIN
   -- Atualizar tabela principal de figurinhas
   UPDATE public.stickers SET number = number - 1 WHERE number > 331;
 
-  -- Atualizar tipo da figurinha 360 (antiga 361) para 'exclusiva'
-  UPDATE public.stickers SET type = 'exclusiva' WHERE number = 360;
+  -- Atualizar tipo da figurinha 360 (antiga 361) para 'bonus'
+  UPDATE public.stickers SET type = 'bonus' WHERE number = 360;
 END $$;
 
 -- Atualizar a função check_and_grant_rewards para desbloquear a figurinha #360 quando o usuário tiver as 359 figurinhas base

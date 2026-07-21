@@ -320,7 +320,7 @@ function LojaPage() {
 
       {/* Exclusive Stickers Section */}
       {(storeFilter === "todos" || storeFilter === "exclusivas") && (() => {
-        const exclusiveStickers = parentData.stickers.filter((s) => s.number >= 320 && s.number <= 360);
+        const exclusiveStickers = parentData.stickers.filter((s) => s.number >= 320 && s.number <= 359);
         const alreadyOwned = (num: number) =>
           parentData.userStickers.some((us) => us.sticker_number === num && us.copies > 0);
         return exclusiveStickers.length > 0 ? (

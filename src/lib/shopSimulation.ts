@@ -92,7 +92,7 @@ function stickerToAcquired(sticker: Sticker, date: string, source: string, kind:
 }
 
 function getAcquiredKind(sticker: Sticker): SimAcquiredSticker["kind"] {
-  if (sticker.number >= 320 && sticker.number <= 360) return "exclusiva";
+  if (sticker.number >= 320 && sticker.number <= 359) return "exclusiva";
   return "comum";
 }
 
