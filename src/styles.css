@@ -7517,4 +7517,84 @@ html.theme-lilac .pack-opener-btn svg {
   color: #2e7d32 !important;
 }
 
+/* Complete theme coverage for application cards and dark action buttons. */
+html.theme-lilac .shop-card,
+html.theme-lilac .trade-dupe-card,
+html.theme-lilac .trade-request-card,
+html.theme-lilac .collection-row,
+html.theme-lilac .codes-card,
+html.theme-lilac .surface-card,
+html.theme-lilac .coupon-input-group input {
+  background: #fdf7fc !important;
+  border-color: #e5b8e0 !important;
+}
+
+html.theme-lilac button[style*="gradient"],
+html.theme-lilac a[style*="gradient"],
+html.theme-lilac .btn:not(.soft):not(.outline),
+html.theme-lilac .shop-add-btn,
+html.theme-lilac .trade-btn-trade,
+html.theme-lilac .trade-flow-search-btn {
+  color: #fff !important;
+}
+
+html.theme-lilac button[style*="gradient"] svg,
+html.theme-lilac a[style*="gradient"] svg,
+html.theme-lilac .btn:not(.soft):not(.outline) svg,
+html.theme-lilac .shop-add-btn svg,
+html.theme-lilac .trade-btn-trade svg,
+html.theme-lilac .trade-flow-search-btn svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+
+html.dark .shop-card,
+html.dark .trade-dupe-card,
+html.dark .trade-request-card,
+html.dark .collection-row,
+html.dark .collection-card,
+html.dark .surface-card,
+html.dark .album-controls,
+html.dark .codes-card,
+html.dark .coupon-input-group input,
+html.dark .trade-flow-card,
+html.dark .trade-empty {
+  background: #1d0b22 !important;
+  color: #fff7fb !important;
+  border-color: #5f1b43 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .shop-card h2,
+html.dark .shop-card p,
+html.dark .shop-card b,
+html.dark .trade-dupe-card b,
+html.dark .trade-dupe-card span,
+html.dark .trade-request-card b,
+html.dark .trade-request-card span,
+html.dark .collection-row,
+html.dark .collection-row b,
+html.dark .collection-row span,
+html.dark .coupon-input-group input {
+  color: #ffd6e8 !important;
+}
+
+html.dark button[style*="gradient"],
+html.dark a[style*="gradient"],
+html.dark .btn:not(.soft):not(.outline),
+html.dark .shop-add-btn,
+html.dark .trade-btn-trade,
+html.dark .trade-flow-search-btn {
+  color: #fff !important;
+}
+
+html.dark button[style*="gradient"] svg,
+html.dark a[style*="gradient"] svg,
+html.dark .btn:not(.soft):not(.outline) svg,
+html.dark .shop-add-btn svg,
+html.dark .trade-btn-trade svg,
+html.dark .trade-flow-search-btn svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
 
