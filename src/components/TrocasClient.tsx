@@ -530,6 +530,8 @@ export default function TrocasClient({
 
   const freeDupes = buildDupes(21, 193);
   const shopDupes = buildDupes(194, 319);
+  const freeDuplicatesCount = freeDupes.reduce((sum, item) => sum + item.copies - 1, 0);
+  const shopDuplicatesCount = shopDupes.reduce((sum, item) => sum + item.copies - 1, 0);
 
   // â”€â”€â”€ Trade flow handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -1286,12 +1288,12 @@ export default function TrocasClient({
         <button className={`trade-main-tab ${mainTab === "free" ? "active" : ""}`} onClick={() => setMainTab("free")}>
           <HeartHandshake className="w-4 h-4" />
           Gratuitas
-          {freeDupes.length > 0 && <span className="trade-tab-count">{freeDupes.length}</span>}
+          {freeDuplicatesCount > 0 && <span className="trade-tab-count">{freeDuplicatesCount}</span>}
         </button>
         <button className={`trade-main-tab ${mainTab === "shop" ? "active" : ""}`} onClick={() => setMainTab("shop")}>
           <ShoppingBag className="w-4 h-4" />
           Loja
-          {shopDupes.length > 0 && <span className="trade-tab-count">{shopDupes.length}</span>}
+          {shopDuplicatesCount > 0 && <span className="trade-tab-count">{shopDuplicatesCount}</span>}
         </button>
         <button className={`trade-main-tab ${mainTab === "requests" ? "active" : ""}`} onClick={() => setMainTab("requests")}>
           <Bell className="w-4 h-4" />

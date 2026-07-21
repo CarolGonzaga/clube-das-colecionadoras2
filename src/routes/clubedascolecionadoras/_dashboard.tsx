@@ -77,7 +77,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
     const pointsBalance = await dbService.getPointsBalance().catch(() => 0);
     const albumRewardClaimed = await dbService.getAlbumRewardClaimed(user.id);
 
-    const rewardIds = ["lilac", "avatar-neon-frame", "new-icon", "theme-dark", "story-layout"];
+    const rewardIds = ["lilac", "avatar-neon-frame", "new-icon", "theme-dark"];
     const allElementsClaimed = rewardIds.every((id) =>
       userStyles.some((s) => s.style_id === id && s.unlocked),
     );

@@ -16,7 +16,7 @@ export function isExclusiveSticker(stickerOrNumber: Sticker | number) {
 
 export const ALL_RARE_STICKER_NUMBERS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-  45, 47, 79, 112, 164, 167, 194, 258, 292, 298,
+  28, 45, 47, 79, 112, 164, 167, 194, 292, 298,
 ];
 
 export function canHaveRareVersion(stickerOrNumber: Sticker | number) {

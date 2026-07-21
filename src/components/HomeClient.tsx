@@ -471,9 +471,9 @@ export default function HomeClient({
           const claimedReward = res.data.style?.id
             ? styleIdToRewardMapping[res.data.style.id]
             : undefined;
-          ui.toast(
-            `Estilização resgatada: ${claimedReward?.name || "novo elemento"}${claimedReward?.icon ? ` ${claimedReward.icon}` : ""}. Volte amanhã para mais! ✦`,
-          );
+          ui.toast(res.data.all_claimed
+            ? `Estilização resgatada: ${claimedReward?.name || "novo elemento"}${claimedReward?.icon ? ` ${claimedReward.icon}` : ""}. Não há mais nenhum resgate novo; volte no próximo dia para mais novidades! ✦`
+            : `Estilização resgatada: ${claimedReward?.name || "novo elemento"}${claimedReward?.icon ? ` ${claimedReward.icon}` : ""}. Volte amanhã para mais! ✦`);
         } else {
           ui.toast(res.data.message || "Elemento do dia resgatado! Volte amanhã para mais! ✦");
         }
@@ -1407,7 +1407,7 @@ export default function HomeClient({
         {allElementsClaimed ? (
           <div className="bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 text-center">
             <p className="text-[12px] text-[#9e1b4a] font-bold leading-relaxed">
-              Todos os elementos já foram resgatados! Em breve traremos novos estilos para você desbloquear.
+              Não há mais nenhum resgate novo. Volte no próximo dia para mais novidades! ✦
             </p>
           </div>
         ) : (

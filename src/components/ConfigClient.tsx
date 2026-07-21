@@ -465,7 +465,7 @@ export default function ConfigClient({ profile, styles, userStyles }: ConfigClie
       {/* Style Cosmetics Section */}
       <div className="set-block">
         <h3>🎨 Estilizações</h3>
-        {unlockedStyles.filter((s) => s.id !== "new-icon" && s.id !== "story-layout").length ===
+        {unlockedStyles.filter((s) => s.id !== "new-icon").length ===
         0 ? (
           <div className="note" style={{ textAlign: "left", margin: "2px 0" }}>
             Você ainda não liberou estilizações. Resgate o <b>elemento do dia</b> na página inicial
@@ -473,7 +473,7 @@ export default function ConfigClient({ profile, styles, userStyles }: ConfigClie
           </div>
         ) : (
           unlockedStyles
-            .filter((s) => s.id !== "new-icon" && s.id !== "story-layout")
+            .filter((s) => s.id !== "new-icon")
             .map((s) => {
               const isEnabled = getStyleEnabled(s.id);
               let displayIcon = s.icon;
