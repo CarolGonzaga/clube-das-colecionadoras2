@@ -683,10 +683,10 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                 </div>
                 <div
                   className={`card-3d-front rounded-lg border-2 border-white/20 ${
-                    currentIsRare ? "rare-autographed" : currentIsExclusive ? "exclusive-cell" : ""
+                    currentIsRare || currentIsExclusive ? "rare-autographed" : ""
                   }`}
                 >
-                  {currentIsRare && <div className="card-rare-holo" />}
+                  {(currentIsRare || currentIsExclusive) && <div className="card-rare-holo" />}
                   <Stamp
                     number={currentReveal.number}
                     owned={true}
@@ -694,7 +694,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
                     exclusive={currentIsExclusive}
                     cover={currentReveal.slug}
                   />
-                  {currentIsRare && <div className="card-rare-glow animate-pulse" />}
+                  {(currentIsRare || currentIsExclusive) && <div className="card-rare-glow animate-pulse" />}
                 </div>
               </div>
             </motion.div>
