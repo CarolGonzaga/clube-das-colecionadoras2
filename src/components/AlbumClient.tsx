@@ -27,6 +27,7 @@ import {
   Share2,
   Grid3X3,
   List,
+  Search,
 } from "lucide-react";
 
 function getAutographFilename(author: string | null): string | null {
@@ -198,6 +199,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
   const router = useRouter();
   type AlbumFilter = "todas" | "faltam" | "coladas" | "repetidas" | "raras" | "exclusivas" | "bonus";
   const [filter, setFilter] = useState<AlbumFilter>("todas");
+  const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [itemsChoice, setItemsChoice] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"album" | "colecoes">(() => {
@@ -288,9 +290,31 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     return isRareStickerVersion(num, info);
   };
 
+  const normalizedSearchQuery = searchQuery
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const numericSearch = /^\d+$/.test(normalizedSearchQuery)
+    ? Number(normalizedSearchQuery)
+    : null;
+
   const filteredStickers = stickers.filter((s) => {
     const info = getOwnedInfo(s.number);
     const copies = getCopiesCount(s.number);
+
+    if (normalizedSearchQuery) {
+      const normalizedName = s.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const matchesSearch =
+        numericSearch !== null
+          ? s.number === numericSearch
+          : normalizedName.includes(normalizedSearchQuery);
+
+      if (!matchesSearch) return false;
+    }
     
     // Hide bonus stickers (like 361) from the general views if not owned
     if (s.type === "bonus" && !info) {
@@ -1050,6 +1074,44 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
         <>
           {/* Modern Filter Dropdown with counts */}
           <div className="filter-dropdown-container" style={{ margin: "14px 0", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <label
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                flex: "1 1 220px",
+                minWidth: windowWidth < 380 ? "100%" : "220px",
+              }}
+            >
+              <Search
+                size={17}
+                aria-hidden="true"
+                style={{ position: "absolute", left: "12px", color: "var(--magenta)" }}
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Buscar por número ou nome"
+                aria-label="Buscar figurinha por número ou nome"
+                style={{
+                  width: "100%",
+                  padding: "9px 12px 9px 38px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--blush)",
+                  background: "#fff",
+                  color: "var(--wine)",
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  outline: "none",
+                  boxShadow: "0 2px 8px rgba(158, 27, 74, 0.04)",
+                  fontFamily: "Baloo 2",
+                }}
+              />
+            </label>
             <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--wine)", fontFamily: "Baloo 2" }}>Filtrar:</span>
             <select
               value={filter}
@@ -1095,7 +1157,11 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
 
           {/* Album Grid */}
           {filteredStickers.length === 0 ? (
-            <div className="empty">Nenhuma figurinha encontrada com este filtro.</div>
+            <div className="empty">
+              {searchQuery.trim()
+                ? `Nenhuma figurinha encontrada para “${searchQuery.trim()}”.`
+                : "Nenhuma figurinha encontrada com este filtro."}
+            </div>
           ) : (
             <>
               <div

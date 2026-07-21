@@ -148,7 +148,30 @@ export async function startQuizQuestionTimerAction(formData: {
 export async function redeemCodeAction(codeRaw: string) {
   try {
     const res = await dbService.redeemCode(codeRaw);
-    return { success: true, data: res };
+    // Redeem-code migrations historically returned either a reveal array or
+    // an object containing that array. Keep one stable shape for every screen
+    // so all successful redemptions open the interactive package.
+    let payload: any = res;
+    if (typeof payload === "string") {
+      try {
+        payload = JSON.parse(payload);
+      } catch {
+        payload = null;
+      }
+    }
+
+    if (Array.isArray(payload)) {
+      return { success: true, data: { reveals: payload, element: null } };
+    }
+
+    const reveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
+    return {
+      success: true,
+      data: {
+        ...(payload && typeof payload === "object" ? payload : {}),
+        reveals,
+      },
+    };
   } catch (err: any) {
     return { success: false, message: translateError(err) };
   }
