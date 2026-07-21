@@ -187,16 +187,23 @@ function RegistrosPage() {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            const input = (e.currentTarget.elements.namedItem("redeemCode") as HTMLInputElement).value;
+            // React clears currentTarget after the first await. Keep the form
+            // reference now so a successful RPC cannot throw before the
+            // package animation is started.
+            const form = e.currentTarget;
+            const input = (form.elements.namedItem("redeemCode") as HTMLInputElement).value;
             if (!input.trim()) return;
             setRedeemLoading(true);
             const res = await redeemCodeAction(input.trim());
             setRedeemLoading(false);
             if (res.success && res.data) {
-              e.currentTarget.reset();
-              ui.toast("Código resgatado com sucesso!");
+              // Start/persist the reveal before any secondary UI work. Once
+              // the RPC committed the reward, no form/toast refresh failure
+              // may prevent the user from seeing the package.
               if (Array.isArray(res.data)) ui.showReveals(res.data, "Figurinhas do Código");
               else ui.showReveals(res.data.reveals, "Figurinhas do Código");
+              form.reset();
+              ui.toast("Código resgatado com sucesso!");
               refreshOrders();
               // UIProvider refreshes the dashboard after the reveal closes.
             } else {

@@ -17,23 +17,33 @@ BEGIN
   DELETE FROM public.trade_requests WHERE initiator_sticker = 331 OR receiver_sticker = 331;
   DELETE FROM public.stickers WHERE number = 331;
 
-  -- Reordenar os números das figurinhas subsequentes (332..361 decrementam 1)
-  -- Atualização em tabelas dependentes
-  UPDATE public.user_stickers SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.purchase_pack_stickers SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.shop_pack_stickers SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.quiz_questions SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.quiz_answers SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.quiz_question_timers SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.quiz_reward_rarities SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.redeem_pools SET sticker_number = sticker_number - 1 WHERE sticker_number > 331;
-  UPDATE public.trade_requests SET initiator_sticker = initiator_sticker - 1 WHERE initiator_sticker > 331;
-  UPDATE public.trade_requests SET receiver_sticker = receiver_sticker - 1 WHERE receiver_sticker > 331;
+  -- 1. Inverter o sinal para evitar qualquer conflito de chave única / chave primária durante o reordenamento
+  UPDATE public.user_stickers SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.purchase_pack_stickers SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.shop_pack_stickers SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.quiz_questions SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.quiz_answers SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.quiz_question_timers SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.quiz_reward_rarities SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.redeem_pools SET sticker_number = -sticker_number WHERE sticker_number > 331;
+  UPDATE public.trade_requests SET initiator_sticker = -initiator_sticker WHERE initiator_sticker > 331;
+  UPDATE public.trade_requests SET receiver_sticker = -receiver_sticker WHERE receiver_sticker > 331;
+  UPDATE public.stickers SET number = -number WHERE number > 331;
 
-  -- Atualizar tabela principal de figurinhas
-  UPDATE public.stickers SET number = number - 1 WHERE number > 331;
+  -- 2. Converter de volta ajustando o número final (-1 da posição original)
+  UPDATE public.user_stickers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.purchase_pack_stickers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.shop_pack_stickers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.quiz_questions SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.quiz_answers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.quiz_question_timers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.quiz_reward_rarities SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.redeem_pools SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
+  UPDATE public.trade_requests SET initiator_sticker = (-initiator_sticker) - 1 WHERE initiator_sticker < -331;
+  UPDATE public.trade_requests SET receiver_sticker = (-receiver_sticker) - 1 WHERE receiver_sticker < -331;
+  UPDATE public.stickers SET number = (-number) - 1 WHERE number < -331;
 
-  -- Atualizar tipo da figurinha 360 (antiga 361) para 'bonus'
+  -- 3. Atualizar tipo da figurinha 360 (antiga 361) para 'bonus'
   UPDATE public.stickers SET type = 'bonus' WHERE number = 360;
 END $$;
 
