@@ -4,47 +4,71 @@
 -- ============================================================
 
 DO $$
+DECLARE
+  v_table text;
+  v_tables text[] := ARRAY[
+    'user_stickers',
+    'purchase_pack_stickers',
+    'shop_pack_stickers',
+    'quiz_questions',
+    'quiz_answers',
+    'quiz_question_timers',
+    'quiz_reward_rarities',
+    'redeem_pools',
+    'stickers'
+  ];
 BEGIN
-  -- Deletar todas as referências da figurinha 331
-  DELETE FROM public.user_stickers WHERE sticker_number = 331;
-  DELETE FROM public.purchase_pack_stickers WHERE sticker_number = 331;
-  DELETE FROM public.shop_pack_stickers WHERE sticker_number = 331;
-  DELETE FROM public.quiz_questions WHERE sticker_number = 331;
-  DELETE FROM public.quiz_answers WHERE sticker_number = 331;
-  DELETE FROM public.quiz_question_timers WHERE sticker_number = 331;
-  DELETE FROM public.quiz_reward_rarities WHERE sticker_number = 331;
-  DELETE FROM public.redeem_pools WHERE sticker_number = 331;
-  DELETE FROM public.trade_requests WHERE initiator_sticker = 331 OR receiver_sticker = 331;
-  DELETE FROM public.stickers WHERE number = 331;
+  -- Deletar figurinha 331 de tabelas existentes
+  FOREACH v_table IN ARRAY v_tables LOOP
+    IF to_regclass('public.' || v_table) IS NOT NULL THEN
+      IF v_table = 'stickers' THEN
+        EXECUTE 'DELETE FROM public.stickers WHERE number = 331';
+      ELSE
+        EXECUTE 'DELETE FROM public.' || quote_ident(v_table) || ' WHERE sticker_number = 331';
+      END IF;
+    END IF;
+  END LOOP;
 
-  -- 1. Inverter o sinal para evitar qualquer conflito de chave única / chave primária durante o reordenamento
-  UPDATE public.user_stickers SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.purchase_pack_stickers SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.shop_pack_stickers SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.quiz_questions SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.quiz_answers SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.quiz_question_timers SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.quiz_reward_rarities SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.redeem_pools SET sticker_number = -sticker_number WHERE sticker_number > 331;
-  UPDATE public.trade_requests SET initiator_sticker = -initiator_sticker WHERE initiator_sticker > 331;
-  UPDATE public.trade_requests SET receiver_sticker = -receiver_sticker WHERE receiver_sticker > 331;
-  UPDATE public.stickers SET number = -number WHERE number > 331;
+  IF to_regclass('public.trade_requests') IS NOT NULL THEN
+    EXECUTE 'DELETE FROM public.trade_requests WHERE initiator_sticker = 331 OR receiver_sticker = 331';
+  END IF;
+
+  -- 1. Inverter o sinal (> 331 -> negative) para evitar qualquer conflito de chave única durante o reordenamento
+  FOREACH v_table IN ARRAY v_tables LOOP
+    IF to_regclass('public.' || v_table) IS NOT NULL THEN
+      IF v_table = 'stickers' THEN
+        EXECUTE 'UPDATE public.stickers SET number = -number WHERE number > 331';
+      ELSE
+        EXECUTE 'UPDATE public.' || quote_ident(v_table) || ' SET sticker_number = -sticker_number WHERE sticker_number > 331';
+      END IF;
+    END IF;
+  END LOOP;
+
+  IF to_regclass('public.trade_requests') IS NOT NULL THEN
+    EXECUTE 'UPDATE public.trade_requests SET initiator_sticker = -initiator_sticker WHERE initiator_sticker > 331';
+    EXECUTE 'UPDATE public.trade_requests SET receiver_sticker = -receiver_sticker WHERE receiver_sticker > 331';
+  END IF;
 
   -- 2. Converter de volta ajustando o número final (-1 da posição original)
-  UPDATE public.user_stickers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.purchase_pack_stickers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.shop_pack_stickers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.quiz_questions SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.quiz_answers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.quiz_question_timers SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.quiz_reward_rarities SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.redeem_pools SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331;
-  UPDATE public.trade_requests SET initiator_sticker = (-initiator_sticker) - 1 WHERE initiator_sticker < -331;
-  UPDATE public.trade_requests SET receiver_sticker = (-receiver_sticker) - 1 WHERE receiver_sticker < -331;
-  UPDATE public.stickers SET number = (-number) - 1 WHERE number < -331;
+  FOREACH v_table IN ARRAY v_tables LOOP
+    IF to_regclass('public.' || v_table) IS NOT NULL THEN
+      IF v_table = 'stickers' THEN
+        EXECUTE 'UPDATE public.stickers SET number = (-number) - 1 WHERE number < -331';
+      ELSE
+        EXECUTE 'UPDATE public.' || quote_ident(v_table) || ' SET sticker_number = (-sticker_number) - 1 WHERE sticker_number < -331';
+      END IF;
+    END IF;
+  END LOOP;
+
+  IF to_regclass('public.trade_requests') IS NOT NULL THEN
+    EXECUTE 'UPDATE public.trade_requests SET initiator_sticker = (-initiator_sticker) - 1 WHERE initiator_sticker < -331';
+    EXECUTE 'UPDATE public.trade_requests SET receiver_sticker = (-receiver_sticker) - 1 WHERE receiver_sticker < -331';
+  END IF;
 
   -- 3. Atualizar tipo da figurinha 360 (antiga 361) para 'bonus'
-  UPDATE public.stickers SET type = 'bonus' WHERE number = 360;
+  IF to_regclass('public.stickers') IS NOT NULL THEN
+    EXECUTE 'UPDATE public.stickers SET type = ''bonus'' WHERE number = 360';
+  END IF;
 END $$;
 
 -- Atualizar a função check_and_grant_rewards para desbloquear a figurinha #360 quando o usuário tiver as 359 figurinhas base

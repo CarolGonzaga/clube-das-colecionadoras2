@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS public.album_completion_rewards (
 
 ALTER TABLE public.album_completion_rewards ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Usuário lê próprio resgate de álbum completo" ON public.album_completion_rewards;
 CREATE POLICY "Usuário lê próprio resgate de álbum completo"
   ON public.album_completion_rewards
   FOR SELECT
