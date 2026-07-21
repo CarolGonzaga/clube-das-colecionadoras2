@@ -622,7 +622,7 @@ export default function TrocasClient({
                     : us,
                 ),
               );
-              ui.toast(`+45 pontos! Saldo: ${newBal} pts ðŸª™`);
+              ui.toast(`+45 pontos! Saldo: ${newBal} pts 🪙`);
               router.invalidate();
             } else {
               ui.toast(res.message || "Erro ao trocar por pontos.");
