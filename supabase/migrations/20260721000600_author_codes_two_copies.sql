@@ -18,7 +18,7 @@ BEGIN
 END $$;
 
 UPDATE public.redeem_codes
-SET copies_per_sticker = 1,
+SET copies_per_sticker = 2,
     max_redemptions = 2
 WHERE grant_all_pool = true
   AND label LIKE 'Pacote de %';
