@@ -424,7 +424,11 @@ BEGIN
     AND q_index = q_index_param;
 
   IF v_deadline IS NULL THEN
-    RAISE EXCEPTION 'Inicie o cronômetro antes de responder.';
+    INSERT INTO public.quiz_question_timers (user_id, sticker_number, q_index, expires_at)
+    VALUES (v_uid, sticker_number_param, q_index_param, now() + interval '3 minutes')
+    ON CONFLICT (user_id, sticker_number, q_index) DO UPDATE
+    SET expires_at = public.quiz_question_timers.expires_at
+    RETURNING expires_at INTO v_deadline;
   ELSIF v_deadline <= now() THEN
     RETURN public.record_quiz_timeout(v_uid, sticker_number_param, q_index_param);
   END IF;
@@ -494,9 +498,12 @@ BEGIN
   INSERT INTO public.point_transactions (user_id, amount, reason, sticker_number)
   VALUES (v_uid, 10, 'Quiz Respondido Corretamente', sticker_number_param);
 
-  UPDATE public.profiles
-  SET points_balance = coalesce(points_balance, 0) + 10
-  WHERE id = v_uid;
+  PERFORM public.ensure_user_points(v_uid);
+
+  UPDATE public.user_points
+  SET balance = balance + 10,
+      updated_at = now()
+  WHERE user_id = v_uid;
 
   RETURN jsonb_build_object(
     'correct', true,

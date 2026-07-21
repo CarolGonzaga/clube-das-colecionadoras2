@@ -476,7 +476,10 @@ export const dbService = {
 
   async getQuizQuestionsForToday() {
     const { error: timerError } = await supabase.rpc("expire_quiz_question_timers");
-    if (timerError) throw new Error(timerError.message);
+    // Expiring an old timer is maintenance work and must never prevent the
+    // current daily quiz from loading. The RPC also cleans stale rows itself,
+    // but keep the page resilient while database migrations are rolling out.
+    if (timerError) console.warn("Could not expire old quiz timers:", timerError.message);
     const { data, error } = await supabase.rpc("get_quiz_questions_for_today");
     if (error) throw new Error(error.message);
     return data;
