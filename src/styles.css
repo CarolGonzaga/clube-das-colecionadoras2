@@ -7598,3 +7598,163 @@ html.dark .trade-flow-search-btn svg {
   stroke: #fff !important;
 }
 
+/* Dark theme coverage for controls and nested surfaces that use fixed light
+   colors in their base styles. Keep these selectors component-scoped so the
+   light and lilac themes are unaffected. */
+html.dark {
+  --gradient-card: linear-gradient(135deg, #24102a 0%, #1d0b22 100%);
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-card: 0 12px 30px rgba(0, 0, 0, 0.34);
+}
+
+html.dark .registry-stat,
+html.dark .registry-section,
+html.dark .registry-empty-state,
+html.dark .registry-pack-card,
+html.dark .registry-sticker-row,
+html.dark .registry-purchase-card,
+html.dark .registry-sticker-order {
+  background: #1d0b22 !important;
+  color: #fff7fb !important;
+  border-color: #5f1b43 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24) !important;
+}
+
+html.dark .registry-pack-cover,
+html.dark .registry-order-payment,
+html.dark .registry-order-item,
+html.dark .registry-sticker-order-head,
+html.dark .registry-direct-sticker-list li {
+  background: #2a102c !important;
+  border-color: #5f1b43 !important;
+}
+
+html.dark .registry-section-head,
+html.dark .registry-section-meta small,
+html.dark .registry-pack-card b,
+html.dark .registry-pack-card span,
+html.dark .registry-pack-card small,
+html.dark .registry-purchase-card b,
+html.dark .registry-purchase-card span,
+html.dark .registry-order-head b,
+html.dark .registry-order-payment span,
+html.dark .registry-order-total,
+html.dark .registry-sticker-order,
+html.dark .registry-sticker-order small {
+  color: #ffd6e8 !important;
+}
+
+html.dark .album-page-size,
+html.dark .album-view-toggle,
+html.dark .trade-main-tabs,
+html.dark .trade-sub-tabs {
+  background: #24102a !important;
+  border-color: #5f1b43 !important;
+}
+
+html.dark .album-page-size button,
+html.dark .album-view-toggle button,
+html.dark .trade-main-tab,
+html.dark .trade-sub-tab {
+  color: #e99abe !important;
+}
+
+html.dark .album-page-size button.active,
+html.dark .album-view-toggle button.active,
+html.dark .trade-main-tab.active {
+  background: var(--grad-brand) !important;
+  color: #fff !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .album-page-size button.active svg,
+html.dark .album-view-toggle button.active svg,
+html.dark .trade-main-tab.active svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+
+html.dark .trade-main-tab:hover:not(.active) {
+  background: #32142f !important;
+  color: #ffd6e8 !important;
+}
+
+html.dark .trade-sub-tab.active {
+  color: #fff7fb !important;
+  border-bottom-color: #f06ba8 !important;
+}
+
+html.dark .trade-tab-count {
+  background: #4e192f !important;
+  color: #ffd6e8 !important;
+}
+
+html.dark .filter-dropdown-container input,
+html.dark .filter-dropdown-container select {
+  background: #24102a !important;
+  color: #fff7fb !important;
+  border-color: #6f2850 !important;
+  color-scheme: dark;
+}
+
+html.dark .filter-dropdown-container input::placeholder {
+  color: #d99ab8 !important;
+}
+
+html.dark .filter-dropdown-container option {
+  background: #24102a;
+  color: #fff7fb;
+}
+
+html.dark .shop-filter-bar button {
+  background: #2a102c !important;
+  color: #ffd6e8 !important;
+  border-color: #5f1b43 !important;
+}
+
+html.dark .shop-filter-bar button.active {
+  background: var(--grad-brand) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+html.dark .qty-stepper,
+html.dark .shop-cart-total,
+html.dark .shop-cart-line,
+html.dark .checkout-card,
+html.dark .checkout-line,
+html.dark .checkout-wallet,
+html.dark .checkout-summary {
+  background: #24102a !important;
+  color: #fff7fb !important;
+  border-color: #5f1b43 !important;
+}
+
+html.dark .qty-stepper span,
+html.dark .shop-cart-total,
+html.dark .shop-cart-line b,
+html.dark .shop-cart-line span,
+html.dark .checkout-line b,
+html.dark .checkout-line span,
+html.dark .checkout-wallet,
+html.dark .checkout-summary,
+html.dark .checkout-summary b,
+html.dark .checkout-summary strong,
+html.dark .checkout-empty,
+html.dark .checkout-empty p {
+  color: #ffd6e8 !important;
+}
+
+html.dark .shop-modal-close,
+html.dark .shop-remove-btn,
+html.dark .btn.muted {
+  background: #321127 !important;
+  color: #ffd6e8 !important;
+  border-color: #6f2850 !important;
+}
+
+html.dark .shop-modal-close svg,
+html.dark .shop-remove-btn svg {
+  color: #ffd6e8 !important;
+  stroke: #ffd6e8 !important;
+}
