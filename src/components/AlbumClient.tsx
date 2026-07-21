@@ -971,6 +971,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
             const completedTagInfo = completedTags.find((t) => t.tag_name === family.tag);
             const isClaimed = completedTagInfo?.claimed || false;
             const isClaiming = claimingTags[family.tag] || false;
+            const hasSuperFanSeal = isCompleted || isClaimed;
 
             const handleClaim = async () => {
               setClaimingTags((prev) => ({ ...prev, [family.tag]: true }));
@@ -1023,37 +1024,31 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
 
                   {/* Manual claim button */}
                   <div style={{ marginTop: "12px", borderTop: "1px dashed var(--blush)", paddingTop: "12px", display: "flex", justifyContent: "center" }}>
-                    {isCompleted && isClaimed ? (
-                      <span style={{ color: "#22c55e", fontWeight: "bold", fontSize: "13px", display: "flex", alignItems: "center", gap: "4px" }}>
-                        ✓ Prêmio Resgatado
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={!isCompleted || isClaiming}
-                        onClick={handleClaim}
-                        className="btn"
-                        style={{
-                          margin: 0,
-                          padding: "8px 16px",
-                          fontSize: "13px",
-                          background: isCompleted ? "var(--gradient-berry)" : "#e0e0e0",
-                          color: isCompleted ? "#fff" : "#999",
-                          borderRadius: "10px",
-                          cursor: isCompleted ? "pointer" : "not-allowed",
-                        }}
-                      >
-                        {isClaiming ? "Resgatando..." : (isCompleted ? "Resgatar Prêmio" : "Incompleto")}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      disabled={!isCompleted || isClaimed || isClaiming}
+                      onClick={handleClaim}
+                      className="btn"
+                      style={{
+                        margin: 0,
+                        padding: "8px 16px",
+                        fontSize: "13px",
+                        background: isCompleted && !isClaimed ? "var(--gradient-berry)" : "#e0e0e0",
+                        color: isCompleted && !isClaimed ? "#fff" : isClaimed ? "#22c55e" : "#999",
+                        borderRadius: "10px",
+                        cursor: isCompleted && !isClaimed ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      {isClaiming ? "Resgatando..." : isClaimed ? "Resgatado" : isCompleted ? "Resgatar Prêmio" : "Incompleto"}
+                    </button>
                   </div>
                 </div>
 
                 {/* Seal Container */}
-                <div className={`collection-seal-container ${isCompleted ? "completed" : ""}`}>
+                <div className={`collection-seal-container ${hasSuperFanSeal ? "completed" : ""}`}>
                   <img
-                    src={isCompleted ? "/icons/selo-super-fa.png" : "/icons/selo-super-fa-cinza.png"}
-                    alt={isCompleted ? "Selo Super Fã" : "Espaço Vago Selo Super Fã"}
+                    src={hasSuperFanSeal ? "/icons/selo-super-fa.png" : "/icons/selo-super-fa-cinza.png"}
+                    alt={hasSuperFanSeal ? "Selo Super Fã" : "Espaço vago para o Selo Super Fã"}
                     className="collection-seal-img"
                   />
                 </div>

@@ -202,11 +202,31 @@ begin
   on conflict (user_id, reward_key) do nothing;
 
   -- 9. Migrar famílias de tags completadas (completed_tags)
-  insert into public.completed_tags (user_id, tag_name, completed_at)
-  select user_id, tag_name, coalesce(completed_at, now())
+  insert into public.completed_tags (user_id, tag_name, completed_at, claimed, claimed_at)
+  select
+    user_id,
+    case tag_name
+      when 'Baldaverso' then 'Coleção Baldaverso'
+      when 'Frutaverso' then 'Coleção Frutaverso'
+      when 'Bright Falls' then 'Coleção Bright Falls'
+      when 'Opostos Co.' then 'Coleção Opostos Co.'
+      when 'HQ' then 'Coleção HQ'
+      else tag_name
+    end,
+    coalesce(completed_at, now()),
+    tag_name <> 'Baldaverso',
+    case when tag_name <> 'Baldaverso' then coalesce(completed_at, now()) else null end
   from public.v1_staging_completed_tags
   where user_id = target_user_id
-  on conflict (user_id, tag_name) do nothing;
+  on conflict (user_id, tag_name) do update set
+    claimed = case
+      when excluded.tag_name = 'Coleção Baldaverso' then public.completed_tags.claimed
+      else true
+    end,
+    claimed_at = case
+      when excluded.tag_name = 'Coleção Baldaverso' then public.completed_tags.claimed_at
+      else coalesce(public.completed_tags.claimed_at, excluded.claimed_at)
+    end;
 
   -- Registrar sucesso da migração
   update public.v2_migration_claims
