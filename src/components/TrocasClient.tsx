@@ -463,14 +463,14 @@ export default function TrocasClient({
         if (reveals.length > 0) {
           const pendingObj = {
             reveals,
-            title: "Figurinha recebida por doação! 🎁",
+            title: "Figurinha recebida por doação!",
             flippedCards: [],
             isOpened: false,
           };
           localStorage.setItem("pending_pack", JSON.stringify(pendingObj));
           ui.triggerPendingPack();
         } else {
-          ui.toast("Figurinha resgatada com sucesso! 🎁‰");
+          ui.toast("Figurinha resgatada com sucesso!");
         }
         setRedeemCodeInput("");
         router.invalidate();
@@ -490,12 +490,12 @@ export default function TrocasClient({
     try {
       const res = await generateDonationAction(stickerNumber);
       if (res.success && res.code) {
-        ui.toast(`Código de doação gerado com sucesso! Copie-o abaixo. 🎁`);
+        ui.toast("Código de doação gerado com sucesso! Copie-o abaixo.");
         
         ui.openModal(
           <div style={{ textAlign: "center", padding: "8px 0" }}>
             <Gift className="w-12 h-12 text-[#C2185B] mx-auto mb-2 animate-bounce" />
-            <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Código de Doação Gerado! 🎁</h2>
+            <h2 style={{ fontSize: "16px", fontWeight: "800", color: "#5c0d2b" }}>Código de doação gerado!</h2>
             <p style={{ fontSize: "12px", color: "#bf2a5e", margin: "8px 0 16px" }}>
               Envie este código para uma amiga. Ela poderá resgatar a figurinha <b>#{String(stickerNumber).padStart(3, "0")} · {stickerName}</b> imediatamente!
             </p>
@@ -710,7 +710,7 @@ export default function TrocasClient({
             const res = await respondToTradeAction(tradeId, accept);
             setRespondLoading((p) => ({ ...p, [tradeId]: false }));
             if (res.success) {
-              ui.toast(accept ? "Troca concluída! 🎁‰" : "Troca recusada.");
+              ui.toast(accept ? "Troca concluída!" : "Troca recusada.");
               router.invalidate();
               if (accept) {
                 try {
@@ -1077,7 +1077,7 @@ export default function TrocasClient({
                       onClick={() => handleClaimSticker(tr.id)}
                       disabled={claimLoading[tr.id]}
                     >
-                      {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha 🎁"}
+                      {claimLoading[tr.id] ? "Resgatando..." : "Receber figurinha"}
                     </button>
                   )}
                 </div>
@@ -1139,7 +1139,7 @@ export default function TrocasClient({
                         onClick={() => handleClaimSticker(tr.id)}
                         disabled={claimLoading[tr.id]}
                       >
-                        {claimLoading[tr.id] ? "Resgatando..." : "Receber Figurinha 🎁"}
+                        {claimLoading[tr.id] ? "Resgatando..." : "Receber figurinha"}
                       </button>
                     )}
                   </div>
@@ -1186,7 +1186,7 @@ export default function TrocasClient({
                 <div key={d.code} className="trade-request-card">
                   <div className="trade-request-header">
                     <div className="w-9 h-9 rounded-full bg-pink-100 border-2 border-pink-200 flex items-center justify-center text-lg">
-                      🎁
+                      <Gift className="w-4 h-4" aria-hidden="true" />
                     </div>
                     <div className="trade-request-meta">
                       <b>Doação: {d.code} {isOutgoing ? "(Enviada)" : "(Resgatada)"}</b>
@@ -1265,7 +1265,7 @@ export default function TrocasClient({
                 onClick={async () => {
                   if (navigator.clipboard) {
                     await navigator.clipboard.writeText(profileNick);
-                    ui.toast("Nome copiado! ðŸ’");
+                    ui.toast("Nome copiado!");
                   }
                 }}
               >
