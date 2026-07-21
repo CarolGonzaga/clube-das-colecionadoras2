@@ -161,10 +161,11 @@ export async function redeemCodeAction(codeRaw: string) {
     }
 
     if (Array.isArray(payload)) {
-      return { success: true, data: { reveals: payload, element: null } };
+      return { success: true, data: { reveals: payload.flat(), element: null } };
     }
 
-    const reveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
+    const rawReveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
+    const reveals = rawReveals.flat();
     return {
       success: true,
       data: {
@@ -189,7 +190,28 @@ export async function generateDonationAction(stickerNumber: number) {
 export async function redeemDonationAction(codeRaw: string) {
   try {
     const res = await dbService.redeemDonation(codeRaw);
-    return { success: true, data: res };
+    let payload: any = res;
+    if (typeof payload === "string") {
+      try {
+        payload = JSON.parse(payload);
+      } catch {
+        payload = null;
+      }
+    }
+
+    if (Array.isArray(payload)) {
+      return { success: true, data: { reveals: payload.flat() } };
+    }
+
+    const rawReveals = Array.isArray(payload?.reveals) ? payload.reveals : [];
+    const reveals = rawReveals.flat();
+    return {
+      success: true,
+      data: {
+        ...(payload && typeof payload === "object" ? payload : {}),
+        reveals,
+      },
+    };
   } catch (err: any) {
     return { success: false, message: translateError(err) };
   }
