@@ -64,6 +64,7 @@ interface HomeClientProps {
   userRank: number | null;
   donations: Donation[];
   albumRewardClaimed?: boolean;
+  albumRewardPacksOpened?: number;
 }
 
 const HOME =
@@ -286,6 +287,7 @@ export default function HomeClient({
   userRank: propUserRank,
   donations: initialDonations,
   albumRewardClaimed: initialAlbumRewardClaimed = false,
+  albumRewardPacksOpened: initialAlbumRewardPacksOpened = 0,
 }: HomeClientProps) {
   const ui = useUI();
   const router = useRouter();
@@ -298,6 +300,7 @@ export default function HomeClient({
   const [posterMode, setPosterMode] = useState<"final" | "progress">("progress");
 
   const [albumRewardClaimed, setAlbumRewardClaimed] = useState(initialAlbumRewardClaimed);
+  const [albumRewardPacksOpened, setAlbumRewardPacksOpened] = useState(initialAlbumRewardPacksOpened);
   const [claimingAlbumReward, setClaimingAlbumReward] = useState(false);
   const [packReveals, setPackReveals] = useState<RevealItem[]>([]);
   const [packTitle, setPackTitle] = useState("");
@@ -306,11 +309,16 @@ export default function HomeClient({
   const handleClaimAlbumReward = async () => {
     setClaimingAlbumReward(true);
     try {
-      const res = await dbService.claimAlbumCompletionReward();
-      setAlbumRewardClaimed(true);
+      let rareNumbers = ALL_RARE_STICKER_NUMBERS;
+      if (!albumRewardClaimed) {
+        const res = await dbService.claimAlbumCompletionReward();
+        setAlbumRewardClaimed(true);
+        rareNumbers = res.rare_numbers || ALL_RARE_STICKER_NUMBERS;
+      }
 
-      const rareNumbers = res.rare_numbers || ALL_RARE_STICKER_NUMBERS;
-      const reveals: RevealItem[] = rareNumbers.map((num: number) => {
+      const packNumber = albumRewardPacksOpened + 1;
+      const packNumbers = rareNumbers.slice(albumRewardPacksOpened * 5, packNumber * 5);
+      const reveals: RevealItem[] = packNumbers.map((num: number) => {
         const st = stickers.find((s: any) => s.number === num);
         return {
           number: num,
@@ -325,15 +333,16 @@ export default function HomeClient({
       });
 
       setPackReveals(reveals);
-      setPackTitle("Recompensa de 100% do Álbum: 30 Raras");
+      setPackTitle(`Recompensa de 100% do Álbum — pacote ${packNumber} de 6`);
       setShowPackOpener(true);
-      ui.toast("Recompensa resgatada com sucesso! Todas as Raras foram coladas no seu álbum.");
     } catch (err: any) {
       ui.toast(err?.message || "Erro ao resgatar recompensa de 100% do álbum.");
     } finally {
       setClaimingAlbumReward(false);
     }
   };
+
+  const remainingAlbumRewardPacks = Math.max(0, 6 - albumRewardPacksOpened);
 
   const ownedCount = ownedSlugs.length;
   const { pct, statusText, titleIcon } = getCollectionStatus(ownedCount);
@@ -1370,7 +1379,7 @@ export default function HomeClient({
 
       {/* ===== ELEMENT OF THE DAY ===== */}
       <div className="home-dashboard-daily mx-4 mb-4">
-        {ownedCount >= 360 && !albumRewardClaimed && (
+        {ownedCount >= 360 && remainingAlbumRewardPacks > 0 && (
           <div className="bg-gradient-to-r from-amber-500/10 via-pink-500/10 to-purple-500/10 rounded-2xl border-2 border-amber-400 p-4 mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-md">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0 border border-amber-300">
@@ -1381,7 +1390,7 @@ export default function HomeClient({
                   Recompensa do Álbum Completo (100%)
                 </h3>
                 <p className="text-[11px] text-[#bf2a5e] font-medium">
-                  Parabéns! Você completou 100% do álbum (360/360). Resgate o seu pacote especial de Raras do Álbum!
+                  As 30 versões raras serão reveladas em 6 pacotes de 5 figurinhas.
                 </p>
               </div>
             </div>
@@ -1395,7 +1404,7 @@ export default function HomeClient({
               }}
             >
               <Gift className="w-4 h-4" />
-              {claimingAlbumReward ? "Resgatando Raras..." : "Resgatar Pacote de Raras"}
+              {claimingAlbumReward ? "Preparando pacote..." : `Abrir pacote raro (${remainingAlbumRewardPacks})`}
             </button>
           </div>
         )}
@@ -1855,9 +1864,19 @@ export default function HomeClient({
         <PackOpener
           reveals={packReveals}
           title={packTitle}
-          onClose={() => {
-            setShowPackOpener(false);
-            router.invalidate();
+          onClose={async (completed) => {
+            if (!completed) return;
+            try {
+              const result = await dbService.markAlbumRarePackOpened();
+              setAlbumRewardPacksOpened(result.packs_opened);
+              setShowPackOpener(false);
+              if (result.remaining === 0) {
+                ui.toast("Recompensa concluída! As 30 figurinhas raras foram reveladas.");
+                router.invalidate();
+              }
+            } catch (err: any) {
+              ui.toast(err?.message || "Não foi possível registrar a abertura deste pacote.");
+            }
           }}
         />
       )}

@@ -8,7 +8,7 @@ import { dbService } from "@/lib/db";
 import { canHaveRareVersion, isExclusiveSticker } from "@/lib/albumRules";
 import { SEED_STICKERS } from "@/lib/seeds";
 import type { RevealItem, Sticker } from "@/lib/types";
-import { getClubAssetUrl } from "@/lib/urls";
+import { getStickerCoverUrl } from "@/lib/urls";
 
 interface PackOpenerProps {
   reveals: RevealItem[];
@@ -204,7 +204,7 @@ export default function PackOpener({ reveals, onClose, title = "Você ganhou!" }
       reveals
         .map((item) => coverByNumber.get(item.number))
         .filter((coverUrl): coverUrl is string => Boolean(coverUrl))
-        .map((coverUrl) => getClubAssetUrl(`/covers/${coverUrl}`)),
+        .map((coverUrl) => getStickerCoverUrl(coverUrl)),
     );
 
     coverUrls.forEach((coverUrl) => {

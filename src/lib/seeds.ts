@@ -3308,7 +3308,7 @@ export const SEED_STICKERS: SeedSticker[] = [
     name: "Agradecimentos",
     author: null,
     type: "bonus",
-    cover_url: "card story/extra.png",
+    cover_url: "card story/extra.jpg",
   },
 ]
 

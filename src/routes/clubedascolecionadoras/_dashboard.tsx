@@ -49,6 +49,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
         pendingTradesCount: 0,
         pointsBalance: 0,
         albumRewardClaimed: false,
+        albumRewardPacksOpened: 0,
       };
     }
 
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
     const donations = await dbService.getOutgoingDonations(user.id);
     const pendingTradesCount = await dbService.countIncomingPendingTrades().catch(() => 0);
     const pointsBalance = await dbService.getPointsBalance().catch(() => 0);
-    const albumRewardClaimed = await dbService.getAlbumRewardClaimed(user.id);
+    const albumRewardStatus = await dbService.getAlbumRewardStatus(user.id);
 
     const rewardIds = ["lilac", "avatar-neon-frame", "new-icon", "theme-dark"];
     const allElementsClaimed = rewardIds.every((id) =>
@@ -98,7 +99,8 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard")({
       donations,
       pendingTradesCount,
       pointsBalance,
-      albumRewardClaimed,
+      albumRewardClaimed: albumRewardStatus.claimed,
+      albumRewardPacksOpened: albumRewardStatus.packsOpened,
     };
   },
   component: DashboardLayout,

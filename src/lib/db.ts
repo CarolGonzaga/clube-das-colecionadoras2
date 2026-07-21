@@ -339,22 +339,28 @@ export const dbService = {
     });
   },
 
-  async getAlbumRewardClaimed(userId: string): Promise<boolean> {
+  async getAlbumRewardStatus(userId: string): Promise<{ claimed: boolean; packsOpened: number }> {
     try {
       const { data, error } = await supabase
         .from("album_completion_rewards")
-        .select("id")
+        .select("id,packs_opened")
         .eq("user_id", userId)
         .maybeSingle();
-      if (error) return false;
-      return !!data;
+      if (error || !data) return { claimed: false, packsOpened: 0 };
+      return { claimed: true, packsOpened: Math.min(6, Math.max(0, data.packs_opened || 0)) };
     } catch {
-      return false;
+      return { claimed: false, packsOpened: 0 };
     }
   },
 
   async claimAlbumCompletionReward(): Promise<{ claimed: boolean; rare_numbers: number[]; message: string }> {
     const { data, error } = await supabase.rpc("claim_album_completion_reward");
+    if (error) throw new Error(error.message);
+    return data;
+  },
+
+  async markAlbumRarePackOpened(): Promise<{ packs_opened: number; remaining: number }> {
+    const { data, error } = await supabase.rpc("mark_album_rare_pack_opened");
     if (error) throw new Error(error.message);
     return data;
   },

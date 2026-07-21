@@ -59,6 +59,7 @@ function DashboardIndex() {
       userRank={parentData.userRank}
       donations={parentData.donations}
       albumRewardClaimed={parentData.albumRewardClaimed}
+      albumRewardPacksOpened={parentData.albumRewardPacksOpened}
     />
   );
 }

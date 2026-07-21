@@ -2,7 +2,7 @@
 
 import React from "react";
 import { SEED_STICKERS } from "../lib/seeds";
-import { getClubAssetUrl } from "../lib/urls";
+import { getClubAssetUrl, getStickerCoverUrl } from "../lib/urls";
 
 interface StampProps {
   number: number;
@@ -72,7 +72,7 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
 
   const coverFilename = getCoverFilename(number);
   const hasCover = !!coverFilename && owned;
-  const baseCoverUrl = coverFilename ? getClubAssetUrl(`/covers/${coverFilename}`) : "";
+  const baseCoverUrl = coverFilename ? getStickerCoverUrl(coverFilename) : "";
   const [coverUrl, setCoverUrl] = React.useState(baseCoverUrl);
   const [coverFailures, setCoverFailures] = React.useState(0);
 

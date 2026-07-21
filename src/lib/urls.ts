@@ -42,6 +42,11 @@ export function getClubAssetUrl(path: string) {
   return `${DEFAULT_PUBLIC_ORIGIN}${normalizedPath}`;
 }
 
+export function getStickerCoverUrl(coverFilename: string) {
+  const normalized = coverFilename.replace(/^\/+/, "");
+  return getClubAssetUrl(normalized.includes("/") ? `/${normalized}` : `/covers/${normalized}`);
+}
+
 export function getPublicAlbumUrl(profileId: string) {
   return getClubUrl(`/album/u/${profileId}`);
 }
