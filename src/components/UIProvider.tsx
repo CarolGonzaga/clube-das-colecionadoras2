@@ -199,7 +199,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           message: isAlbumCompletion
             ? "Parabéns! Você completou as 359 figurinhas base e desbloqueou a figurinha bônus."
             : isPosterUnlock
-              ? "Parabéns! Você alcançou 100 figurinhas e desbloqueou o Gerador de Pôster."
+              ? "Parabéns! Você completou o Álbum Básico, com todas as figurinhas de 1 a 193, e desbloqueou o Gerador de Pôster."
               : `Parabéns! Você completou a coleção ${tagName}! Você possui prêmios a serem resgatados.`,
           seen: false,
           date: new Date().toISOString(),
@@ -226,7 +226,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           {isAlbumCompletion
             ? "Álbum Completo!"
             : isPosterUnlock
-              ? "Gerador de Pôster Desbloqueado!"
+              ? "Álbum Básico Completo!"
             : tagName === "Baldaverso"
               ? "Kit Baldaverso Completo!"
               : `Saga ${tagName} Completa!`}
@@ -384,7 +384,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
             (firstItem.reward === "collection_1_359"
               ? "Parabéns! Você completou as 359 figurinhas base e desbloqueou a figurinha bônus de agradecimento."
               : firstItem.reward === "poster"
-              ? "Parabéns! Você alcançou 100 figurinhas no álbum e desbloqueou o Gerador de Pôster!"
+              ? "Parabéns! Você completou o Álbum Básico, com todas as figurinhas de 1 a 193, e desbloqueou o Gerador de Pôster!"
               : rewardTag
                 ? rewardTag === "Baldaverso"
                   ? `Parabéns! Você completou o kit Baldaverso e ganhou um pacote extra!`

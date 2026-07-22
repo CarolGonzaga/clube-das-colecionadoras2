@@ -442,9 +442,8 @@ export default function QuizClient({
                 <Trophy className="w-5 h-5 text-emerald-600" /> Parabéns! Quiz Concluído!
               </p>
               <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 leading-relaxed font-sans">
-                Você acertou todas as 20 perguntas do quiz! Compartilhe o seu feito com outras
-                colecionadoras usando o poster exclusivo que acaba de ser desbloqueado para você na
-                página inicial! 🌸✨
+                Você acertou todas as 20 perguntas do quiz! Continue completando as figurinhas de 1 a
+                193 para concluir o Álbum Básico e desbloquear o Gerador de Pôster.
               </p>
             </div>
           ) : hasNoPendingQuestions ? (
