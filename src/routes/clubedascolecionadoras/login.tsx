@@ -13,7 +13,7 @@ import PasswordField from "../../components/PasswordField";
 const searchSchema = z.object({
   redirect: z.string().optional(),
   step: z.string().optional(),
-  maintenance_test: z.literal("1").optional(),
+  maintenance_test: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute("/clubedascolecionadoras/login")({
