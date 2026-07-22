@@ -178,17 +178,20 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     rewardTag?: string;
   }) => {
     triggerHearts();
-    const tagName = pack.rewardTag || "Saga";
+    const isAlbumCompletion = pack.items.some((item) => item.reward === "poster");
+    const tagName = pack.rewardTag;
 
     try {
       const stored = localStorage.getItem("trade_notifications");
       const notifications = stored ? JSON.parse(stored) : [];
-      const notifId = `completed-tag-${tagName}`;
+      const notifId = isAlbumCompletion ? "completed-album" : `completed-tag-${tagName}`;
       if (!notifications.some((n: any) => n.id === notifId)) {
         const newNotif = {
           id: notifId,
           type: "collection_completed",
-          message: `Parabéns! Você completou a ${tagName}! Você possui prêmios a serem resgatados.`,
+          message: isAlbumCompletion
+            ? "Parabéns! Você completou as 359 figurinhas base e desbloqueou a figurinha bônus."
+            : `Parabéns! Você completou a coleção ${tagName}! Você possui prêmios a serem resgatados.`,
           seen: false,
           date: new Date().toISOString(),
         };
@@ -211,7 +214,11 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     openModal(
       <div className="family-reward-modal" style={{ textAlign: "center", padding: "10px" }}>
         <h2 style={{ color: "var(--magenta)", marginBottom: "10px", fontSize: "22px" }}>
-          {tagName === "Baldaverso" ? "Kit Baldaverso Completo!" : `Saga ${tagName} Completa!`}
+          {isAlbumCompletion
+            ? "Álbum Completo!"
+            : tagName === "Baldaverso"
+              ? "Kit Baldaverso Completo!"
+              : `Saga ${tagName} Completa!`}
         </h2>
         <p style={{ fontSize: "14px", marginBottom: "16px", fontWeight: 600, color: "#444" }}>
           {pack.rewardMsg}
@@ -249,11 +256,11 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
             closeModal();
             router.navigate({
               to: "/clubedascolecionadoras/album",
-              search: { tab: "colecoes" }
+              search: isAlbumCompletion ? {} : { tab: "colecoes" }
             });
           }}
         >
-          Ir para Coleções
+          {isAlbumCompletion ? "Ir para o Álbum" : "Ir para Coleções"}
         </button>
       </div>,
     );
