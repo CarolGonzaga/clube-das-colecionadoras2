@@ -7,9 +7,7 @@ function cleanSecret(value?: string) {
 }
 
 function getStaticAccessToken() {
-  return cleanSecret(
-    process.env.MERCADO_PAGO_ACCESS_TOKEN || process.env.VITE_MERCADO_PAGO_ACCESS_TOKEN,
-  );
+  return cleanSecret(process.env.MERCADO_PAGO_ACCESS_TOKEN);
 }
 
 async function getOAuthAccessToken() {
@@ -48,6 +46,24 @@ async function requestPayment(paymentId: string, accessToken: string) {
   });
   const payload = await response.json().catch(() => ({}));
   return { response, payload };
+}
+
+export async function verifyMercadoPagoCredentials() {
+  const accessToken = getStaticAccessToken();
+  if (!accessToken) throw new Error("MERCADO_PAGO_ACCESS_TOKEN não configurado.");
+
+  const response = await fetch("https://api.mercadopago.com/users/me", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(payload?.message || "Credenciais do Mercado Pago inválidas.");
+    (error as any).status = response.status;
+    throw error;
+  }
+
+  return { id: payload?.id ? String(payload.id) : null };
 }
 
 export async function fetchMercadoPagoPaymentSecure(paymentId: string) {

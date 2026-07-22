@@ -86,7 +86,12 @@ export async function handleMercadoPagoWebhook(request: Request) {
 
   const url = new URL(request.url);
   const rawBody = await request.text();
-  const payload = rawBody ? JSON.parse(rawBody) : {};
+  let payload: any;
+  try {
+    payload = rawBody ? JSON.parse(rawBody) : {};
+  } catch {
+    return jsonResponse({ error: "Corpo JSON inválido." }, 400);
+  }
   const signatureDataId = url.searchParams.get("data.id") || url.searchParams.get("data_id") || "";
   const bodyDataId = payload?.data?.id ? String(payload.data.id) : "";
   const eventId = payload?.id ? String(payload.id) : "";
@@ -103,13 +108,12 @@ export async function handleMercadoPagoWebhook(request: Request) {
     })
   ) {
     console.error("[MercadoPago Webhook] Assinatura inválida!", {
-      xSignature,
-      xRequestId,
+      hasSignature: Boolean(xSignature),
+      hasRequestId: Boolean(xRequestId),
       signatureDataId,
       bodyDataId,
       eventId,
       hasSecret: Boolean(webhookSecret),
-      secretPrefix: webhookSecret ? webhookSecret.trim().substring(0, 5) + "..." : "none",
     });
     return jsonResponse({ error: "Assinatura inválida." }, 401);
   }
@@ -121,7 +125,7 @@ export async function handleMercadoPagoWebhook(request: Request) {
     provider_event_id: providerEventId,
     provider_payment_id: paymentId || null,
     x_request_id: xRequestId,
-    x_signature: xSignature,
+    x_signature: null,
     action: payload?.action || null,
     event_type: payload?.type || null,
     live_mode: typeof payload?.live_mode === "boolean" ? payload.live_mode : null,
@@ -134,7 +138,14 @@ export async function handleMercadoPagoWebhook(request: Request) {
       onConflict: providerEventId ? "provider_event_id" : "x_request_id,provider_payment_id",
       ignoreDuplicates: true,
     });
-  if (eventError) throw new Error(eventError.message);
+  if (eventError) {
+    // Audit logging must not prevent an approved payment from being processed.
+    console.error("[MercadoPago Webhook Audit Error]", {
+      providerEventId,
+      paymentId,
+      message: eventError.message,
+    });
+  }
 
   if (payload?.type !== "payment" && !String(payload?.action || "").startsWith("payment.")) {
     return jsonResponse({ ok: true, ignored: true });
@@ -145,8 +156,20 @@ export async function handleMercadoPagoWebhook(request: Request) {
       throw new Error("Notificação sem ID de pagamento.");
     }
 
-    // Se for teste de simulação (fake ID "123456" enviado pelo painel do MP), responda OK sem falhar
-    if (paymentId === "123456" || payload?.live_mode === false) {
+    // The dashboard simulator uses a fictitious payment. Validate the live
+    // credentials instead of reporting a false processing success.
+    if (paymentId === "123456") {
+      const { verifyMercadoPagoCredentials } = await import("./mercadoPagoApi.server");
+      const credentials = await verifyMercadoPagoCredentials();
+      return jsonResponse({
+        ok: true,
+        simulated: true,
+        credentials_valid: true,
+        account: credentials.id,
+      });
+    }
+
+    if (payload?.live_mode === false) {
       try {
         const payment = await fetchMercadoPagoPayment(String(paymentId));
         const { data: result, error: processError } = await supabaseAdmin.rpc(
@@ -156,10 +179,6 @@ export async function handleMercadoPagoWebhook(request: Request) {
         if (processError) throw new Error(processError.message);
         return jsonResponse({ ok: true, result });
       } catch (simError: any) {
-        if (paymentId === "123456") {
-          console.log("[MercadoPago Webhook] Simulação de teste recebida com sucesso (ID fictício 123456).");
-          return jsonResponse({ ok: true, simulated: true });
-        }
         throw simError;
       }
     }
