@@ -182,6 +182,77 @@
   gap: 8px;
 }
 
+.checkout-payer {
+  margin-top: 16px;
+  border-radius: 18px;
+  background: #fff5fa;
+  padding: 14px;
+}
+
+.checkout-payer-heading h2 {
+  margin: 0;
+  color: var(--wine);
+  font-size: 14px;
+}
+
+.checkout-payer-heading p {
+  margin: 4px 0 0;
+  color: rgba(90, 19, 49, 0.68);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.checkout-payer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.checkout-field {
+  display: grid;
+  gap: 5px;
+}
+
+.checkout-field-wide {
+  grid-column: 1 / -1;
+}
+
+.checkout-field span {
+  color: var(--wine);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.checkout-field input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(194, 24, 91, 0.2);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--wine);
+  padding: 10px 11px;
+  font: inherit;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+.checkout-field input:focus {
+  outline: none;
+  border-color: var(--magenta);
+  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.12);
+}
+
+@media (max-width: 560px) {
+  .checkout-payer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-field-wide {
+    grid-column: auto;
+  }
+}
+
 .payment-result-card {
   display: grid;
   justify-items: center;
@@ -7743,7 +7814,8 @@ html.dark .shop-cart-line,
 html.dark .checkout-card,
 html.dark .checkout-line,
 html.dark .checkout-wallet,
-html.dark .checkout-summary {
+html.dark .checkout-summary,
+html.dark .checkout-payer {
   background: #24102a !important;
   color: #fff7fb !important;
   border-color: #5f1b43 !important;
@@ -7820,6 +7892,23 @@ html.dark .checkout-coupon .coupon-input-group input::placeholder {
 html.dark .checkout-coupon .coupon-input-group input:focus {
   border-color: #f06ba8 !important;
   box-shadow: 0 0 0 3px rgba(240, 107, 168, 0.18) !important;
+}
+
+html.dark .checkout-payer-heading h2,
+html.dark .checkout-payer-heading p,
+html.dark .checkout-field span {
+  color: #ffd6e8 !important;
+}
+
+html.dark .checkout-field input {
+  background: #1d0b22 !important;
+  color: #fff7fb !important;
+  border-color: #6f2850 !important;
+  color-scheme: dark;
+}
+
+html.dark .checkout-field input::placeholder {
+  color: #d99ab8 !important;
 }
 
 html.dark .checkout-wallet input[type="checkbox"] {

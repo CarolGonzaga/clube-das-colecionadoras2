@@ -8,10 +8,36 @@ const checkoutItemSchema = z.object({
   quantity: z.number().int().min(1).max(20),
 });
 
+function isValidCpf(cpf: string) {
+  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;
+  const digit = (length: number) => {
+    const sum = cpf
+      .slice(0, length)
+      .split("")
+      .reduce((total, current, index) => total + Number(current) * (length + 1 - index), 0);
+    const remainder = (sum * 10) % 11;
+    return remainder === 10 ? 0 : remainder;
+  };
+  return digit(9) === Number(cpf[9]) && digit(10) === Number(cpf[10]);
+}
+
+const checkoutPayerSchema = z.object({
+  fullName: z.string().trim().min(3).max(120).refine((value) => value.includes(" "), {
+    message: "Informe nome e sobrenome.",
+  }),
+  cpf: z.string().regex(/^\d{11}$/, "CPF inválido.").refine(isValidCpf, "CPF inválido."),
+  phone: z.string().regex(/^\d{10,11}$/, "Telefone inválido."),
+  zipCode: z.string().regex(/^\d{8}$/, "CEP inválido."),
+  streetName: z.string().trim().min(3).max(160),
+  streetNumber: z.string().trim().min(1).max(20),
+});
+
 const createCheckoutSchema = z.object({
   items: z.array(checkoutItemSchema).min(1),
   requestedPoints: z.number().int().min(0).default(0),
   couponCode: z.string().optional(),
+  deviceId: z.string().trim().min(1).max(512).optional(),
+  payer: checkoutPayerSchema.optional(),
 });
 
 const validateCouponSchema = z.object({
@@ -70,11 +96,17 @@ function centsToMoney(cents: number) {
 async function createMercadoPagoPreference({
   orderId,
   payerEmail,
+  payerCreatedAt,
+  payer,
+  deviceId,
   items,
   amountDueCents,
 }: {
   orderId: string;
   payerEmail?: string | null;
+  payerCreatedAt?: string | null;
+  payer?: z.infer<typeof checkoutPayerSchema> | null;
+  deviceId?: string | null;
   items: Array<{ product_name: string; quantity: number; total_price_cents: number }>;
   amountDueCents: number;
 }) {
@@ -82,6 +114,7 @@ async function createMercadoPagoPreference({
   const webhookUrl =
     process.env.MERCADO_PAGO_WEBHOOK_URL || `${baseUrl}/api/webhooks/mercado-pago`;
   const accessToken = getMercadoPagoAccessToken();
+  const payerNames = payer?.fullName.trim().split(/\s+/) || [];
 
   const preferenceItems =
     items.length === 1
@@ -89,6 +122,8 @@ async function createMercadoPagoPreference({
           {
             id: orderId,
             title: items[0].product_name,
+            description: "Figurinhas colecionáveis do Clube das Colecionadoras",
+            category_id: "entertainment",
             quantity: 1,
             currency_id: "BRL",
             unit_price: centsToMoney(amountDueCents),
@@ -98,6 +133,8 @@ async function createMercadoPagoPreference({
           {
             id: orderId,
             title: "Clube das Colecionadoras",
+            description: `${items.length} itens de figurinhas colecionáveis`,
+            category_id: "entertainment",
             quantity: 1,
             currency_id: "BRL",
             unit_price: centsToMoney(amountDueCents),
@@ -109,11 +146,36 @@ async function createMercadoPagoPreference({
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
+      ...(deviceId ? { "X-meli-session-id": deviceId } : {}),
     },
     body: JSON.stringify({
       items: preferenceItems,
-      payer: payerEmail ? { email: payerEmail } : undefined,
+      payer: payerEmail
+        ? {
+            email: payerEmail,
+            name: payer ? payerNames[0] : undefined,
+            surname: payer ? payerNames.slice(1).join(" ") : undefined,
+            identification: payer
+              ? { type: "CPF", number: payer.cpf }
+              : undefined,
+            phone: payer
+              ? { area_code: payer.phone.slice(0, 2), number: payer.phone.slice(2) }
+              : undefined,
+            address: payer
+              ? {
+                  zip_code: payer.zipCode,
+                  street_name: payer.streetName,
+                  street_number: payer.streetNumber,
+                }
+              : undefined,
+            date_created: payerCreatedAt || undefined,
+          }
+        : undefined,
       external_reference: orderId,
+      statement_descriptor: "CLUBE COLECIONADORAS",
+      metadata: {
+        order_id: orderId,
+      },
       back_urls: {
         success: `${baseUrl}/clubedascolecionadoras/pagamento/sucesso?order=${orderId}`,
         pending: `${baseUrl}/clubedascolecionadoras/pagamento/pendente?order=${orderId}`,
@@ -155,6 +217,11 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
 
     const { data: userResult } = await supabase.auth.getUser();
     const payerEmail = userResult.user?.email ?? null;
+    const payerCreatedAt = userResult.user?.created_at ?? null;
+
+    if (!payerEmail) {
+      throw new Error("Sua conta precisa ter um e-mail válido para iniciar o pagamento.");
+    }
 
     const { data: createdOrder, error: createError } = await supabase.rpc(
       "create_purchase_order_from_cart",
@@ -242,6 +309,10 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
       };
     }
 
+    if (!data.payer) {
+      throw new Error("Preencha os dados de segurança para continuar com o Mercado Pago.");
+    }
+
     const { data: orderItems, error: itemsError } = await supabaseAdmin
       .from("purchase_order_items")
       .select("product_name, quantity, total_price_cents")
@@ -251,6 +322,9 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     const preference = await createMercadoPagoPreference({
       orderId,
       payerEmail,
+      payerCreatedAt,
+      payer: data.payer,
+      deviceId: data.deviceId,
       items: orderItems || [],
       amountDueCents,
     });
