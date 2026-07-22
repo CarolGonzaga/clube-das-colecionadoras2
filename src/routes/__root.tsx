@@ -170,9 +170,10 @@ function RootComponent() {
 function MaintenanceAccessGate({ children }: { children: ReactNode }) {
   const location = useRouterState({ select: (state) => state.location });
   const [access, setAccess] = useState<"checking" | "allowed" | "blocked">("checking");
+  const maintenanceTest = (location.search as Record<string, unknown>)?.maintenance_test;
   const isTestLoginRoute =
     location.pathname === "/clubedascolecionadoras/login" &&
-    location.href.includes("maintenance_test=1");
+    String(maintenanceTest ?? "") === "1";
 
   useEffect(() => {
     let active = true;
