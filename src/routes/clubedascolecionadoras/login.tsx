@@ -297,9 +297,12 @@ function LoginComponent() {
           </form>
         )}
 
-        {/* STEP 3: VERIFY OTP (Now Magic Link Sent state) */}
+        {/* STEP 3: VERIFY RECOVERY OTP */}
         {step === "forgot_verify" && (
-          <div className="w-full flex flex-col gap-4 animate-in slide-in-from-right-4 duration-300 items-center">
+          <form
+            onSubmit={handleVerifyOtp}
+            className="w-full flex flex-col gap-4 animate-in slide-in-from-right-4 duration-300 items-center"
+          >
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center shadow-[var(--shadow-soft)] mb-2"
               style={{ background: "var(--gradient-berry)" }}
@@ -307,12 +310,34 @@ function LoginComponent() {
               <Mail size={30} className="text-white" />
             </div>
             <p className="text-xs text-berry/80 text-center px-2 leading-relaxed">
-              Enviamos um link de recuperação para <strong>{email}</strong>.
+              Enviamos um código de recuperação para <strong>{email}</strong>.
             </p>
             <p className="text-[11px] text-berry/70 text-center px-4 mb-2">
-              Abra seu e-mail e clique no link para redefinir sua senha. Caso não encontre,
+              Digite o código recebido para criar uma nova senha. Caso não encontre a mensagem,
               verifique a caixa de spam.
             </p>
+
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="Código de recuperação"
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+              minLength={6}
+              maxLength={8}
+              className="w-full p-3 rounded-xl border border-rose-soft focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-xl tracking-[0.3em] font-mono font-bold bg-white/70 text-berry"
+              required
+            />
+
+            <button
+              type="submit"
+              disabled={loading || otpCode.length < 6}
+              className="w-full py-3 rounded-2xl text-xs font-bold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: "var(--gradient-berry)" }}
+            >
+              {loading ? "Verificando..." : "Verificar código"}
+            </button>
 
             <button
               type="button"
@@ -324,7 +349,7 @@ function LoginComponent() {
             >
               Tentar outro e-mail
             </button>
-          </div>
+          </form>
         )}
 
         {/* STEP 4: DEFINE NEW PASSWORD */}
