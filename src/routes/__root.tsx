@@ -4,10 +4,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { supabase } from "../integrations/supabase/client";
@@ -15,6 +16,10 @@ import { supabase } from "../integrations/supabase/client";
 // Operational switch used while the production database is being repaired.
 // Keep this explicit so reopening the application requires a reviewed deploy.
 const MAINTENANCE_MODE = true;
+const MAINTENANCE_TEST_USERS = new Set([
+  "483f4e4b-20b0-4340-a1bb-4666acd54b32",
+  "9d974c54-e1a2-47ed-a1cb-c9afe9ba5b97",
+]);
 
 function NotFoundComponent() {
   return (
@@ -125,10 +130,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR">
       <head>
         <HeadContent />
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-2GBJCHQHDQ"
-        />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-2GBJCHQHDQ" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -151,37 +153,69 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-  if (MAINTENANCE_MODE) {
-    return <MaintenanceScreen />;
-  }
-
-  return (
+  const application = (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );
+
+  if (MAINTENANCE_MODE) {
+    return <MaintenanceAccessGate>{application}</MaintenanceAccessGate>;
+  }
+
+  return application;
 }
 
-function MaintenanceScreen() {
+function MaintenanceAccessGate({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const [access, setAccess] = useState<"checking" | "allowed" | "blocked">("checking");
+  const isLoginRoute = pathname === "/clubedascolecionadoras/login";
+
   useEffect(() => {
-    // Remove the session from this browser. Server-side authorization remains
-    // protected by the maintenance screen while global sessions are revoked.
-    void supabase.auth.signOut({ scope: "local" }).catch((error) => {
-      console.warn("Não foi possível encerrar a sessão local durante a manutenção.", error);
+    let active = true;
+
+    const evaluate = (userId?: string) => {
+      if (!active) return;
+      const allowed = Boolean(userId && MAINTENANCE_TEST_USERS.has(userId));
+      setAccess(allowed ? "allowed" : "blocked");
+
+      if (userId && !allowed) {
+        window.setTimeout(() => {
+          void supabase.auth.signOut({ scope: "local" }).catch((error) => {
+            console.warn("Não foi possível encerrar a sessão local durante a manutenção.", error);
+          });
+        }, 0);
+      }
+    };
+
+    void supabase.auth.getSession().then(({ data }) => evaluate(data.session?.user.id));
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      evaluate(session?.user.id);
     });
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
   }, []);
 
+  // The login route remains reachable so approved testers can authenticate.
+  // Every other route stays blocked until the authenticated ID is allowlisted.
+  if (isLoginRoute || access === "allowed") return children;
+
+  return <MaintenanceScreen checking={access === "checking"} />;
+}
+
+function MaintenanceScreen({ checking = false }: { checking?: boolean }) {
   return (
     <main className="maintenance-screen">
       <section className="maintenance-card" role="status" aria-live="polite">
-        <img
-          className="maintenance-logo"
-          src="/logo_text.png"
-          alt="Clube das Colecionadoras"
-        />
-        <span className="maintenance-kicker">Manutenção em andamento</span>
-        <h1>Estamos cuidando de tudo por aqui</h1>
+        <img className="maintenance-logo" src="/logo_text.png" alt="Clube das Colecionadoras" />
+        <span className="maintenance-kicker">
+          {checking ? "Verificando acesso" : "Manutenção em andamento"}
+        </span>
+        <h1>{checking ? "Só um instante" : "Estamos cuidando de tudo por aqui"}</h1>
         <p>
           O Clube está temporariamente indisponível enquanto realizamos ajustes de segurança e
           estabilidade. Seu álbum e seu progresso permanecem preservados.
