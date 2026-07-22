@@ -10,6 +10,11 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { supabase } from "../integrations/supabase/client";
+
+// Operational switch used while the production database is being repaired.
+// Keep this explicit so reopening the application requires a reviewed deploy.
+const MAINTENANCE_MODE = true;
 
 function NotFoundComponent() {
   return (
@@ -146,10 +151,43 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  if (MAINTENANCE_MODE) {
+    return <MaintenanceScreen />;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
+  );
+}
+
+function MaintenanceScreen() {
+  useEffect(() => {
+    // Remove the session from this browser. Server-side authorization remains
+    // protected by the maintenance screen while global sessions are revoked.
+    void supabase.auth.signOut({ scope: "local" }).catch((error) => {
+      console.warn("Não foi possível encerrar a sessão local durante a manutenção.", error);
+    });
+  }, []);
+
+  return (
+    <main className="maintenance-screen">
+      <section className="maintenance-card" role="status" aria-live="polite">
+        <img
+          className="maintenance-logo"
+          src="/logo_text.png"
+          alt="Clube das Colecionadoras"
+        />
+        <span className="maintenance-kicker">Manutenção em andamento</span>
+        <h1>Estamos cuidando de tudo por aqui</h1>
+        <p>
+          O Clube está temporariamente indisponível enquanto realizamos ajustes de segurança e
+          estabilidade. Seu álbum e seu progresso permanecem preservados.
+        </p>
+        <div className="maintenance-note">Volte em breve para continuar sua coleção.</div>
+      </section>
+    </main>
   );
 }
