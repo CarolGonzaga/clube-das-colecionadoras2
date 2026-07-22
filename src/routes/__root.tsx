@@ -15,7 +15,7 @@ import { supabase } from "../integrations/supabase/client";
 
 // Operational switch used while the production database is being repaired.
 // Keep this explicit so reopening the application requires a reviewed deploy.
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 const MAINTENANCE_TEST_USERS = new Set([
   "483f4e4b-20b0-4340-a1bb-4666acd54b32",
   "9d974c54-e1a2-47ed-a1cb-c9afe9ba5b97",
