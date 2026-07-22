@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, Clock, PackageOpen } from "lucide-react";
-import { useEffect, useState } from "react";
 import { z } from "zod";
-import { getMyOrder, reconcileMercadoPagoPayment } from "@/lib/checkout";
+import { usePaymentOrderPolling } from "@/hooks/usePaymentOrderPolling";
 
 const searchSchema = z.object({
   order: z.string().uuid().optional(),
@@ -26,49 +25,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/pagamen
 
 function PaymentPendingPage() {
   const search = Route.useSearch();
-  const [order, setOrder] = useState<any>(null);
-  const [confirmationError, setConfirmationError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!search.order) return;
-    let alive = true;
-    let checking = false;
-    let permanentFailure = false;
-
-    const reconcileAndLoad = async () => {
-      if (checking || permanentFailure) return;
-      checking = true;
-      try {
-        if (search.payment_id) {
-          const paymentId = decodeURIComponent(String(search.payment_id)).replace(/[^0-9]/g, "");
-          await reconcileMercadoPagoPayment({
-            data: { orderId: search.order!, paymentId },
-          });
-        }
-
-        const result = await getMyOrder({ data: { orderId: search.order! } });
-        if (alive) {
-          setOrder(result.order);
-          setConfirmationError(null);
-        }
-      } catch (error: any) {
-        const message = error?.message || "Ainda não conseguimos confirmar o pagamento.";
-        permanentFailure = /unauthorized use of live credentials/i.test(message);
-        if (alive) {
-          setConfirmationError(message);
-        }
-      } finally {
-        checking = false;
-      }
-    };
-
-    reconcileAndLoad();
-    const timer = window.setInterval(reconcileAndLoad, 5000);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-    };
-  }, [search.order, search.payment_id]);
+  const { order, confirmationError } = usePaymentOrderPolling(search.order, search.payment_id);
 
   const approved = order?.payment_status === "approved";
 

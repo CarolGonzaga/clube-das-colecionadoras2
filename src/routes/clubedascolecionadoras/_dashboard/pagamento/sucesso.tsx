@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, Clock, PackageOpen } from "lucide-react";
-import { useEffect, useState } from "react";
 import { z } from "zod";
-import { getMyOrder, reconcileMercadoPagoPayment } from "@/lib/checkout";
+import { usePaymentOrderPolling } from "@/hooks/usePaymentOrderPolling";
 
 const searchSchema = z.object({
   order: z.string().optional(),
@@ -16,45 +15,11 @@ export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/pagamen
 
 function PaymentSuccessPage() {
   const search = Route.useSearch();
-  const [order, setOrder] = useState<any>(null);
-  const [confirmationError, setConfirmationError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!search.order) return;
-    let alive = true;
-    let reconciled = false;
-
-    const load = async () => {
-      try {
-        if (!reconciled && search.payment_id) {
-          reconciled = true;
-          const cleanPaymentId = decodeURIComponent(String(search.payment_id)).replace(/[^0-9]/g, "");
-          await reconcileMercadoPagoPayment({
-            data: { orderId: search.order!, paymentId: cleanPaymentId },
-          });
-          if (alive) setConfirmationError(null);
-        }
-
-        const result = await getMyOrder({ data: { orderId: search.order! } });
-        if (alive) setOrder(result.order);
-      } catch (error: any) {
-        if (alive && search.payment_id) {
-          setConfirmationError(error?.message || "Ainda não conseguimos confirmar automaticamente este pagamento.");
-        }
-      }
-    };
-
-    load();
-    const timer = window.setInterval(load, 5000);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-    };
-  }, [search.order, search.payment_id]);
+  const { order, confirmationError } = usePaymentOrderPolling(search.order, search.payment_id);
 
   const released =
     order?.payment_status === "approved" &&
-    ["pending_opening", "partially_opened", "released"].includes(order?.fulfillment_status);
+    ["pending_opening", "partially_opened", "released"].includes(order?.fulfillment_status ?? "");
 
   return (
     <main className="screen payment-result-screen">
@@ -68,7 +33,8 @@ function PaymentSuccessPage() {
         </p>
         {!released && confirmationError && (
           <p className="payment-result-warning">
-            Pagamento localizado, mas a liberação automática ainda não foi concluída. Tente atualizar em alguns segundos.
+            Pagamento localizado, mas a liberação automática ainda não foi concluída. Tente
+            atualizar em alguns segundos.
             <br />
             <small>Detalhe técnico: {confirmationError}</small>
           </p>
