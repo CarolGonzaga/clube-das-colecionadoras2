@@ -178,20 +178,29 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     rewardTag?: string;
   }) => {
     triggerHearts();
-    const isAlbumCompletion = pack.items.some((item) => item.reward === "poster");
+    const isAlbumCompletion = pack.items.some(
+      (item) => item.reward === "collection_1_359" || item.number === 360,
+    );
+    const isPosterUnlock = pack.items.some((item) => item.reward === "poster");
     const tagName = pack.rewardTag;
 
     try {
       const stored = localStorage.getItem("trade_notifications");
       const notifications = stored ? JSON.parse(stored) : [];
-      const notifId = isAlbumCompletion ? "completed-album" : `completed-tag-${tagName}`;
+      const notifId = isAlbumCompletion
+        ? "completed-album"
+        : isPosterUnlock
+          ? "unlocked-poster-generator"
+          : `completed-tag-${tagName}`;
       if (!notifications.some((n: any) => n.id === notifId)) {
         const newNotif = {
           id: notifId,
           type: "collection_completed",
           message: isAlbumCompletion
             ? "Parabéns! Você completou as 359 figurinhas base e desbloqueou a figurinha bônus."
-            : `Parabéns! Você completou a coleção ${tagName}! Você possui prêmios a serem resgatados.`,
+            : isPosterUnlock
+              ? "Parabéns! Você alcançou 100 figurinhas e desbloqueou o Gerador de Pôster."
+              : `Parabéns! Você completou a coleção ${tagName}! Você possui prêmios a serem resgatados.`,
           seen: false,
           date: new Date().toISOString(),
         };
@@ -216,6 +225,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         <h2 style={{ color: "var(--magenta)", marginBottom: "10px", fontSize: "22px" }}>
           {isAlbumCompletion
             ? "Álbum Completo!"
+            : isPosterUnlock
+              ? "Gerador de Pôster Desbloqueado!"
             : tagName === "Baldaverso"
               ? "Kit Baldaverso Completo!"
               : `Saga ${tagName} Completa!`}
@@ -256,11 +267,11 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
             closeModal();
             router.navigate({
               to: "/clubedascolecionadoras/album",
-              search: isAlbumCompletion ? {} : { tab: "colecoes" }
+              search: isAlbumCompletion || isPosterUnlock ? {} : { tab: "colecoes" }
             });
           }}
         >
-          {isAlbumCompletion ? "Ir para o Álbum" : "Ir para Coleções"}
+          {isAlbumCompletion || isPosterUnlock ? "Ir para o Álbum" : "Ir para Coleções"}
         </button>
       </div>,
     );
@@ -331,7 +342,12 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     });
 
     normalizedItems.forEach((item) => {
-      if (item.reward && (item.reward.startsWith("tag_") || item.reward === "poster")) {
+      if (
+        item.reward &&
+        (item.reward.startsWith("tag_") ||
+          item.reward === "poster" ||
+          item.reward === "collection_1_359")
+      ) {
         if (currentPackItems.length > 0) {
           // The five family-reward stickers share one tag. Keep this run as
           // one package instead of splitting it into five single reveals.
@@ -352,7 +368,9 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       const firstItem = currentPackItems[0];
       if (
         firstItem.reward &&
-        (firstItem.reward.startsWith("tag_") || firstItem.reward === "poster")
+        (firstItem.reward.startsWith("tag_") ||
+          firstItem.reward === "poster" ||
+          firstItem.reward === "collection_1_359")
       ) {
         const rewardTag = firstItem.reward.startsWith("tag_")
           ? firstItem.reward.replace("tag_", "")
@@ -363,8 +381,10 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
           rewardTag,
           rewardMsg:
             firstItem.rewardMessage ||
-            (firstItem.reward === "poster"
-              ? "Parabéns! Você completou o álbum!"
+            (firstItem.reward === "collection_1_359"
+              ? "Parabéns! Você completou as 359 figurinhas base e desbloqueou a figurinha bônus de agradecimento."
+              : firstItem.reward === "poster"
+              ? "Parabéns! Você alcançou 100 figurinhas no álbum e desbloqueou o Gerador de Pôster!"
               : rewardTag
                 ? rewardTag === "Baldaverso"
                   ? `Parabéns! Você completou o kit Baldaverso e ganhou um pacote extra!`
