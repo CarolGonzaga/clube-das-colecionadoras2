@@ -483,7 +483,7 @@ function CartPage() {
                     <CreditCard size={16} />
                     {loadingProvider === "infinitepay"
                       ? "Preparando InfinitePay..."
-                      : "Testar cartão pela InfinitePay"}
+                      : "Pagar com InfinitePay"}
                   </button>
                 )}
               </div>

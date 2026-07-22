@@ -226,11 +226,11 @@ function allocateProviderItems(
 
 export const getPaymentProviderAvailability = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { isInfinitePayEnabledForUser } = await import("@/lib/infinitePay.server");
+  .handler(async () => {
+    const { isInfinitePayEnabled } = await import("@/lib/infinitePay.server");
     return {
       mercadopago: true,
-      infinitepay: isInfinitePayEnabledForUser(context.userId),
+      infinitepay: isInfinitePayEnabled(),
     };
   });
 
@@ -339,11 +339,11 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     let preference: any = null;
 
     if (data.provider === "infinitepay") {
-      const { createInfinitePayLink, isInfinitePayEnabledForUser } = await import(
+      const { createInfinitePayLink, isInfinitePayEnabled } = await import(
         "@/lib/infinitePay.server"
       );
-      if (!isInfinitePayEnabledForUser(userId)) {
-        throw new Error("InfinitePay ainda não está disponível para esta conta.");
+      if (!isInfinitePayEnabled()) {
+        throw new Error("InfinitePay ainda não está disponível.");
       }
       const baseUrl = getPublicBaseUrl();
       const result = await createInfinitePayLink({

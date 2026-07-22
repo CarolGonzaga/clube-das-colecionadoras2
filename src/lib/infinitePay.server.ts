@@ -10,13 +10,8 @@ export function getInfinitePayHandle() {
   return clean(process.env.INFINITEPAY_HANDLE || "ana-flavia-nue");
 }
 
-export function isInfinitePayEnabledForUser(userId: string) {
-  if (clean(process.env.INFINITEPAY_ENABLED).toLowerCase() !== "true") return false;
-  const allowed = clean(process.env.INFINITEPAY_TEST_USER_IDS)
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return allowed.includes(userId);
+export function isInfinitePayEnabled() {
+  return clean(process.env.INFINITEPAY_ENABLED).toLowerCase() === "true";
 }
 
 async function parseResponse(response: Response) {
@@ -93,4 +88,3 @@ export async function checkInfinitePayPayment({
     slug,
   };
 }
-
