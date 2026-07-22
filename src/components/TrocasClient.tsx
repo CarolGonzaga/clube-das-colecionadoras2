@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Sticker, UserSticker, TradeRequest, TradeUserLookup, Donation } from "@/lib/types";
 import { useUI } from "@/components/UIProvider";
 import { useRouter } from "@tanstack/react-router";
@@ -1237,7 +1237,7 @@ export default function TrocasClient({
                     <span className={`trade-status-badge ${statusCls}`}>{statusLabel}</span>
                   </div>
 
-                  <div className="trade-request-stickers" style={{ padding: "8px 12px", background: "#fdf2f7" }}>
+                  <div className="trade-request-stickers bg-[#fdf2f7] dark:bg-[#2a102c] border border-pink-100 dark:border-[#5f1b43]" style={{ padding: "8px 12px" }}>
                     <div className="trade-req-sticker" style={{ flex: 1, textAlign: "left" }}>
                       <span className="note" style={{ margin: 0 }}>Figurinha doada:</span>
                       <b>#{String(d.sticker_number).padStart(3, "0")}</b>
@@ -1340,11 +1340,11 @@ export default function TrocasClient({
       </div>
 
       {/* Donation Code Redemption Section */}
-      <div className="trade-redeem-section bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 mb-4">
-        <h3 className="text-xs font-bold text-[#5c0d2b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <Gift className="w-4 h-4 text-[#C2185B]" /> Resgatar Figurinha Doada
+      <div className="trade-redeem-section bg-white dark:bg-[#1d0b22] rounded-2xl border border-pink-200/60 dark:border-[#5f1b43] shadow-sm p-4 mb-4">
+        <h3 className="text-xs font-bold text-[#5c0d2b] dark:text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <Gift className="w-4 h-4 text-[#C2185B] dark:text-[#f06ba8]" /> Resgatar Figurinha Doada
         </h3>
-        <p className="text-[11px] text-[#bf2a5e]/80 mb-3">
+        <p className="text-[11px] text-[#bf2a5e]/80 dark:text-gray-200 mb-3">
           Recebeu um código de doação de outra colecionadora? Cole o código de 8 caracteres abaixo para resgatar.
         </p>
         <div className="flex gap-2">
@@ -1354,7 +1354,7 @@ export default function TrocasClient({
             value={redeemCodeInput}
             onChange={(e) => setRedeemCodeInput(e.target.value.toUpperCase().trim())}
             style={{ height: "40px" }}
-            className="flex-1 min-w-0 px-3 border border-pink-200/60 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+            className="flex-1 min-w-0 px-3 border border-pink-200/60 dark:border-[#5f1b43] dark:bg-[#24102a] dark:text-white dark:placeholder-[#d99ab8] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
           />
           <button
             onClick={handleRedeemDonation}

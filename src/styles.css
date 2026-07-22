@@ -3811,7 +3811,11 @@ html.dark .text-\[\#C2185B\],
 html.dark .text-\[\#c2185b\],
 html.dark .text-\[\#9e1b4a\],
 html.dark .text-\[\#bf2a5e\],
+html.dark .text-\[\#bf2a5e\]\/80,
+html.dark .text-\[\#bf2a5e\]\/70,
 html.dark .text-\[\#5c0d2b\],
+html.dark .text-\[\#7a0c3b\],
+html.dark .text-berry\/70,
 html.dark .section-title,
 html.dark .section-sub,
 html.dark .style-row .st b,
@@ -7662,7 +7666,12 @@ html.dark .album-controls,
 html.dark .codes-card,
 html.dark .coupon-input-group input,
 html.dark .trade-flow-card,
-html.dark .trade-empty {
+html.dark .trade-empty,
+html.dark .trade-redeem-section,
+html.dark .trade-nick-card,
+html.dark .trade-wallet-bar,
+html.dark .trade-confirm-summary,
+html.dark .points-help-modal {
   background: #1d0b22 !important;
   color: #fff7fb !important;
   border-color: #5f1b43 !important;
@@ -7679,7 +7688,20 @@ html.dark .trade-request-card span,
 html.dark .collection-row,
 html.dark .collection-row b,
 html.dark .collection-row span,
-html.dark .coupon-input-group input {
+html.dark .coupon-input-group input,
+html.dark .trade-redeem-section h3,
+html.dark .trade-redeem-section p,
+html.dark .trade-nick-card b,
+html.dark .trade-nick-card span,
+html.dark .trade-wallet-label,
+html.dark .trade-wallet-balance,
+html.dark .trade-share-note,
+html.dark .trade-time-note,
+html.dark .trade-confirm-summary,
+html.dark .trade-confirm-side b,
+html.dark .trade-confirm-side span,
+html.dark .points-help-modal h2,
+html.dark .points-help-modal p {
   color: #ffd6e8 !important;
 }
 
