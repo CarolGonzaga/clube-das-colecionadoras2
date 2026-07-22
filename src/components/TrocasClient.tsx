@@ -251,6 +251,7 @@ export default function TrocasClient({
   const ui = useUI();
   const router = useRouter();
   const hasShownTutorialRef = React.useRef(false);
+  const lookupRequestRef = React.useRef(0);
 
   // State
   const [mainTab, setMainTab] = useState<MainTab>(
@@ -281,6 +282,8 @@ export default function TrocasClient({
   const [flowNickInput, setFlowNickInput] = useState("");
   const [flowNickLoading, setFlowNickLoading] = useState(false);
   const [flowLookup, setFlowLookup] = useState<TradeUserLookup | null>(null);
+  const [flowLookupError, setFlowLookupError] = useState("");
+  const [flowLookupUpdatedAt, setFlowLookupUpdatedAt] = useState<Date | null>(null);
   const [flowDesiredSticker, setFlowDesiredSticker] = useState<number | null>(null);
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
 
@@ -587,20 +590,29 @@ export default function TrocasClient({
     setFlowCategory(category);
     setFlowNickInput("");
     setFlowLookup(null);
+    setFlowLookupError("");
+    setFlowLookupUpdatedAt(null);
     setFlowDesiredSticker(null);
     setFlowStep("enter-nick");
   };
 
   const handleNickLookup = async () => {
     if (!flowNickInput.trim()) return;
+    const requestId = lookupRequestRef.current + 1;
+    lookupRequestRef.current = requestId;
+    setFlowLookup(null);
+    setFlowLookupError("");
+    setFlowLookupUpdatedAt(null);
     setFlowNickLoading(true);
     const res = await lookupUserByNickAction(flowNickInput.trim().toLowerCase());
+    if (requestId !== lookupRequestRef.current) return;
     setFlowNickLoading(false);
     if (!res.success || !res.data) {
-      ui.toast(res.message || "Usuária não encontrada.");
+      setFlowLookupError(res.message || "Usuária não encontrada.");
       return;
     }
     setFlowLookup(res.data);
+    setFlowLookupUpdatedAt(new Date());
     setFlowStep("confirm-user");
   };
 
@@ -629,10 +641,14 @@ export default function TrocasClient({
   };
 
   const resetFlow = () => {
+    lookupRequestRef.current += 1;
     setFlowStep("idle");
     setFlowMySticker(null);
     setFlowNickInput("");
     setFlowLookup(null);
+    setFlowLookupError("");
+    setFlowLookupUpdatedAt(null);
+    setFlowNickLoading(false);
     setFlowDesiredSticker(null);
   };
 
@@ -806,7 +822,14 @@ export default function TrocasClient({
                 type="text"
                 placeholder="ex: minhaamiga123"
                 value={flowNickInput}
-                onChange={(e) => setFlowNickInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                onChange={(e) => {
+                  lookupRequestRef.current += 1;
+                  setFlowNickInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""));
+                  setFlowLookup(null);
+                  setFlowLookupError("");
+                  setFlowLookupUpdatedAt(null);
+                  setFlowNickLoading(false);
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleNickLookup()}
                 autoFocus
               />
@@ -818,6 +841,11 @@ export default function TrocasClient({
                 {flowNickLoading ? "..." : <Search className="w-4 h-4" />}
               </button>
             </div>
+            {flowLookupError && (
+              <p className="note" role="status" style={{ color: "#b42355", margin: "8px 0 0" }}>
+                {flowLookupError}
+              </p>
+            )}
           </div>
         </div>
       );
@@ -835,8 +863,13 @@ export default function TrocasClient({
             <div>
               <b>@{flowLookup.nick}</b>
               <p className="note" style={{ margin: 0 }}>
-                {eligibleDupes.length} repetida{eligibleDupes.length !== 1 ? "s" : ""} disponível{eligibleDupes.length !== 1 ? "eis" : ""}
+                Categoria: <b>{flowCategory === "free" ? "Gratuitas" : "Loja"}</b> · {eligibleDupes.length} figurinha{eligibleDupes.length !== 1 ? "s" : ""} com repetidas
               </p>
+              {flowLookupUpdatedAt && (
+                <p className="note" style={{ margin: "2px 0 0" }}>
+                  Atualizado às {flowLookupUpdatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </p>
+              )}
             </div>
           </div>
           <p style={{ fontSize: 13, margin: "8px 0 4px" }}>Você quer receber qual figurinha?</p>

@@ -158,6 +158,13 @@ export const dbService = {
     return data as Profile | null;
   },
 
+  async getPublicProfile(userId: string): Promise<Profile | null> {
+    const { data, error } = await supabase.rpc("get_public_profile", { profile_id: userId });
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? ({ ...row, mural_opt_in: false, created_at: "" } as Profile) : null;
+  },
+
   async getStickers(): Promise<Sticker[]> {
     const { data, error } = await supabase
       .from("stickers")
@@ -369,6 +376,12 @@ export const dbService = {
     const { data, error } = await supabase.from("user_styles").select("*").eq("user_id", userId);
     if (error) throw new Error(error.message);
     return data as UserStyle[];
+  },
+
+  async getPublicStyles(userId: string): Promise<string[]> {
+    const { data, error } = await supabase.rpc("get_public_styles", { profile_id: userId });
+    if (error) throw new Error(error.message);
+    return (data || []).map((row: { style_id: string }) => row.style_id);
   },
 
   async getDailyClaimsCount(userId: string): Promise<number> {

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/album/u/$id")({
     // All calls are non-fatal — errors return empty/null data instead of crashing
     let profile = null;
     try {
-      profile = await dbService.getProfile(id);
+      profile = await dbService.getPublicProfile(id);
     } catch (_) {}
 
     if (!profile) {
@@ -24,8 +24,7 @@ export const Route = createFileRoute("/clubedascolecionadoras/album/u/$id")({
 
     let ownerStyles: string[] = [];
     try {
-      const userStyles = await dbService.getUserStyles(id);
-      ownerStyles = userStyles.filter((s) => s.enabled).map((s) => s.style_id);
+      ownerStyles = await dbService.getPublicStyles(id);
     } catch (_) {}
 
     return { profile, stickers, userStickers, ownerStyles };

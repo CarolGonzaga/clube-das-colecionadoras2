@@ -223,6 +223,14 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
       throw new Error("Sua conta precisa ter um e-mail válido para iniciar o pagamento.");
     }
 
+    // Best-effort cleanup: only whole orders abandoned for 24 hours are
+    // cancelled and have their reserved points returned.
+    try {
+      await supabaseAdmin.rpc("expire_stale_purchase_orders");
+    } catch {
+      // Checkout must remain available if maintenance cleanup is unavailable.
+    }
+
     const { data: createdOrder, error: createError } = await supabase.rpc(
       "create_purchase_order_from_cart",
       {
