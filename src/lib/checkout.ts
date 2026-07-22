@@ -45,11 +45,13 @@ const validateCouponSchema = z.object({
 });
 
 export const validateCoupon = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((data) => validateCouponSchema.parse(data))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: result, error } = await supabaseAdmin.rpc("validate_coupon", {
+    const { data: result, error } = await supabaseAdmin.rpc("validate_coupon_for_user", {
       coupon_code_param: data.code,
+      user_id_param: context.userId,
     });
     if (error) throw new Error(error.message);
     return result as {
@@ -249,44 +251,21 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     let couponDiscountCents = 0;
 
     if (data.couponCode && data.couponCode.trim() !== "") {
-      const { data: valResult, error: valError } = await supabaseAdmin.rpc("validate_coupon", {
-        coupon_code_param: data.couponCode,
-      });
+      const { data: valResult, error: valError } = await supabaseAdmin.rpc(
+        "apply_coupon_to_purchase_order",
+        {
+          order_id_param: orderId,
+          user_id_param: userId,
+          coupon_code_param: data.couponCode,
+        },
+      );
       if (valError) throw new Error(valError.message);
       const val = valResult as any;
       if (!val.valid) {
         throw new Error(val.message || "Cupom inválido.");
       }
-
-      if (val.discount_percent > 0) {
-        couponDiscountCents = Math.round((amountDueCents * val.discount_percent) / 100);
-      } else if (val.discount_cents > 0) {
-        couponDiscountCents = Math.min(amountDueCents, val.discount_cents);
-      }
-
-      amountDueCents = Math.max(0, amountDueCents - couponDiscountCents);
-
-      await supabaseAdmin
-        .from("purchase_orders")
-        .update({
-          coupon_code: val.code,
-          coupon_discount_cents: couponDiscountCents,
-          amount_due_cents: amountDueCents,
-        })
-        .eq("id", orderId);
-
-      // Increment coupon usage count
-      const { data: cRow } = await supabaseAdmin
-        .from("coupons")
-        .select("uses_count")
-        .eq("code", val.code)
-        .maybeSingle();
-      if (cRow) {
-        await supabaseAdmin
-          .from("coupons")
-          .update({ uses_count: (cRow.uses_count || 0) + 1 })
-          .eq("code", val.code);
-      }
+      couponDiscountCents = Number(val.coupon_discount_cents || 0);
+      amountDueCents = Number(val.amount_due_cents || 0);
     }
 
     if (data.requestedPoints > 0 && amountDueCents > 0) {
