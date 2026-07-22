@@ -23,7 +23,7 @@ function InfinitePayReturnPage() {
   const search = Route.useSearch();
   const orderId = search.order_nsu || search.order;
   const { order } = usePaymentOrderPolling(orderId, null);
-  const [confirmationError, setConfirmationError] = useState<string | null>(null);
+  const [confirmationDelayed, setConfirmationDelayed] = useState(false);
 
   useEffect(() => {
     if (!orderId || !search.transaction_nsu || !search.slug) return;
@@ -34,11 +34,9 @@ function InfinitePayReturnPage() {
         transactionNsu: search.transaction_nsu,
         slug: search.slug,
       },
-    }).catch((error: unknown) => {
+    }).catch(() => {
       if (alive) {
-        setConfirmationError(
-          error instanceof Error ? error.message : "Ainda não foi possível confirmar o pagamento.",
-        );
+        setConfirmationDelayed(true);
       }
     });
     return () => {
@@ -62,11 +60,10 @@ function InfinitePayReturnPage() {
             ? "Suas figurinhas já foram adicionadas aos Registros para abertura."
             : "Estamos confirmando a transação diretamente com a InfinitePay."}
         </p>
-        {!released && confirmationError && (
+        {!released && confirmationDelayed && (
           <p className="payment-result-warning">
-            Ainda não foi possível concluir a confirmação. Atualizaremos o pedido pelo webhook.
-            <br />
-            <small>Detalhe técnico: {confirmationError}</small>
+            A confirmação pode levar alguns instantes. Você pode acompanhar o pedido na página de
+            Registros.
           </p>
         )}
         <Link to="/clubedascolecionadoras/registros" className="btn">
@@ -77,4 +74,3 @@ function InfinitePayReturnPage() {
     </main>
   );
 }
-
