@@ -38,6 +38,7 @@ const createCheckoutSchema = z.object({
   couponCode: z.string().optional(),
   deviceId: z.string().trim().min(1).max(512).optional(),
   payer: checkoutPayerSchema.optional(),
+  provider: z.enum(["mercadopago", "infinitepay"]).default("mercadopago"),
 });
 
 const validateCouponSchema = z.object({
@@ -72,6 +73,12 @@ const reconcilePaymentSchema = z.object({
   paymentId: z.string().min(1),
 });
 
+const reconcileInfinitePaySchema = z.object({
+  orderId: z.string().uuid(),
+  transactionNsu: z.string().uuid(),
+  slug: z.string().min(1).max(200),
+});
+
 function getPublicBaseUrl() {
   const configured =
     process.env.PUBLIC_SITE_URL ||
@@ -98,7 +105,6 @@ function centsToMoney(cents: number) {
 async function createMercadoPagoPreference({
   orderId,
   payerEmail,
-  payerCreatedAt,
   payer,
   deviceId,
   items,
@@ -106,10 +112,9 @@ async function createMercadoPagoPreference({
 }: {
   orderId: string;
   payerEmail?: string | null;
-  payerCreatedAt?: string | null;
   payer?: z.infer<typeof checkoutPayerSchema> | null;
   deviceId?: string | null;
-  items: Array<{ product_name: string; quantity: number; total_price_cents: number }>;
+  items: Array<{ product_id: string; product_name: string; quantity: number; total_price_cents: number }>;
   amountDueCents: number;
 }) {
   const baseUrl = getPublicBaseUrl();
@@ -118,30 +123,15 @@ async function createMercadoPagoPreference({
   const accessToken = getMercadoPagoAccessToken();
   const payerNames = payer?.fullName.trim().split(/\s+/) || [];
 
-  const preferenceItems =
-    items.length === 1
-      ? [
-          {
-            id: orderId,
-            title: items[0].product_name,
-            description: "Figurinhas colecionáveis do Clube das Colecionadoras",
-            category_id: "entertainment",
-            quantity: 1,
-            currency_id: "BRL",
-            unit_price: centsToMoney(amountDueCents),
-          },
-        ]
-      : [
-          {
-            id: orderId,
-            title: "Clube das Colecionadoras",
-            description: `${items.length} itens de figurinhas colecionáveis`,
-            category_id: "entertainment",
-            quantity: 1,
-            currency_id: "BRL",
-            unit_price: centsToMoney(amountDueCents),
-          },
-        ];
+  const preferenceItems = allocateProviderItems(items, amountDueCents).map((item) => ({
+    id: item.productId,
+    title: item.description,
+    description: "Figurinhas digitais colecionáveis do Clube das Colecionadoras",
+    category_id: "entertainment",
+    quantity: 1,
+    currency_id: "BRL",
+    unit_price: centsToMoney(item.price),
+  }));
 
   const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
     method: "POST",
@@ -170,7 +160,6 @@ async function createMercadoPagoPreference({
                   street_number: payer.streetNumber,
                 }
               : undefined,
-            date_created: payerCreatedAt || undefined,
           }
         : undefined,
       external_reference: orderId,
@@ -205,6 +194,46 @@ async function createMercadoPagoPreference({
   };
 }
 
+function allocateProviderItems(
+  items: Array<{ product_id: string; product_name: string; quantity: number; total_price_cents: number }>,
+  amountDueCents: number,
+) {
+  const total = items.reduce(
+    (sum, item) => sum + Math.max(0, Number(item.total_price_cents) || 0),
+    0,
+  );
+  if (total <= 0) throw new Error("O pedido não possui valor válido para pagamento.");
+
+  let allocated = 0;
+  return items
+    .map((item, index) => {
+      const price =
+        index === items.length - 1
+          ? amountDueCents - allocated
+          : Math.floor(
+              (amountDueCents * Math.max(0, Number(item.total_price_cents) || 0)) / total,
+            );
+      allocated += price;
+      return {
+        productId: String(item.product_id || `item-${index + 1}`),
+        description: `${item.quantity}x ${item.product_name}`.slice(0, 120),
+        quantity: 1,
+        price,
+      };
+    })
+    .filter((item) => item.price > 0);
+}
+
+export const getPaymentProviderAvailability = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { isInfinitePayEnabledForUser } = await import("@/lib/infinitePay.server");
+    return {
+      mercadopago: true,
+      infinitepay: isInfinitePayEnabledForUser(context.userId),
+    };
+  });
+
 async function fetchMercadoPagoPayment(paymentId: string) {
   const { fetchMercadoPagoPaymentSecure } = await import("@/lib/mercadoPagoApi.server");
   return fetchMercadoPagoPaymentSecure(paymentId);
@@ -219,7 +248,6 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
 
     const { data: userResult } = await supabase.auth.getUser();
     const payerEmail = userResult.user?.email ?? null;
-    const payerCreatedAt = userResult.user?.created_at ?? null;
 
     if (!payerEmail) {
       throw new Error("Sua conta precisa ter um e-mail válido para iniciar o pagamento.");
@@ -297,28 +325,63 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     }
 
     if (!data.payer) {
-      throw new Error("Preencha os dados de segurança para continuar com o Mercado Pago.");
+      throw new Error("Preencha os dados de segurança para continuar com o pagamento.");
     }
 
     const { data: orderItems, error: itemsError } = await supabaseAdmin
       .from("purchase_order_items")
-      .select("product_name, quantity, total_price_cents")
+      .select("product_id, product_name, quantity, total_price_cents")
       .eq("order_id", orderId);
     if (itemsError) throw new Error(itemsError.message);
 
-    const preference = await createMercadoPagoPreference({
-      orderId,
-      payerEmail,
-      payerCreatedAt,
-      payer: data.payer,
-      deviceId: data.deviceId,
-      items: orderItems || [],
-      amountDueCents,
-    });
+    let checkoutUrl = "";
+    let providerReference: string | null = null;
+    let preference: any = null;
 
-    const checkoutUrl = preference.init_point || preference.sandbox_init_point;
-    if (!checkoutUrl) {
-      throw new Error("Mercado Pago não retornou URL de checkout.");
+    if (data.provider === "infinitepay") {
+      const { createInfinitePayLink, isInfinitePayEnabledForUser } = await import(
+        "@/lib/infinitePay.server"
+      );
+      if (!isInfinitePayEnabledForUser(userId)) {
+        throw new Error("InfinitePay ainda não está disponível para esta conta.");
+      }
+      const baseUrl = getPublicBaseUrl();
+      const result = await createInfinitePayLink({
+        orderId,
+        items: allocateProviderItems(orderItems || [], amountDueCents).map(
+          ({ quantity, price, description }) => ({ quantity, price, description }),
+        ),
+        customer: {
+          name: data.payer.fullName,
+          email: payerEmail,
+          phone_number: `+55${data.payer.phone}`,
+        },
+        redirectUrl: `${baseUrl}/clubedascolecionadoras/pagamento/infinitepay?order=${orderId}`,
+        webhookUrl: `${baseUrl}/api/webhooks/infinitepay`,
+      });
+      checkoutUrl = String(result?.url || "");
+      providerReference = result?.invoice_slug ? String(result.invoice_slug) : null;
+      if (!checkoutUrl) throw new Error("InfinitePay não retornou URL de checkout.");
+    } else {
+      preference = await createMercadoPagoPreference({
+        orderId,
+        payerEmail,
+        payer: data.payer,
+        deviceId: data.deviceId,
+        items: orderItems || [],
+        amountDueCents,
+      });
+      checkoutUrl = preference.init_point || preference.sandbox_init_point;
+      providerReference = preference.id;
+      if (!checkoutUrl) throw new Error("Mercado Pago não retornou URL de checkout.");
+      console.info("[MercadoPago Checkout Signals]", {
+        orderId,
+        deviceIdPresent: Boolean(data.deviceId),
+        payerEmailPresent: Boolean(payerEmail),
+        payerIdentificationPresent: Boolean(data.payer?.cpf),
+        payerAddressPresent: Boolean(data.payer?.zipCode && data.payer?.streetName),
+        itemCount: (orderItems || []).length,
+      });
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -327,10 +390,12 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
         status: "pending_payment",
         payment_status: "pending",
         payment_pending_at: new Date().toISOString(),
-        mercado_pago_preference_id: preference.id,
-        init_point: preference.init_point || null,
-        sandbox_init_point: preference.sandbox_init_point || null,
+        mercado_pago_preference_id: preference?.id || null,
+        init_point: preference?.init_point || null,
+        sandbox_init_point: preference?.sandbox_init_point || null,
         checkout_url: checkoutUrl,
+        payment_provider: data.provider,
+        provider_checkout_reference: providerReference,
       })
       .eq("id", orderId)
       .eq("user_id", userId);
@@ -342,6 +407,7 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
       amountDueCents,
       pointsUsed,
       requiresMercadoPago: true,
+      provider: data.provider,
     };
   });
 
@@ -418,6 +484,42 @@ export const reconcileMercadoPagoPayment = createServerFn({ method: "POST" })
     );
     if (processError) throw new Error(processError.message);
 
+    return result;
+  });
+
+export const reconcileInfinitePayPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data) => reconcileInfinitePaySchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { checkInfinitePayPayment } = await import("@/lib/infinitePay.server");
+
+    const { data: order, error: orderError } = await supabase
+      .from("purchase_orders")
+      .select("id, payment_status, payment_provider")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (orderError) throw new Error(orderError.message);
+    if (!order) throw new Error("Pedido não encontrado.");
+    if (order.payment_provider !== "infinitepay") {
+      throw new Error("Este pedido não pertence à InfinitePay.");
+    }
+    if (order.payment_status === "approved") return { ok: true, already_approved: true };
+
+    const verified = await checkInfinitePayPayment({
+      orderNsu: data.orderId,
+      transactionNsu: data.transactionNsu,
+      slug: data.slug,
+    });
+    if (verified?.success !== true || verified?.paid !== true) {
+      return { ok: false, pending: true };
+    }
+
+    const { data: result, error } = await supabaseAdmin.rpc("process_infinitepay_payment", {
+      payment_payload: verified,
+    });
+    if (error) throw new Error(error.message);
     return result;
   });
 

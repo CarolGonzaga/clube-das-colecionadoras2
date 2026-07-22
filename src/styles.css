@@ -182,6 +182,20 @@
   gap: 8px;
 }
 
+.checkout-provider-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.checkout-provider-actions .checkout-pay-btn + .checkout-pay-btn {
+  margin-top: 0;
+}
+
+.infinitepay-pay-btn {
+  background: linear-gradient(135deg, #181818, #343434);
+  color: #fff;
+}
+
 .checkout-payer {
   margin-top: 16px;
   border-radius: 18px;

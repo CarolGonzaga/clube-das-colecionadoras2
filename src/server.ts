@@ -45,6 +45,10 @@ export default {
         const { handleMercadoPagoWebhook } = await import("./lib/mercadoPagoWebhook.server");
         return await handleMercadoPagoWebhook(request);
       }
+      if (url.pathname === "/api/webhooks/infinitepay") {
+        const { handleInfinitePayWebhook } = await import("./lib/infinitePayWebhook.server");
+        return await handleInfinitePayWebhook(request);
+      }
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

@@ -3,7 +3,11 @@ import { ArrowLeft, Coins, CreditCard, ShoppingBag, Tag, Trash2 } from "lucide-r
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
 import { clearCheckoutCart, readCheckoutCart, writeCheckoutCart, type CheckoutCartItem } from "@/lib/cartStorage";
-import { createMercadoPagoCheckout, validateCoupon } from "@/lib/checkout";
+import {
+  createMercadoPagoCheckout,
+  getPaymentProviderAvailability,
+  validateCoupon,
+} from "@/lib/checkout";
 import { dbService } from "@/lib/db";
 import { POINTS_BALANCE_CHANGED, emitPointsBalanceChanged, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 
@@ -22,7 +26,9 @@ function formatMoneyFromCents(cents: number) {
 }
 
 async function getMercadoPagoDeviceId() {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  // Give the official security script enough time on slower mobile networks.
+  // Checkout still remains available if privacy software blocks the script.
+  for (let attempt = 0; attempt < 50; attempt += 1) {
     const deviceId = window.MP_DEVICE_SESSION_ID?.trim();
     if (deviceId) return deviceId;
     await new Promise((resolve) => window.setTimeout(resolve, 100));
@@ -55,6 +61,8 @@ function CartPage() {
   const [walletPoints, setWalletPoints] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<"mercadopago" | "infinitepay" | null>(null);
+  const [infinitePayAvailable, setInfinitePayAvailable] = useState(false);
   const [payer, setPayer] = useState({
     fullName: "",
     cpf: "",
@@ -70,6 +78,9 @@ function CartPage() {
 
   useEffect(() => {
     setItems(readCheckoutCart());
+    getPaymentProviderAvailability()
+      .then((availability) => setInfinitePayAvailable(availability.infinitepay === true))
+      .catch(() => setInfinitePayAvailable(false));
   }, []);
 
   useEffect(() => {
@@ -183,7 +194,7 @@ function CartPage() {
     );
   };
 
-  const checkout = async () => {
+  const checkout = async (provider: "mercadopago" | "infinitepay" = "mercadopago") => {
     if (items.length === 0) {
       ui.toast("Seu carrinho está vazio.");
       return;
@@ -207,8 +218,9 @@ function CartPage() {
       }
     }
     setLoading(true);
+    setLoadingProvider(provider);
     try {
-      const deviceId = await getMercadoPagoDeviceId();
+      const deviceId = provider === "mercadopago" ? await getMercadoPagoDeviceId() : undefined;
       const result = await createMercadoPagoCheckout({
         data: {
           items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
@@ -216,6 +228,7 @@ function CartPage() {
           couponCode: appliedCoupon?.code,
           deviceId,
           payer: amountDueCents > 0 ? payer : undefined,
+          provider,
         },
       });
 
@@ -239,6 +252,7 @@ function CartPage() {
       ui.toast(error?.message || "Erro ao iniciar pagamento.");
     } finally {
       setLoading(false);
+      setLoadingProvider(null);
     }
   };
 
@@ -351,7 +365,7 @@ function CartPage() {
                 <div className="checkout-payer-heading">
                   <div>
                     <h2 id="checkout-payer-title">Dados para segurança do pagamento</h2>
-                    <p>Enviados ao Mercado Pago nesta compra e não armazenados pelo Clube.</p>
+                    <p>Enviados ao provedor escolhido nesta compra e não armazenados pelo Clube.</p>
                   </div>
                 </div>
                 <div className="checkout-payer-grid">
@@ -436,14 +450,44 @@ function CartPage() {
               <strong>{formatMoneyFromCents(amountDueCents)}</strong>
             </div>
 
-            <button type="button" className="btn checkout-pay-btn" disabled={loading} onClick={checkout}>
-              <CreditCard size={16} />
-              {loading
-                ? "Preparando pagamento..."
-                : amountDueCents > 0
-                  ? "Pagar com Mercado Pago"
-                  : "Finalizar com pontos"}
-            </button>
+            {amountDueCents === 0 ? (
+              <button
+                type="button"
+                className="btn checkout-pay-btn"
+                disabled={loading}
+                onClick={() => checkout("mercadopago")}
+              >
+                <CreditCard size={16} />
+                {loading ? "Finalizando..." : "Finalizar com pontos"}
+              </button>
+            ) : (
+              <div className="checkout-provider-actions">
+                <button
+                  type="button"
+                  className="btn checkout-pay-btn"
+                  disabled={loading}
+                  onClick={() => checkout("mercadopago")}
+                >
+                  <CreditCard size={16} />
+                  {loadingProvider === "mercadopago"
+                    ? "Preparando Mercado Pago..."
+                    : "Pagar com Mercado Pago"}
+                </button>
+                {infinitePayAvailable && (
+                  <button
+                    type="button"
+                    className="btn checkout-pay-btn infinitepay-pay-btn"
+                    disabled={loading}
+                    onClick={() => checkout("infinitepay")}
+                  >
+                    <CreditCard size={16} />
+                    {loadingProvider === "infinitepay"
+                      ? "Preparando InfinitePay..."
+                      : "Testar cartão pela InfinitePay"}
+                  </button>
+                )}
+              </div>
+            )}
           </>
         )}
       </section>
