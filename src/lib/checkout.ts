@@ -229,7 +229,11 @@ export const getPaymentProviderAvailability = createServerFn({ method: "GET" })
   .handler(async () => {
     const { isInfinitePayEnabled } = await import("@/lib/infinitePay.server");
     return {
-      mercadopago: true,
+      // Keep Mercado Pago visible but unavailable while its production
+      // credentials/webhook flow are under maintenance. Re-enable it from
+      // Vercel without another code change by setting this variable to "true".
+      mercadopago:
+        String(process.env.MERCADO_PAGO_CHECKOUT_ENABLED || "").trim().toLowerCase() === "true",
       infinitepay: isInfinitePayEnabled(),
     };
   });

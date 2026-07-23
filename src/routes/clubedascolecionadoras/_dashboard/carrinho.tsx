@@ -62,6 +62,7 @@ function CartPage() {
   const [usePoints, setUsePoints] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"mercadopago" | "infinitepay" | null>(null);
+  const [mercadoPagoAvailable, setMercadoPagoAvailable] = useState(false);
   const [infinitePayAvailable, setInfinitePayAvailable] = useState(false);
   const [payer, setPayer] = useState({
     fullName: "",
@@ -79,8 +80,14 @@ function CartPage() {
   useEffect(() => {
     setItems(readCheckoutCart());
     getPaymentProviderAvailability()
-      .then((availability) => setInfinitePayAvailable(availability.infinitepay === true))
-      .catch(() => setInfinitePayAvailable(false));
+      .then((availability) => {
+        setMercadoPagoAvailable(availability.mercadopago === true);
+        setInfinitePayAvailable(availability.infinitepay === true);
+      })
+      .catch(() => {
+        setMercadoPagoAvailable(false);
+        setInfinitePayAvailable(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -465,11 +472,18 @@ function CartPage() {
                 <button
                   type="button"
                   className="btn checkout-pay-btn"
-                  disabled={loading}
+                  disabled={loading || !mercadoPagoAvailable}
                   onClick={() => checkout("mercadopago")}
+                  title={
+                    mercadoPagoAvailable
+                      ? "Pagar com Mercado Pago"
+                      : "Mercado Pago temporariamente indisponível"
+                  }
                 >
                   <CreditCard size={16} />
-                  {loadingProvider === "mercadopago"
+                  {!mercadoPagoAvailable
+                    ? "Mercado Pago temporariamente indisponível"
+                    : loadingProvider === "mercadopago"
                     ? "Preparando Mercado Pago..."
                     : "Pagar com Mercado Pago"}
                 </button>
@@ -482,8 +496,8 @@ function CartPage() {
                   >
                     <CreditCard size={16} />
                     {loadingProvider === "infinitepay"
-                      ? "Preparando InfinitePay..."
-                      : "Pagar com InfinitePay"}
+                      ? "Abrindo pagamento..."
+                      : "Ir para pagamento"}
                   </button>
                 )}
               </div>
