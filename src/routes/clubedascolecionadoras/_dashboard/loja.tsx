@@ -2,11 +2,22 @@ import { createFileRoute, useLoaderData, useRouter } from "@tanstack/react-route
 import { Minus, Plus, ShoppingBag, ShoppingCart, Sparkles, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useUI } from "@/components/UIProvider";
-import { dbService } from "@/lib/db";
+import { dbService, supabase } from "@/lib/db";
 import { readCheckoutCart, writeCheckoutCart } from "@/lib/cartStorage";
 import { POINTS_BALANCE_CHANGED, readPointsBalanceFromEvent } from "@/lib/walletEvents";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
+  loader: async () => {
+    const { data, error } = await (supabase as any)
+      .from("shop_products")
+      .select("id,name,description,product_type,sticker_number,pack_count,stickers_per_pack,price_cents,point_price,image_url,display_section,active,sort_order")
+      .eq("active", true)
+      .neq("product_type", "exclusive")
+      .order("sort_order")
+      .order("name");
+    if (error) return [];
+    return data || [];
+  },
   component: LojaPage,
 });
 
@@ -71,6 +82,7 @@ function LojaPage() {
   const ui = useUI();
   const router = useRouter();
   const parentData = useLoaderData({ from: "/clubedascolecionadoras/_dashboard" });
+  const catalogProducts = Route.useLoaderData();
   const [cart, setCart] = useState<CartLine[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
@@ -95,7 +107,18 @@ function LojaPage() {
   const amountDue = amountDueCents / 100;
 
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
-  const featuredItems = STORE_ITEMS.filter(
+  const databaseItems: StoreItem[] = catalogProducts.map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description || "",
+    price: Number(item.price_cents || 0) / 100,
+    pointsPrice: Number(item.point_price || 0),
+    image: item.image_url || "/verso-card.png",
+    tag: item.product_type === "combo" ? "combo" : item.product_type === "single_random" ? "unitaria" : "pacote",
+    section: item.display_section || (item.product_type === "single_random" ? "unitarias" : "pacotes"),
+  }));
+  const effectiveStoreItems = databaseItems.length > 0 ? databaseItems : STORE_ITEMS;
+  const featuredItems = effectiveStoreItems.filter(
     (item) => storeFilter === "todos" || item.section === storeFilter,
   );
 
