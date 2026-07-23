@@ -7668,7 +7668,7 @@ html.dark .coupon-input-group input,
 html.dark .trade-flow-card,
 html.dark .trade-empty,
 html.dark .trade-redeem-section,
-html.dark .trade-nick-card,
+html.dark .trade-my-nick-bar,
 html.dark .trade-wallet-bar,
 html.dark .trade-confirm-summary,
 html.dark .points-help-modal {
@@ -7691,8 +7691,9 @@ html.dark .collection-row span,
 html.dark .coupon-input-group input,
 html.dark .trade-redeem-section h3,
 html.dark .trade-redeem-section p,
-html.dark .trade-nick-card b,
-html.dark .trade-nick-card span,
+html.dark .trade-my-nick-bar b,
+html.dark .trade-my-nick-bar span,
+html.dark .trade-my-nick-chip,
 html.dark .trade-wallet-label,
 html.dark .trade-wallet-balance,
 html.dark .trade-share-note,
@@ -7703,6 +7704,13 @@ html.dark .trade-confirm-side span,
 html.dark .points-help-modal h2,
 html.dark .points-help-modal p {
   color: #ffd6e8 !important;
+}
+
+html.dark .trade-copy-btn {
+  color: #f06ba8 !important;
+}
+html.dark .trade-copy-btn:hover {
+  background: rgba(240, 107, 168, 0.15) !important;
 }
 
 /* Dark mode inner sticker card container in trade requests & donations */
