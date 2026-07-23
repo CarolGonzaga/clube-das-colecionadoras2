@@ -7705,6 +7705,47 @@ html.dark .points-help-modal p {
   color: #ffd6e8 !important;
 }
 
+/* Dark mode inner sticker card container in trade requests & donations */
+html.dark .trade-request-stickers {
+  background: #2a102c !important;
+  border: 1px solid #5f1b43 !important;
+}
+
+html.dark .trade-req-sticker b {
+  color: #ffd6e8 !important;
+}
+
+html.dark .trade-req-sticker span,
+html.dark .trade-req-sticker .note {
+  color: #e99abe !important;
+}
+
+/* Dark mode Shop tag badge on duplicate sticker cards */
+html.dark .trade-shop-tag {
+  background: #1b3a24 !important;
+  color: #81c784 !important;
+  border: 1px solid #2e7d32 !important;
+}
+
+/* Dark mode trade status badges */
+html.dark .badge-pending {
+  background: #3e2e04 !important;
+  color: #ffe082 !important;
+  border: 1px solid #795548 !important;
+}
+html.dark .badge-accepted {
+  background: #1b3a24 !important;
+  color: #81c784 !important;
+  border: 1px solid #2e7d32 !important;
+}
+html.dark .badge-rejected,
+html.dark .badge-cancelled,
+html.dark .badge-expired {
+  background: #3a1525 !important;
+  color: #ef9a9a !important;
+  border: 1px solid #5f1b43 !important;
+}
+
 html.dark button[style*="gradient"],
 html.dark a[style*="gradient"],
 html.dark .btn:not(.soft):not(.outline),
