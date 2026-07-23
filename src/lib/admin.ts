@@ -37,14 +37,29 @@ export const getAdminDashboard = createServerFn({ method: "POST" })
   .validator((value) => dashboardSchema.parse(value))
   .handler(async ({ context, data }) => {
     const admin = await requireAdmin(context.userId);
-    const [metricsResult, ordersResult, couponsResult, productsResult] = await Promise.all([
+    const [metricsResult, ordersResult, couponsResult, productsResult, redeemCodesResult] = await Promise.all([
       admin.from("admin_user_metrics").select("*"),
       admin.from("purchase_orders").select("id,order_code,user_id,status,payment_status,payment_provider,total_cents,points_used,coupon_code,coupon_discount_cents,amount_due_cents,created_at,payment_approved_at,purchase_order_items(product_name,quantity,total_price_cents)").order("created_at", { ascending: false }).limit(200),
       admin.from("coupons").select("id,code,discount_percent,discount_cents,max_uses,max_uses_per_user,uses_count,expires_at,is_active,created_at").order("created_at", { ascending: false }),
       admin.from("shop_products").select("id,name,description,product_type,sticker_number,pack_count,stickers_per_pack,price_cents,point_price,currency,active,metadata,image_url,display_section,sort_order,created_at,updated_at").order("sort_order").order("name"),
+      admin.from("admin_redeem_code_metrics").select("*").order("active", { ascending: false }).order("code"),
     ]);
     for (const result of [metricsResult, ordersResult, couponsResult, productsResult]) {
       if (result.error) throw new Error(result.error.message);
+    }
+    let redeemCodes = redeemCodesResult.data || [];
+    if (redeemCodesResult.error) {
+      const fallback = await admin
+        .from("redeem_codes")
+        .select("code,label,element,active,max_redemptions,grant_all_pool,copies_per_sticker,redeem_pools(sticker_number)")
+        .order("active", { ascending: false })
+        .order("code");
+      if (fallback.error) throw new Error(fallback.error.message);
+      redeemCodes = (fallback.data || []).map((row: any) => ({
+        ...row,
+        redemption_count: null,
+        sticker_numbers: (row.redeem_pools || []).map((item: any) => item.sticker_number).sort((a: number, b: number) => a - b),
+      }));
     }
 
     const authUsers: any[] = [];
@@ -74,7 +89,7 @@ export const getAdminDashboard = createServerFn({ method: "POST" })
     const perPage = 50;
     const totalUsers = users.length;
     users = users.slice((data.page - 1) * perPage, data.page * perPage);
-    return { users, totalUsers, perPage, orders: ordersResult.data || [], coupons: couponsResult.data || [], products: productsResult.data || [] };
+    return { users, totalUsers, perPage, orders: ordersResult.data || [], coupons: couponsResult.data || [], products: productsResult.data || [], redeemCodes };
   });
 
 const couponSchema = z.object({
@@ -133,3 +148,21 @@ export const archiveAdminProduct = createServerFn({ method: "POST" }).middleware
   await audit(admin, context.userId, "product.archive", "shop_product", data.id, before, { ...before, active: false });
   return { success: true };
 });
+
+export const setAdminRedeemCodeActive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => z.object({ code: z.string().trim().min(1).max(80), active: z.boolean() }).parse(value))
+  .handler(async ({ context, data }) => {
+    const admin = await requireAdmin(context.userId);
+    const before = (await admin.from("redeem_codes").select("*").eq("code", data.code).maybeSingle()).data;
+    if (!before) throw new Error("Código de resgate não encontrado.");
+    const { data: saved, error } = await admin
+      .from("redeem_codes")
+      .update({ active: data.active })
+      .eq("code", data.code)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    await audit(admin, context.userId, data.active ? "redeem_code.activate" : "redeem_code.deactivate", "redeem_code", data.code, before, saved);
+    return saved;
+  });

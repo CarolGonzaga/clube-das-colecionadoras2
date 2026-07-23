@@ -1,8 +1,8 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { BadgePercent, Boxes, LayoutDashboard, LogOut, ReceiptText, Users } from "lucide-react";
+import { BadgePercent, Boxes, KeyRound, LayoutDashboard, LogOut, ReceiptText, Users } from "lucide-react";
 import "@/admin.css";
-import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct } from "@/lib/admin";
+import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct, setAdminRedeemCodeActive } from "@/lib/admin";
 import { dbService } from "@/lib/db";
 
 export const Route = createFileRoute("/clubedascolecionadoras/admin")({
@@ -19,8 +19,9 @@ function AdminPage() {
   const initial = Route.useLoaderData();
   const router = useRouter();
   const [data, setData] = useState(initial);
-  const [tab, setTab] = useState<"overview" | "users" | "sales" | "coupons" | "products">("overview");
+  const [tab, setTab] = useState<"overview" | "users" | "sales" | "coupons" | "redeemCodes" | "products">("overview");
   const [search, setSearch] = useState("");
+  const [codeSearch, setCodeSearch] = useState("");
   const [message, setMessage] = useState("");
   const [coupon, setCoupon] = useState<any>({ code: "", discountPercent: 10, expiresAt: "", maxUses: "", maxUsesPerUser: 1, active: true });
   const [product, setProduct] = useState<any>({ id: "", name: "", description: "", productType: "pack", stickerNumber: "", packCount: 1, stickersPerPack: 5, price: "", pointPrice: "", imageUrl: "", displaySection: "pacotes", sortOrder: 100, active: true });
@@ -40,6 +41,7 @@ function AdminPage() {
     ["users", "Usuárias", Users],
     ["sales", "Vendas", ReceiptText],
     ["coupons", "Cupons", BadgePercent],
+    ["redeemCodes", "Resgates", KeyRound],
     ["products", "Loja", Boxes],
   ] as const;
 
@@ -76,6 +78,21 @@ function AdminPage() {
 
     {tab === "coupons" && <section className="admin-panel"><h2>{coupon.id ? "Editar cupom" : "Novo cupom"}</h2><div className="admin-form"><label>Nome<input value={coupon.code} onChange={(e) => setCoupon({...coupon,code:e.target.value})}/></label><label>Desconto (%)<input type="number" value={coupon.discountPercent} onChange={(e) => setCoupon({...coupon,discountPercent:Number(e.target.value)})}/></label><label>Validade<input type="datetime-local" value={coupon.expiresAt || ""} onChange={(e) => setCoupon({...coupon,expiresAt:e.target.value})}/></label><label>Limite global<input type="number" value={coupon.maxUses} onChange={(e) => setCoupon({...coupon,maxUses:e.target.value})}/></label><label>Por usuária<input type="number" value={coupon.maxUsesPerUser} onChange={(e) => setCoupon({...coupon,maxUsesPerUser:e.target.value})}/></label><label><input type="checkbox" checked={coupon.active} onChange={(e) => setCoupon({...coupon,active:e.target.checked})}/> Ativo</label><button onClick={() => run(() => saveAdminCoupon({ data: {...coupon,expiresAt:coupon.expiresAt ? new Date(coupon.expiresAt).toISOString() : null,maxUses:coupon.maxUses ? Number(coupon.maxUses) : null,maxUsesPerUser:coupon.maxUsesPerUser ? Number(coupon.maxUsesPerUser) : null} }))}>Salvar</button><button onClick={() => setCoupon({ code: "", discountPercent: 10, expiresAt: "", maxUses: "", maxUsesPerUser: 1, active: true })}>Novo</button></div>
       <div className="admin-cards">{data.coupons.map((c:any)=><article key={c.id}><b>{c.code}</b><span>{c.discount_percent}% · {c.uses_count} usos</span><span>{c.is_active ? "Ativo" : "Pausado"} · até {date(c.expires_at)}</span><div><button onClick={()=>setCoupon({id:c.id,code:c.code,discountPercent:c.discount_percent,expiresAt:c.expires_at?.slice(0,16)||"",maxUses:c.max_uses||"",maxUsesPerUser:c.max_uses_per_user||"",active:c.is_active})}>Editar</button><button onClick={()=>setCoupon({code:`${c.code}COPIA`,discountPercent:c.discount_percent,expiresAt:"",maxUses:c.max_uses||"",maxUsesPerUser:c.max_uses_per_user||1,active:false})}>Duplicar</button><button onClick={()=>run(()=>deleteAdminCoupon({data:{id:c.id}}))}>Pausar</button></div></article>)}</div>
+    </section>}
+
+    {tab === "redeemCodes" && <section className="admin-panel">
+      <div className="admin-panel-title"><div><h2>Códigos de resgate</h2><p>Desativar um código impede novos resgates sem apagar o histórico.</p></div><span className="admin-code-total">{data.redeemCodes.filter((item:any)=>item.active).length} ativos</span></div>
+      <div className="admin-toolbar"><input value={codeSearch} onChange={(event)=>setCodeSearch(event.target.value)} placeholder="Buscar por código, nome ou figurinha"/></div>
+      <div className="admin-table-wrap"><table><thead><tr><th>Código</th><th>Pacote</th><th>Conteúdo</th><th>Resgates</th><th>Status</th><th>Ação</th></tr></thead><tbody>
+        {data.redeemCodes.filter((item:any)=>{const term=codeSearch.trim().toLocaleLowerCase("pt-BR");return !term || item.code.toLocaleLowerCase("pt-BR").includes(term) || String(item.label||"").toLocaleLowerCase("pt-BR").includes(term) || (item.sticker_numbers||[]).join(",").includes(term)}).map((item:any)=><tr key={item.code}>
+          <td><b>{item.code}</b></td>
+          <td>{item.label || (item.grant_all_pool ? "Pacote definido" : "Pacote aleatório")}<small>{item.grant_all_pool ? "Conteúdo exato" : "Sorteio pelo pool"}</small></td>
+          <td><span className="admin-code-content">{(item.sticker_numbers||[]).length ? (item.sticker_numbers||[]).map((number:number)=>`#${number}`).join(", ") : "Pool aleatório"}</span></td>
+          <td>{item.redemption_count ?? "—"}<small>{item.max_redemptions ? `Limite: ${item.max_redemptions}` : "Sem limite global"}</small></td>
+          <td><span className={`admin-pill ${item.active ? "approved" : ""}`}>{item.active ? "Ativo" : "Inativo"}</span></td>
+          <td><button className={item.active ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setAdminRedeemCodeActive({data:{code:item.code,active:!item.active}}))}>{item.active ? "Desativar" : "Ativar"}</button></td>
+        </tr>)}
+      </tbody></table></div>
     </section>}
 
     {tab === "products" && <section className="admin-panel"><h2>{data.products.some((p:any)=>p.id===product.id) ? "Editar produto" : "Novo produto"}</h2><div className="admin-form"><label>ID<input value={product.id} onChange={(e)=>setProduct({...product,id:e.target.value})}/></label><label>Nome<input value={product.name} onChange={(e)=>setProduct({...product,name:e.target.value})}/></label><label>Descrição<textarea value={product.description} onChange={(e)=>setProduct({...product,description:e.target.value})}/></label><label>Imagem (URL/caminho)<input value={product.imageUrl} onChange={(e)=>setProduct({...product,imageUrl:e.target.value})}/></label><label>Preço (R$)<input type="number" step="0.01" value={product.price} onChange={(e)=>setProduct({...product,price:e.target.value})}/></label><label>Pontos<input type="number" value={product.pointPrice} onChange={(e)=>setProduct({...product,pointPrice:e.target.value})}/></label><label>Tipo<select value={product.productType} onChange={(e)=>setProduct({...product,productType:e.target.value})}><option value="pack">Pacote</option><option value="combo">Combo</option><option value="single_random">Unitária</option><option value="exclusive">Exclusiva</option></select></label><label>Pacotes<input type="number" value={product.packCount} onChange={(e)=>setProduct({...product,packCount:Number(e.target.value)})}/></label><label>Figurinhas/pacote<input type="number" value={product.stickersPerPack} onChange={(e)=>setProduct({...product,stickersPerPack:Number(e.target.value)})}/></label><label>Nº exclusiva<input type="number" value={product.stickerNumber} onChange={(e)=>setProduct({...product,stickerNumber:e.target.value})}/></label><label><input type="checkbox" checked={product.active} onChange={(e)=>setProduct({...product,active:e.target.checked})}/> Ativo</label><button onClick={()=>run(()=>saveAdminProduct({data:{...product,stickerNumber:product.stickerNumber?Number(product.stickerNumber):null,priceCents:Math.round(Number(product.price)*100),pointPrice:Number(product.pointPrice||0),sortOrder:Number(product.sortOrder||100)}}))}>Salvar</button></div>
