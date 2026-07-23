@@ -63,8 +63,7 @@ begin
       'title', 'Álbum base completo!',
       'rewardMsg', 'Parabéns! Você completou as 359 figurinhas base e desbloqueou a figurinha bônus de agradecimento.'
     )
-  ),
-      updated_at = now()
+  )
   where id = new.user_id;
 
   return new;
@@ -130,8 +129,7 @@ set reveals_queue = coalesce(p.reveals_queue, '[]'::jsonb) || jsonb_build_array(
     'title', 'Álbum base completo!',
     'rewardMsg', 'Parabéns! Você completou as 359 figurinhas base e desbloqueou a figurinha bônus de agradecimento.'
   )
-),
-    updated_at = now()
+  )
 from reveal_users ru
 where p.id = ru.user_id;
 
