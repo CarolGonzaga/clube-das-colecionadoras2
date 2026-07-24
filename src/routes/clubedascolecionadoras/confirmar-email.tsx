@@ -9,6 +9,9 @@ const searchSchema = z.object({
   type: z.string().optional(),
 });
 
+const MIN_OTP_LENGTH = 6;
+const MAX_OTP_LENGTH = 8;
+
 export const Route = createFileRoute("/clubedascolecionadoras/confirmar-email")({
   ssr: false,
   validateSearch: searchSchema,
@@ -27,8 +30,18 @@ function ConfirmarEmailPage() {
 
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !code) {
+    const normalizedCode = code.replace(/\D/g, "");
+
+    if (!email || !normalizedCode) {
       setError("Preencha o e-mail e o código de verificação.");
+      return;
+    }
+
+    if (
+      normalizedCode.length < MIN_OTP_LENGTH ||
+      normalizedCode.length > MAX_OTP_LENGTH
+    ) {
+      setError("Digite o código completo de 6 a 8 dígitos enviado por e-mail.");
       return;
     }
 
@@ -38,7 +51,7 @@ function ConfirmarEmailPage() {
     try {
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email: email.trim(),
-        token: code.trim(),
+        token: normalizedCode,
         type: type as any,
       });
 
@@ -104,7 +117,8 @@ function ConfirmarEmailPage() {
             </div>
 
             <p className="text-xs text-[#bf2a5e] font-semibold leading-relaxed px-2 mb-2">
-              Enviamos um código de 6 dígitos para o seu e-mail. Por favor, insira-o abaixo para confirmar sua conta.
+              Enviamos um código de confirmação para o seu e-mail. Digite os
+              6 a 8 dígitos abaixo para confirmar sua conta.
             </p>
 
             <form onSubmit={handleConfirm} className="w-full flex flex-col gap-3">
@@ -124,10 +138,18 @@ function ConfirmarEmailPage() {
               <div>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   placeholder="Código"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  maxLength={6}
+                  onChange={(e) =>
+                    setCode(
+                      e.target.value.replace(/\D/g, "").slice(0, MAX_OTP_LENGTH),
+                    )
+                  }
+                  minLength={MIN_OTP_LENGTH}
+                  maxLength={MAX_OTP_LENGTH}
+                  pattern={`\\d{${MIN_OTP_LENGTH},${MAX_OTP_LENGTH}}`}
                   className="w-full p-3 rounded-xl border border-rose-soft focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-center text-xl tracking-[0.3em] font-mono font-bold bg-white/70 text-berry"
                   required
                 />
@@ -135,7 +157,12 @@ function ConfirmarEmailPage() {
 
               <button
                 type="submit"
-                disabled={loading || !email || !code || code.length < 6}
+                disabled={
+                  loading ||
+                  !email ||
+                  code.length < MIN_OTP_LENGTH ||
+                  code.length > MAX_OTP_LENGTH
+                }
                 className="w-full py-3.5 rounded-2xl text-xs font-bold text-white shadow-[var(--shadow-soft)] transition-transform active:scale-[0.98] mt-2 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: "var(--gradient-berry)" }}
               >
