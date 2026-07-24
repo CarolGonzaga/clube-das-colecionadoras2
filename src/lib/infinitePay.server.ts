@@ -14,6 +14,16 @@ export function isInfinitePayEnabled() {
   return clean(process.env.INFINITEPAY_ENABLED).toLowerCase() === "true";
 }
 
+export function getInfinitePayWebhookUrl(baseUrl: string) {
+  const configured = clean(process.env.INFINITEPAY_WEBHOOK_URL);
+  const candidate = configured || new URL("/api/webhooks/infinitepay", baseUrl).toString();
+  const url = new URL(candidate);
+  if (url.protocol !== "https:" && url.hostname !== "localhost") {
+    throw new Error("INFINITEPAY_WEBHOOK_URL precisa usar HTTPS.");
+  }
+  return url.toString();
+}
+
 async function parseResponse(response: Response) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {

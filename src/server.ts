@@ -41,11 +41,11 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
-      if (url.pathname === "/api/webhooks/mercado-pago") {
+      if (url.pathname.endsWith("/api/webhooks/mercado-pago")) {
         const { handleMercadoPagoWebhook } = await import("./lib/mercadoPagoWebhook.server");
         return await handleMercadoPagoWebhook(request);
       }
-      if (url.pathname === "/api/webhooks/infinitepay") {
+      if (url.pathname.endsWith("/api/webhooks/infinitepay")) {
         const { handleInfinitePayWebhook } = await import("./lib/infinitePayWebhook.server");
         return await handleInfinitePayWebhook(request);
       }

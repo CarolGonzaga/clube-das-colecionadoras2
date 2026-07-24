@@ -75,7 +75,7 @@ const reconcilePaymentSchema = z.object({
 
 const reconcileInfinitePaySchema = z.object({
   orderId: z.string().uuid(),
-  transactionNsu: z.string().uuid(),
+  transactionNsu: z.string().trim().min(1).max(200),
   slug: z.string().min(1).max(200),
 });
 
@@ -343,7 +343,7 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     let preference: any = null;
 
     if (data.provider === "infinitepay") {
-      const { createInfinitePayLink, isInfinitePayEnabled } = await import(
+      const { createInfinitePayLink, getInfinitePayWebhookUrl, isInfinitePayEnabled } = await import(
         "@/lib/infinitePay.server"
       );
       if (!isInfinitePayEnabled()) {
@@ -361,7 +361,7 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
           phone_number: `+55${data.payer.phone}`,
         },
         redirectUrl: `${baseUrl}/clubedascolecionadoras/pagamento/infinitepay?order=${orderId}`,
-        webhookUrl: `${baseUrl}/api/webhooks/infinitepay`,
+        webhookUrl: getInfinitePayWebhookUrl(baseUrl),
       });
       checkoutUrl = String(result?.url || "");
       providerReference = result?.invoice_slug ? String(result.invoice_slug) : null;
