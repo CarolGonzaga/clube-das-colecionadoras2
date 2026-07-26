@@ -60,7 +60,9 @@ export default function QuizClient({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answering, setAnswering] = useState<{ [key: number]: boolean }>({});
   const [timeLeft, setTimeLeft] = useState(180);
-  const [timerStatus, setTimerStatus] = useState<"idle" | "starting" | "running" | "stopped" | "error">("idle");
+  const [timerStatus, setTimerStatus] = useState<
+    "idle" | "starting" | "running" | "stopped" | "error"
+  >("idle");
 
   const activeSessionRef = React.useRef(activeSession);
   const currentIndexRef = React.useRef(currentIndex);
@@ -151,7 +153,9 @@ export default function QuizClient({
 
     if (!contentIsReady) {
       setTimerStatus("error");
-      ui.toast("A pergunta não foi carregada corretamente. Atualize a página para tentar novamente.");
+      ui.toast(
+        "A pergunta não foi carregada corretamente. Atualize a página para tentar novamente.",
+      );
       return;
     }
 
@@ -364,7 +368,10 @@ export default function QuizClient({
   // LANDING PAGE SCREEN
   if (!activeSession || questions.length === 0) {
     const isCompleted = perguntasRespondidasCorretasCount >= 20;
-    const isTodayBlocked = !quizUnlimited && tentativasHojeCount >= 4;
+    const unansweredQuestionsCount = questions.filter((question) => !question.answered).length;
+    const answeredAllAvailableQuestions = questions.length > 0 && unansweredQuestionsCount === 0;
+    const isTodayBlocked =
+      !quizUnlimited && (tentativasHojeCount >= 4 || answeredAllAvailableQuestions);
     const hasNoPendingQuestions = questions.length === 0 && !isCompleted;
 
     return (
@@ -406,8 +413,11 @@ export default function QuizClient({
               </span>
               <span className="text-sm font-extrabold text-[#9e1b4a] dark:text-pink-300">
                 {quizUnlimited
-                  ? `${questions.filter((question) => !question.answered).length} questões liberadas`
-                  : `${Math.max(0, 4 - tentativasHojeCount)} de 4 restantes hoje`}
+                  ? `${unansweredQuestionsCount} questões liberadas`
+                  : `${Math.min(
+                      unansweredQuestionsCount,
+                      Math.max(0, 4 - tentativasHojeCount),
+                    )} de 4 restantes hoje`}
               </span>
             </div>
           </div>
@@ -442,8 +452,8 @@ export default function QuizClient({
                 <Trophy className="w-5 h-5 text-emerald-600" /> Parabéns! Quiz Concluído!
               </p>
               <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 leading-relaxed font-sans">
-                Você acertou todas as 20 perguntas do quiz! Continue completando as figurinhas de 1 a
-                193 para concluir o Álbum Básico e desbloquear o Gerador de Pôster.
+                Você acertou todas as 20 perguntas do quiz! Continue completando as figurinhas de 1
+                a 193 para concluir o Álbum Básico e desbloquear o Gerador de Pôster.
               </p>
             </div>
           ) : hasNoPendingQuestions ? (
@@ -452,7 +462,8 @@ export default function QuizClient({
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Nenhuma pergunta pendente
               </p>
               <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-1.5 leading-relaxed font-sans">
-                Todas as perguntas disponíveis para o seu álbum já foram respondidas ou desbloqueadas.
+                Todas as perguntas disponíveis para o seu álbum já foram respondidas ou
+                desbloqueadas.
               </p>
             </div>
           ) : isTodayBlocked ? (
@@ -461,7 +472,9 @@ export default function QuizClient({
                 <Hourglass className="w-4 h-4 text-amber-600 animate-pulse" /> Volte Amanhã!
               </p>
               <p className="text-[11px] text-amber-700 dark:text-zinc-400 font-medium mt-1.5 leading-relaxed font-sans">
-                Você já usou suas 4 tentativas do dia. Suas perguntas serão resetadas amanhã!
+                {answeredAllAvailableQuestions
+                  ? "Você já respondeu todas as perguntas disponíveis hoje. As que não foram acertadas voltarão amanhã!"
+                  : "Você já usou suas 4 tentativas do dia. Suas perguntas serão resetadas amanhã!"}
               </p>
             </div>
           ) : (
