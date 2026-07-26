@@ -1,6 +1,16 @@
 // @ts-nocheck
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { Sticker, Profile, UserSticker, Style, UserStyle, RevealItem, Donation, TradeRequest, TradeUserLookup } from "./types";
+import {
+  Sticker,
+  Profile,
+  UserSticker,
+  Style,
+  UserStyle,
+  RevealItem,
+  Donation,
+  TradeRequest,
+  TradeUserLookup,
+} from "./types";
 import { getLoginUrl } from "./urls";
 import { SEED_STICKERS } from "./seeds";
 import { canHaveRareVersion } from "./albumRules";
@@ -24,10 +34,15 @@ export function normalizePassword(input: string): string {
 export function validatePasswordOrPin(input: string): string | null {
   if (/^\d+$/.test(input)) {
     if (input.length < 4) return "O PIN deve ter no mínimo 4 números.";
-    if (/(\d)\1{3,}/.test(input)) return "O PIN não pode ter quatro números repetidos em sequência.";
+    if (/(\d)\1{3,}/.test(input))
+      return "O PIN não pode ter quatro números repetidos em sequência.";
     const digits = [...input].map(Number);
-    const ascending = digits.every((digit, index) => index === 0 || digit === digits[index - 1] + 1);
-    const descending = digits.every((digit, index) => index === 0 || digit === digits[index - 1] - 1);
+    const ascending = digits.every(
+      (digit, index) => index === 0 || digit === digits[index - 1] + 1,
+    );
+    const descending = digits.every(
+      (digit, index) => index === 0 || digit === digits[index - 1] - 1,
+    );
     if (ascending || descending) return "O PIN não pode ser uma sequência numérica.";
     return null;
   }
@@ -53,6 +68,9 @@ const PUBLIC_MURAL_CACHE_TTL_MS = 60_000;
 let publicMuralCache: any[] | null = null;
 let publicMuralCachedAt = 0;
 let publicMuralRequest: Promise<any[]> | null = null;
+let completedCollectorsCache: any[] | null = null;
+let completedCollectorsCachedAt = 0;
+let completedCollectorsRequest: Promise<any[]> | null = null;
 
 export const dbService = {
   isMock: () => false,
@@ -263,6 +281,29 @@ export const dbService = {
     }
   },
 
+  async getCompletedCollectorsRanking(): Promise<any[]> {
+    const now = Date.now();
+    if (completedCollectorsCache && now - completedCollectorsCachedAt < PUBLIC_MURAL_CACHE_TTL_MS) {
+      return completedCollectorsCache;
+    }
+
+    if (completedCollectorsRequest) return completedCollectorsRequest;
+
+    completedCollectorsRequest = (async () => {
+      const { data, error } = await supabase.rpc("get_completed_collectors_ranking");
+      if (error) throw new Error(error.message);
+      completedCollectorsCache = (data || []).slice(0, 100);
+      completedCollectorsCachedAt = Date.now();
+      return completedCollectorsCache;
+    })();
+
+    try {
+      return await completedCollectorsRequest;
+    } finally {
+      completedCollectorsRequest = null;
+    }
+  },
+
   async getOwnedStickerCount(userId: string): Promise<number> {
     const { count, error } = await supabase
       .from("user_stickers")
@@ -360,7 +401,11 @@ export const dbService = {
     }
   },
 
-  async claimAlbumCompletionReward(): Promise<{ claimed: boolean; rare_numbers: number[]; message: string }> {
+  async claimAlbumCompletionReward(): Promise<{
+    claimed: boolean;
+    rare_numbers: number[];
+    message: string;
+  }> {
     const { data, error } = await supabase.rpc("claim_album_completion_reward");
     if (error) throw new Error(error.message);
     return data;
@@ -652,7 +697,9 @@ export const dbService = {
     if (error) throw new Error(error.message);
   },
 
-  async getCompletedTags(): Promise<{ tag_name: string; claimed: boolean; completed_at: string }[]> {
+  async getCompletedTags(): Promise<
+    { tag_name: string; claimed: boolean; completed_at: string }[]
+  > {
     const { data, error } = await supabase
       .from("completed_tags")
       .select("tag_name, claimed, completed_at");
@@ -765,13 +812,29 @@ export const dbService = {
     const orderIds = (orders || []).map((order: any) => order.id);
     if (orderIds.length === 0) return [];
 
-    const [{ data: items, error: itemsError }, { data: packs, error: packsError }, { data: packStickers, error: stickersError }, { data: payments, error: paymentsError }] =
-      await Promise.all([
-        supabase.from("purchase_order_items").select("*").in("order_id", orderIds),
-        supabase.from("purchase_packs").select("*").in("order_id", orderIds).order("pack_number", { ascending: true }),
-        supabase.from("purchase_pack_stickers").select("*, stickers(number, slug, name, author, ilustrator)").in("order_id", orderIds).order("position", { ascending: true }),
-        supabase.from("purchase_payments").select("*").in("order_id", orderIds).order("created_at", { ascending: false }),
-      ]);
+    const [
+      { data: items, error: itemsError },
+      { data: packs, error: packsError },
+      { data: packStickers, error: stickersError },
+      { data: payments, error: paymentsError },
+    ] = await Promise.all([
+      supabase.from("purchase_order_items").select("*").in("order_id", orderIds),
+      supabase
+        .from("purchase_packs")
+        .select("*")
+        .in("order_id", orderIds)
+        .order("pack_number", { ascending: true }),
+      supabase
+        .from("purchase_pack_stickers")
+        .select("*, stickers(number, slug, name, author, ilustrator)")
+        .in("order_id", orderIds)
+        .order("position", { ascending: true }),
+      supabase
+        .from("purchase_payments")
+        .select("*")
+        .in("order_id", orderIds)
+        .order("created_at", { ascending: false }),
+    ]);
 
     if (itemsError) throw new Error(itemsError.message);
     if (packsError) throw new Error(packsError.message);
@@ -823,4 +886,3 @@ export const dbService = {
     return data;
   },
 };
-

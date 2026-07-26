@@ -12,6 +12,9 @@ interface MuralUser {
   avatar: string | null;
   count: number;
   pct: number;
+  quiz_correct?: number;
+  quiz_errors?: number;
+  milestone_reached_at?: string | null;
   created_at?: string;
 }
 
@@ -21,30 +24,44 @@ const STAR =
 function isImageAvatar(avatar: string | null) {
   return Boolean(
     avatar &&
-      (avatar.startsWith("http") || avatar.startsWith("/avatar/") || avatar.startsWith("data:image/")),
+    (avatar.startsWith("http") ||
+      avatar.startsWith("/avatar/") ||
+      avatar.startsWith("data:image/")),
   );
 }
 
 interface MuralClientProps {
   profile: Profile;
   muralList: MuralUser[];
+  completedCollectors: MuralUser[];
   ownedCount: number;
 }
 
-export default function MuralClient({ profile, muralList, ownedCount }: MuralClientProps) {
+export default function MuralClient({
+  profile,
+  muralList,
+  completedCollectors,
+  ownedCount,
+}: MuralClientProps) {
   const [list, setList] = useState<MuralUser[]>(muralList.slice(0, 20));
+  const [completedList, setCompletedList] = useState<MuralUser[]>(
+    completedCollectors.slice(0, 100),
+  );
+  const [activeRanking, setActiveRanking] = useState<"general" | "completed">("general");
   const [liveOwnedCount, setLiveOwnedCount] = useState(ownedCount);
 
   useEffect(() => {
     let active = true;
     const fetchMural = async () => {
       try {
-        const [freshList, freshOwnedCount] = await Promise.all([
+        const [freshList, freshCompletedList, freshOwnedCount] = await Promise.all([
           dbService.getMural(),
+          dbService.getCompletedCollectorsRanking(),
           dbService.getOwnedStickerCount(profile.id),
         ]);
         if (active) {
           setList(freshList.slice(0, 20));
+          setCompletedList(freshCompletedList.slice(0, 100));
           setLiveOwnedCount(freshOwnedCount);
         }
       } catch (e) {
@@ -84,6 +101,8 @@ export default function MuralClient({ profile, muralList, ownedCount }: MuralCli
       supabase.removeChannel(inventoryChannel);
     };
   }, [profile.id]);
+  const visibleList = activeRanking === "general" ? list : completedList;
+  const isCompletedRanking = activeRanking === "completed";
   // Status text and title icon mapping
   const { statusText, titleIcon } = getCollectionStatus(liveOwnedCount);
 
@@ -130,7 +149,11 @@ export default function MuralClient({ profile, muralList, ownedCount }: MuralCli
             {/* Protruding Level Badge */}
             <div className="w-[84px] h-[84px] rounded-full mural-title-badge-outer border flex items-center justify-center shadow-sm -ml-8 flex-shrink-0 z-10">
               <div className="w-[66px] h-[66px] rounded-full mural-title-badge-inner flex items-center justify-center">
-                <img src={titleIcon} alt={statusText} className="w-[42px] h-[42px] object-contain" />
+                <img
+                  src={titleIcon}
+                  alt={statusText}
+                  className="w-[42px] h-[42px] object-contain"
+                />
               </div>
             </div>
             <h2 className="flex-1 text-center text-sm font-extrabold text-[#5c0d2b] tracking-wider uppercase px-2 font-fredoka">
@@ -144,30 +167,70 @@ export default function MuralClient({ profile, muralList, ownedCount }: MuralCli
       <div className="mb-2 mt-5">
         <p className="text-[11px] font-bold text-[#9e1b4a] flex items-center gap-1">
           <img src={STAR} alt="" className="w-3 h-3 opacity-80" />
-          Ranking Geral
+          {isCompletedRanking ? "Ranking das Colecionadoras" : "Ranking Geral"}
         </p>
+      </div>
+
+      <div
+        className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-pink-200/60 bg-pink-50/70 p-1"
+        role="tablist"
+        aria-label="Categorias do ranking"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeRanking === "general"}
+          onClick={() => setActiveRanking("general")}
+          className={`rounded-lg px-2 py-2 text-[10px] font-extrabold transition-colors ${
+            activeRanking === "general"
+              ? "bg-white text-[#9e1b4a] shadow-sm"
+              : "text-[#bf2a5e]/65 hover:text-[#9e1b4a]"
+          }`}
+        >
+          Ranking geral
+          <span className="mt-0.5 block text-[8px] font-semibold opacity-70">
+            Em andamento · Top 20
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeRanking === "completed"}
+          onClick={() => setActiveRanking("completed")}
+          className={`rounded-lg px-2 py-2 text-[10px] font-extrabold transition-colors ${
+            activeRanking === "completed"
+              ? "bg-white text-[#9e1b4a] shadow-sm"
+              : "text-[#bf2a5e]/65 hover:text-[#9e1b4a]"
+          }`}
+        >
+          Ranking das colecionadoras
+          <span className="mt-0.5 block text-[8px] font-semibold opacity-70">
+            Álbuns completos · Top 100
+          </span>
+        </button>
       </div>
 
       {/* Leaderboard Card Container */}
       <div className="bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4 space-y-4">
-        {list.length === 0 ? (
+        {visibleList.length === 0 ? (
           <div className="py-8 text-center text-xs font-semibold text-[#9e1b4a]">
-            Ninguém no mural ainda. Seja a primeira!
+            {isCompletedRanking
+              ? "Nenhuma colecionadora concluiu o álbum nesta categoria ainda."
+              : "Ninguém no mural ainda. Seja a primeira!"}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {list.map((m, index) => {
+            {visibleList.map((m, index) => {
               const isCurrentUser = m.id === profile.id;
-              const displayAvatar =
-                isImageAvatar(m.avatar) ? (
-                  <img
-                    src={m.avatar || undefined}
-                    alt={m.nick}
-                    className="rounded-full w-full h-full object-cover"
-                  />
-                ) : (
-                  m.avatar || (m.nick[0] || "?").toUpperCase()
-                );
+              const displayAvatar = isImageAvatar(m.avatar) ? (
+                <img
+                  src={m.avatar || undefined}
+                  alt={m.nick}
+                  className="rounded-full w-full h-full object-cover"
+                />
+              ) : (
+                m.avatar || (m.nick[0] || "?").toUpperCase()
+              );
 
               const isFirstPlace = index === 0;
               let cardStyles = "bg-white border-pink-100/50 hover:bg-pink-50/20";
@@ -217,23 +280,32 @@ export default function MuralClient({ profile, muralList, ownedCount }: MuralCli
                       )}
                     </div>
 
-                    {/* Progress Bar & Subtitle */}
-                    <div className="mt-1 flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-pink-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-pink-400 to-[#bf2a5e] rounded-full"
-                          style={{ width: `${Math.min(displayPct, 100)}%` }}
-                        />
+                    {isCompletedRanking ? (
+                      <div className="mt-1 text-[9px] font-semibold text-[#bf2a5e]/75">
+                        Quiz: {m.quiz_correct ?? 0}/20
+                        <span className="mx-1">·</span>
+                        {m.quiz_errors ?? 0} {m.quiz_errors === 1 ? "erro" : "erros"}
                       </div>
-                      <span className="text-[10px] text-[#bf2a5e] font-bold whitespace-nowrap flex-shrink-0">
-                        {m.count}/360
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-pink-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-pink-400 to-[#bf2a5e] rounded-full"
+                            style={{ width: `${Math.min(displayPct, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-[#bf2a5e] font-bold whitespace-nowrap flex-shrink-0">
+                          {m.count}/360
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Percentage Column */}
                   <div className="flex-shrink-0 text-right">
-                    <span className="text-sm font-extrabold text-berry">{displayPct}%</span>
+                    <span className="text-sm font-extrabold text-berry">
+                      {isCompletedRanking ? "100%" : `${displayPct}%`}
+                    </span>
                   </div>
                 </div>
               );
@@ -245,8 +317,9 @@ export default function MuralClient({ profile, muralList, ownedCount }: MuralCli
       {/* Info note */}
       <div className="mt-4 px-2 text-center">
         <p className="text-[10px] text-berry/60 leading-relaxed">
-          Tire suas dúvidas ou troque figurinhas repetidas com outras colecionadoras. Em caso de
-          empate no progresso, o desempate prioriza a quantidade de figurinhas raras e respostas corretas no quiz.
+          {isCompletedRanking
+            ? "Entre álbuns completos, a classificação considera questões únicas corretas, menos erros no quiz e quem alcançou 360 figurinhas primeiro."
+            : "No ranking geral, avançam primeiro as maiores coleções. Empates consideram questões únicas corretas, menos erros no quiz e quem alcançou o progresso primeiro."}
         </p>
       </div>
     </div>

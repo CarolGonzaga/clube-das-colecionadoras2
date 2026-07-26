@@ -21,6 +21,7 @@ export default function PublicProfileClient({
   const [isMounted, setIsMounted] = useState(false);
   const [userStickers, setUserStickers] = useState<UserSticker[]>(initialUserStickers);
   const [muralList, setMuralList] = useState<any[]>(initialMuralList);
+  const [exactRankingPosition, setExactRankingPosition] = useState<number | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -30,10 +31,12 @@ export default function PublicProfileClient({
     Promise.all([
       dbService.getPublicUserStickers(profile.id).catch(() => null),
       dbService.getPublicMural().catch(() => null),
-    ]).then(([freshStickers, freshMural]) => {
+      dbService.getUserMuralRank(profile.id).catch(() => null),
+    ]).then(([freshStickers, freshMural, freshRank]) => {
       if (!active) return;
       if (freshStickers) setUserStickers(freshStickers);
       if (freshMural) setMuralList(freshMural);
+      if (freshRank !== null) setExactRankingPosition(freshRank);
     });
 
     return () => {
@@ -48,7 +51,9 @@ export default function PublicProfileClient({
     return s.copies > 1 ? acc + (s.copies - 1) : acc;
   }, 0);
 
-  const rareCount = userStickers.filter((us) => us.copies > 0 && isRareStickerVersion(us.sticker_number, us)).length;
+  const rareCount = userStickers.filter(
+    (us) => us.copies > 0 && isRareStickerVersion(us.sticker_number, us),
+  ).length;
 
   const quizStickersTotal = stickers.filter((s) => s.type === "quiz").length;
   const quizStickersOwned = userStickers.filter((us) => {
@@ -59,8 +64,9 @@ export default function PublicProfileClient({
 
   // Mural ranking position
   const rankingIndex = muralList.findIndex((m) => m.id === profile.id);
-  const rankingPosition = rankingIndex !== -1 ? rankingIndex + 1 : null;
-  const inTop20 = rankingPosition !== null && rankingPosition <= 20;
+  const rankingPosition = exactRankingPosition ?? (rankingIndex !== -1 ? rankingIndex + 1 : null);
+  const rankingLimit = ownedUniqueStickers >= 360 ? 100 : 20;
+  const isRanked = rankingPosition !== null && rankingPosition <= rankingLimit;
 
   // Visual Theme based on completion
   const pct = Math.round((ownedUniqueStickers / 100) * 100);
@@ -181,7 +187,7 @@ export default function PublicProfileClient({
           </div>
         </div>
 
-        {inTop20 && (
+        {isRanked && (
           <div className="w-full bg-gradient-to-r from-yellow-100 to-amber-50 border border-yellow-200 rounded-2xl p-4 flex items-center justify-between mb-8 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-white shadow-md">
@@ -189,7 +195,7 @@ export default function PublicProfileClient({
               </div>
               <div>
                 <p className="text-xs font-bold text-yellow-800 uppercase tracking-wider">
-                  Ranking do Mural
+                  {ownedUniqueStickers >= 360 ? "Ranking das Colecionadoras" : "Ranking Geral"}
                 </p>
                 <p className="text-sm font-semibold text-yellow-900">
                   Posição: <span className="font-black text-lg">#{rankingPosition}</span>
