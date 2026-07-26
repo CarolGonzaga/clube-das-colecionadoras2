@@ -86,7 +86,6 @@ returns table(
   count bigint,
   pct integer,
   quiz_correct bigint,
-  quiz_errors bigint,
   milestone_reached_at timestamptz
 )
 language sql
@@ -146,7 +145,6 @@ as $$
     sticker_count as count,
     100 as pct,
     unique_quiz_correct as quiz_correct,
-    quiz_errors,
     milestone_reached_at
   from ranked
   order by

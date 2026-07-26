@@ -13,7 +13,6 @@ interface MuralUser {
   count: number;
   pct: number;
   quiz_correct?: number;
-  quiz_errors?: number;
   milestone_reached_at?: string | null;
   created_at?: string;
 }
@@ -28,6 +27,20 @@ function isImageAvatar(avatar: string | null) {
       avatar.startsWith("/avatar/") ||
       avatar.startsWith("data:image/")),
   );
+}
+
+function formatCompletionDate(value?: string | null) {
+  if (!value) return "Data não disponível";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data não disponível";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
 }
 
 interface MuralClientProps {
@@ -284,7 +297,7 @@ export default function MuralClient({
                       <div className="mt-1 text-[9px] font-semibold text-[#bf2a5e]/75">
                         Quiz: {m.quiz_correct ?? 0}/20
                         <span className="mx-1">·</span>
-                        {m.quiz_errors ?? 0} {m.quiz_errors === 1 ? "erro" : "erros"}
+                        Concluído em {formatCompletionDate(m.milestone_reached_at)}
                       </div>
                     ) : (
                       <div className="mt-1 flex items-center gap-2">
@@ -318,8 +331,8 @@ export default function MuralClient({
       <div className="mt-4 px-2 text-center">
         <p className="text-[10px] text-berry/60 leading-relaxed">
           {isCompletedRanking
-            ? "Entre álbuns completos, a classificação considera questões únicas corretas, menos erros no quiz e quem alcançou 360 figurinhas primeiro."
-            : "No ranking geral, avançam primeiro as maiores coleções. Empates consideram questões únicas corretas, menos erros no quiz e quem alcançou o progresso primeiro."}
+            ? "Entre álbuns completos, a classificação considera o desempenho no quiz e a data de conclusão do álbum."
+            : "No ranking geral, avançam primeiro as maiores coleções. Empates consideram o desempenho no quiz e quem alcançou o progresso primeiro."}
         </p>
       </div>
     </div>
