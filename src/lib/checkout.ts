@@ -22,10 +22,18 @@ function isValidCpf(cpf: string) {
 }
 
 const checkoutPayerSchema = z.object({
-  fullName: z.string().trim().min(3).max(120).refine((value) => value.includes(" "), {
-    message: "Informe nome e sobrenome.",
-  }),
-  cpf: z.string().regex(/^\d{11}$/, "CPF inválido.").refine(isValidCpf, "CPF inválido."),
+  fullName: z
+    .string()
+    .trim()
+    .min(3)
+    .max(120)
+    .refine((value) => value.includes(" "), {
+      message: "Informe nome e sobrenome.",
+    }),
+  cpf: z
+    .string()
+    .regex(/^\d{11}$/, "CPF inválido.")
+    .refine(isValidCpf, "CPF inválido."),
   phone: z.string().regex(/^\d{10,11}$/, "Telefone inválido."),
   zipCode: z.string().regex(/^\d{8}$/, "CEP inválido."),
   streetName: z.string().trim().min(3).max(160),
@@ -114,12 +122,16 @@ async function createMercadoPagoPreference({
   payerEmail?: string | null;
   payer?: z.infer<typeof checkoutPayerSchema> | null;
   deviceId?: string | null;
-  items: Array<{ product_id: string; product_name: string; quantity: number; total_price_cents: number }>;
+  items: Array<{
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    total_price_cents: number;
+  }>;
   amountDueCents: number;
 }) {
   const baseUrl = getPublicBaseUrl();
-  const webhookUrl =
-    process.env.MERCADO_PAGO_WEBHOOK_URL || `${baseUrl}/api/webhooks/mercado-pago`;
+  const webhookUrl = process.env.MERCADO_PAGO_WEBHOOK_URL || `${baseUrl}/api/webhooks/mercado-pago`;
   const accessToken = getMercadoPagoAccessToken();
   const payerNames = payer?.fullName.trim().split(/\s+/) || [];
 
@@ -147,9 +159,7 @@ async function createMercadoPagoPreference({
             email: payerEmail,
             name: payer ? payerNames[0] : undefined,
             surname: payer ? payerNames.slice(1).join(" ") : undefined,
-            identification: payer
-              ? { type: "CPF", number: payer.cpf }
-              : undefined,
+            identification: payer ? { type: "CPF", number: payer.cpf } : undefined,
             phone: payer
               ? { area_code: payer.phone.slice(0, 2), number: payer.phone.slice(2) }
               : undefined,
@@ -195,7 +205,12 @@ async function createMercadoPagoPreference({
 }
 
 function allocateProviderItems(
-  items: Array<{ product_id: string; product_name: string; quantity: number; total_price_cents: number }>,
+  items: Array<{
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    total_price_cents: number;
+  }>,
   amountDueCents: number,
 ) {
   const total = items.reduce(
@@ -210,9 +225,7 @@ function allocateProviderItems(
       const price =
         index === items.length - 1
           ? amountDueCents - allocated
-          : Math.floor(
-              (amountDueCents * Math.max(0, Number(item.total_price_cents) || 0)) / total,
-            );
+          : Math.floor((amountDueCents * Math.max(0, Number(item.total_price_cents) || 0)) / total);
       allocated += price;
       return {
         productId: String(item.product_id || `item-${index + 1}`),
@@ -233,7 +246,9 @@ export const getPaymentProviderAvailability = createServerFn({ method: "GET" })
       // credentials/webhook flow are under maintenance. Re-enable it from
       // Vercel without another code change by setting this variable to "true".
       mercadopago:
-        String(process.env.MERCADO_PAGO_CHECKOUT_ENABLED || "").trim().toLowerCase() === "true",
+        String(process.env.MERCADO_PAGO_CHECKOUT_ENABLED || "")
+          .trim()
+          .toLowerCase() === "true",
       infinitepay: isInfinitePayEnabled(),
     };
   });
@@ -257,60 +272,48 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
       throw new Error("Sua conta precisa ter um e-mail válido para iniciar o pagamento.");
     }
 
-    // Best-effort cleanup: only whole orders abandoned for 24 hours are
-    // cancelled and have their reserved points returned.
-    try {
-      await supabaseAdmin.rpc("expire_stale_purchase_orders");
-    } catch {
-      // Checkout must remain available if maintenance cleanup is unavailable.
-    }
-
+    // Order creation, coupon redemption and point debit are atomic. A failure
+    // in any step rolls the whole database operation back.
     const { data: createdOrder, error: createError } = await supabase.rpc(
-      "create_purchase_order_from_cart",
+      "create_discounted_purchase_order_from_cart",
       {
         cart_items: data.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
         })),
+        requested_points_param: data.requestedPoints,
+        coupon_code_param: data.couponCode?.trim() || null,
       },
     );
-    if (createError) throw new Error(createError.message);
-
-    const orderId = String((createdOrder as any).order_id);
-
-    let amountDueCents = Number((createdOrder as any).amount_due_cents || 0);
-    let pointsUsed = 0;
-    let couponDiscountCents = 0;
-
-    if (data.couponCode && data.couponCode.trim() !== "") {
-      const { data: valResult, error: valError } = await supabaseAdmin.rpc(
-        "apply_coupon_to_purchase_order",
-        {
-          order_id_param: orderId,
-          user_id_param: userId,
-          coupon_code_param: data.couponCode,
-        },
-      );
-      if (valError) throw new Error(valError.message);
-      const val = valResult as any;
-      if (!val.valid) {
-        throw new Error(val.message || "Cupom inválido.");
+    if (createError) {
+      if (/statement timeout|canceling statement/i.test(createError.message || "")) {
+        throw new Error(
+          "O pagamento demorou mais que o esperado e foi cancelado com segurança. Seus pontos e cupom não foram consumidos. Tente novamente em instantes.",
+        );
       }
-      couponDiscountCents = Number(val.coupon_discount_cents || 0);
-      amountDueCents = Number(val.amount_due_cents || 0);
+      throw new Error(createError.message);
     }
 
-    if (data.requestedPoints > 0 && amountDueCents > 0) {
-      const { data: pointResult, error: pointError } = await supabase.rpc(
-        "apply_points_to_purchase_order",
-        {
-          order_id_param: orderId,
-          requested_points_param: data.requestedPoints,
-        },
+    const orderId = String((createdOrder as any).order_id);
+    const { data: authoritativeOrder, error: authoritativeOrderError } = await supabaseAdmin
+      .from("purchase_orders")
+      .select(
+        "id,user_id,total_cents,subtotal_cents,coupon_discount_cents,points_used,points_discount_cents,amount_due_cents,currency",
+      )
+      .eq("id", orderId)
+      .eq("user_id", userId)
+      .single();
+    if (authoritativeOrderError || !authoritativeOrder) {
+      throw new Error(
+        authoritativeOrderError?.message || "Não foi possível confirmar o valor final do pedido.",
       );
-      if (pointError) throw new Error(pointError.message);
-      amountDueCents = Number((pointResult as any).amount_due_cents || 0);
-      pointsUsed = Number((pointResult as any).points_used || 0);
+    }
+
+    // Only the value persisted after both discounts is sent to the provider.
+    const amountDueCents = Number(authoritativeOrder.amount_due_cents);
+    const pointsUsed = Number(authoritativeOrder.points_used || 0);
+    if (!Number.isInteger(amountDueCents) || amountDueCents < 0) {
+      throw new Error("O valor final do pedido ficou inválido.");
     }
 
     if (amountDueCents === 0) {
@@ -329,6 +332,15 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     }
 
     if (!data.payer) {
+      const { error: cancelError } = await supabase.rpc("cancel_failed_purchase_checkout", {
+        order_id_param: orderId,
+      });
+      if (cancelError) {
+        console.error("[Checkout Missing Payer Compensation Error]", {
+          orderId,
+          message: cancelError.message,
+        });
+      }
       throw new Error("Preencha os dados de segurança para continuar com o pagamento.");
     }
 
@@ -342,50 +354,65 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
     let providerReference: string | null = null;
     let preference: any = null;
 
-    if (data.provider === "infinitepay") {
-      const { createInfinitePayLink, getInfinitePayWebhookUrl, isInfinitePayEnabled } = await import(
-        "@/lib/infinitePay.server"
-      );
-      if (!isInfinitePayEnabled()) {
-        throw new Error("InfinitePay ainda não está disponível.");
+    try {
+      if (data.provider === "infinitepay") {
+        const { createInfinitePayLink, getInfinitePayWebhookUrl, isInfinitePayEnabled } =
+          await import("@/lib/infinitePay.server");
+        if (!isInfinitePayEnabled()) {
+          throw new Error("InfinitePay ainda não está disponível.");
+        }
+        const baseUrl = getPublicBaseUrl();
+        const result = await createInfinitePayLink({
+          orderId,
+          items: allocateProviderItems(orderItems || [], amountDueCents).map(
+            ({ quantity, price, description }) => ({ quantity, price, description }),
+          ),
+          customer: {
+            name: data.payer.fullName,
+            email: payerEmail,
+            phone_number: `+55${data.payer.phone}`,
+          },
+          redirectUrl: `${baseUrl}/clubedascolecionadoras/pagamento/infinitepay?order=${orderId}`,
+          webhookUrl: getInfinitePayWebhookUrl(baseUrl),
+        });
+        checkoutUrl = String(result?.url || "");
+        providerReference = result?.invoice_slug ? String(result.invoice_slug) : null;
+        if (!checkoutUrl) throw new Error("InfinitePay não retornou URL de checkout.");
+      } else {
+        preference = await createMercadoPagoPreference({
+          orderId,
+          payerEmail,
+          payer: data.payer,
+          deviceId: data.deviceId,
+          items: orderItems || [],
+          amountDueCents,
+        });
+        checkoutUrl = preference.init_point || preference.sandbox_init_point;
+        providerReference = preference.id;
+        if (!checkoutUrl) throw new Error("Mercado Pago não retornou URL de checkout.");
+        console.info("[MercadoPago Checkout Signals]", {
+          orderId,
+          deviceIdPresent: Boolean(data.deviceId),
+          payerEmailPresent: Boolean(payerEmail),
+          payerIdentificationPresent: Boolean(data.payer?.cpf),
+          payerAddressPresent: Boolean(data.payer?.zipCode && data.payer?.streetName),
+          itemCount: (orderItems || []).length,
+        });
       }
-      const baseUrl = getPublicBaseUrl();
-      const result = await createInfinitePayLink({
-        orderId,
-        items: allocateProviderItems(orderItems || [], amountDueCents).map(
-          ({ quantity, price, description }) => ({ quantity, price, description }),
-        ),
-        customer: {
-          name: data.payer.fullName,
-          email: payerEmail,
-          phone_number: `+55${data.payer.phone}`,
-        },
-        redirectUrl: `${baseUrl}/clubedascolecionadoras/pagamento/infinitepay?order=${orderId}`,
-        webhookUrl: getInfinitePayWebhookUrl(baseUrl),
+    } catch (providerError) {
+      // No checkout URL was returned. Release benefits immediately instead of
+      // leaving points or a coupon attached to a broken order.
+      const { error: cancelError } = await supabase.rpc("cancel_failed_purchase_checkout", {
+        order_id_param: orderId,
       });
-      checkoutUrl = String(result?.url || "");
-      providerReference = result?.invoice_slug ? String(result.invoice_slug) : null;
-      if (!checkoutUrl) throw new Error("InfinitePay não retornou URL de checkout.");
-    } else {
-      preference = await createMercadoPagoPreference({
-        orderId,
-        payerEmail,
-        payer: data.payer,
-        deviceId: data.deviceId,
-        items: orderItems || [],
-        amountDueCents,
-      });
-      checkoutUrl = preference.init_point || preference.sandbox_init_point;
-      providerReference = preference.id;
-      if (!checkoutUrl) throw new Error("Mercado Pago não retornou URL de checkout.");
-      console.info("[MercadoPago Checkout Signals]", {
-        orderId,
-        deviceIdPresent: Boolean(data.deviceId),
-        payerEmailPresent: Boolean(payerEmail),
-        payerIdentificationPresent: Boolean(data.payer?.cpf),
-        payerAddressPresent: Boolean(data.payer?.zipCode && data.payer?.streetName),
-        itemCount: (orderItems || []).length,
-      });
+      if (cancelError) {
+        console.error("[Checkout Compensation Error]", {
+          orderId,
+          provider: data.provider,
+          message: cancelError.message,
+        });
+      }
+      throw providerError;
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -539,4 +566,3 @@ export const listMyOrders = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data || [];
   });
-
