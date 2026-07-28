@@ -122,8 +122,8 @@ export default function GameMissions() {
         <Star className="pointer-events-none absolute right-24 top-16 h-3 w-3 fill-pink-300 text-pink-300" />
         <Sparkles className="pointer-events-none absolute bottom-8 left-[29%] h-5 w-5 text-pink-300" />
 
-        <div className="grid items-center gap-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-10">
-          <div className="relative mx-auto hidden h-[220px] w-[220px] lg:block" aria-hidden="true">
+        <div className="grid items-center gap-6 md:grid-cols-[220px_minmax(0,1fr)] md:gap-8 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-12">
+          <div className="relative mx-auto hidden h-[220px] w-[220px] md:block" aria-hidden="true">
             <div className="absolute left-5 top-1 h-[188px] w-[168px] rotate-[-2deg] rounded-2xl border-2 border-pink-200 bg-white p-4 shadow-lg dark:bg-[#260c20]">
               <div className="mb-3 flex justify-around">
                 {[0, 1, 2, 3, 4].map((ring) => (
@@ -169,7 +169,7 @@ export default function GameMissions() {
               </span>
             </div>
 
-            <div className="mt-5 flex flex-col gap-4 xl:flex-row xl:items-center">
+            <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
               <div className="grid flex-1 grid-cols-3 gap-2">
                 {LEVELS.map((level) => {
                   const used = usedDifficulties.includes(level.id);
@@ -203,7 +203,7 @@ export default function GameMissions() {
 
               <button
                 disabled={Boolean(state.reward)}
-                className="flex min-w-[170px] items-center justify-center gap-2 self-center rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none"
+                className="flex min-w-[170px] items-center justify-center gap-2 self-start rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none md:ml-auto md:self-center"
                 onClick={() => setShowRules(true)}
               >
                 {state.reward ? (
