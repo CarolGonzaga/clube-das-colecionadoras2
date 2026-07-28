@@ -6313,6 +6313,7 @@ html.theme-lilac .empty {
   .home-dashboard-daily,
   .home-dashboard-stats,
   .home-dashboard-poster,
+  .home-dashboard-games,
   .home-dashboard-missions,
   .home-dashboard-mural,
   .home-dashboard-share,
@@ -6323,7 +6324,7 @@ html.theme-lilac .empty {
 
   .home-dashboard-daily {
     grid-column: 2 / span 7;
-    grid-row: 4;
+    grid-row: 5;
   }
 
   .home-dashboard-stats {
@@ -6344,14 +6345,19 @@ html.theme-lilac .empty {
     max-width: 112px;
   }
 
+  .home-dashboard-games {
+    grid-column: 2 / 14;
+    grid-row: 4;
+  }
+
   .home-dashboard-missions {
     grid-column: 2 / span 7;
-    grid-row: 5;
+    grid-row: 6;
   }
 
   .home-dashboard-mural {
     grid-column: 9 / 14;
-    grid-row: 4 / span 2;
+    grid-row: 5 / span 2;
     display: flex;
     align-self: stretch;
     flex-direction: column;
@@ -6380,12 +6386,12 @@ html.theme-lilac .empty {
 
   .home-dashboard-share {
     grid-column: 2 / 14;
-    grid-row: 6;
+    grid-row: 7;
   }
 
   .home-dashboard-banner {
     grid-column: 2 / 14;
-    grid-row: 7;
+    grid-row: 8;
   }
 
   .home-share-panel {
