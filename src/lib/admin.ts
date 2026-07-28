@@ -88,13 +88,17 @@ export const getAdminDashboard = createServerFn({ method: "POST" })
       if (data.sort === "created_at" || data.sort === "last_sign_in_at") return new Date(b[data.sort] || 0).getTime() - new Date(a[data.sort] || 0).getTime();
       return String(a[data.sort] || "").localeCompare(String(b[data.sort] || ""), "pt-BR");
     });
+    // A aba geral continua paginada, mas Jogos precisa receber o catálogo
+    // completo para que uma testadora nunca desapareça por estar após a 50ª linha.
+    const gameUsers = [...users];
     const perPage = 50;
     const totalUsers = users.length;
     users = users.slice((data.page - 1) * perPage, data.page * perPage);
     return {
       users, totalUsers, perPage, orders: ordersResult.data || [], coupons: couponsResult.data || [],
       products: productsResult.data || [], redeemCodes,
-      gameAccess: gameAccessResult.data || [], wordSearchEnabled: gameSettingResult.data?.value === true,
+      gameUsers, gameAccess: gameAccessResult.data || [],
+      wordSearchEnabled: gameSettingResult.data?.value === true,
     };
   });
 
