@@ -1,0 +1,129 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  generateWordSearch,
+  isStraightContinuousPath,
+  normalizeGameWord,
+  type WordSource,
+} from "./wordSearchGenerator.ts";
+
+const values = [
+  "Romance",
+  "Drama",
+  "Fantasia",
+  "Suspense",
+  "Mistério",
+  "Poesia",
+  "Distopia",
+  "Contemporâneo",
+  "Slow burn",
+  "Namoro falso",
+  "Segunda chance",
+  "Amor proibido",
+  "Livraria",
+  "Destino",
+  "Encontro",
+  "Orgulho",
+  "Violetas",
+  "Maré alta",
+];
+const candidates: WordSource[] = values.map((displayWord, index) => ({
+  sourceType: index % 2 ? "genre" : "trope",
+  sourceId: String(index),
+  category: index % 2 ? "Gênero" : "Trope",
+  displayWord,
+  normalizedWord: normalizeGameWord(displayWord),
+}));
+
+test("normaliza acentos, espaços, hífens e pontuação sem alterar a origem", () => {
+  const original = "Ficção científica!";
+  assert.equal(normalizeGameWord(original), "FICCAOCIENTIFICA");
+  assert.equal(original, "Ficção científica!");
+});
+
+test("fácil gera 7 palavras sem diagonais ou inversões", () => {
+  const game = generateWordSearch(candidates, "easy", "easy-test");
+  assert.equal(game.words.length, 7);
+  assert.ok(game.words.every((word) => ["right", "down"].includes(word.direction)));
+  assert.ok(game.words.every((word) => !word.isReversed));
+});
+
+test("médio gera 5 palavras, pelo menos 2 diagonais e 2 inversões", () => {
+  const game = generateWordSearch(candidates, "medium", "medium-test");
+  assert.equal(game.words.length, 5);
+  assert.ok(
+    game.words.filter(
+      (word) =>
+        word.direction.toLocaleLowerCase().includes("right") ||
+        word.direction.toLocaleLowerCase().includes("left"),
+    ).length >= 2,
+  );
+  assert.ok(game.words.filter((word) => word.isReversed).length >= 2);
+});
+
+test("difícil gera exatamente 5 palavras completas", () => {
+  const game = generateWordSearch(candidates, "hard", "hard-test");
+  assert.equal(game.words.length, 5);
+  for (const word of game.words) {
+    assert.equal(word.path.length, word.normalizedWord.length);
+    assert.equal(
+      new Set(word.path.map((cell) => `${cell.row}:${cell.col}`)).size,
+      word.path.length,
+    );
+  }
+});
+
+test("validação rejeita salto, curva, repetição e coordenada externa", () => {
+  assert.equal(
+    isStraightContinuousPath(
+      [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+      ],
+      10,
+    ),
+    true,
+  );
+  assert.equal(
+    isStraightContinuousPath(
+      [
+        { row: 0, col: 0 },
+        { row: 0, col: 2 },
+      ],
+      10,
+    ),
+    false,
+  );
+  assert.equal(
+    isStraightContinuousPath(
+      [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 1, col: 1 },
+      ],
+      10,
+    ),
+    false,
+  );
+  assert.equal(
+    isStraightContinuousPath(
+      [
+        { row: 0, col: 0 },
+        { row: 0, col: 1 },
+        { row: 0, col: 0 },
+      ],
+      10,
+    ),
+    false,
+  );
+  assert.equal(
+    isStraightContinuousPath(
+      [
+        { row: 9, col: 9 },
+        { row: 10, col: 9 },
+      ],
+      10,
+    ),
+    false,
+  );
+});

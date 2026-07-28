@@ -37,12 +37,14 @@ export const getAdminDashboard = createServerFn({ method: "POST" })
   .validator((value) => dashboardSchema.parse(value))
   .handler(async ({ context, data }) => {
     const admin = await requireAdmin(context.userId);
-    const [metricsResult, ordersResult, couponsResult, productsResult, redeemCodesResult] = await Promise.all([
+    const [metricsResult, ordersResult, couponsResult, productsResult, redeemCodesResult, gameAccessResult, gameSettingResult] = await Promise.all([
       admin.from("admin_user_metrics").select("*"),
       admin.from("purchase_orders").select("id,order_code,user_id,status,payment_status,payment_provider,total_cents,points_used,coupon_code,coupon_discount_cents,amount_due_cents,created_at,payment_approved_at,purchase_order_items(product_name,quantity,total_price_cents)").order("created_at", { ascending: false }).limit(200),
       admin.from("coupons").select("id,code,discount_percent,discount_cents,max_uses,max_uses_per_user,uses_count,expires_at,is_active,created_at").order("created_at", { ascending: false }),
       admin.from("shop_products").select("id,name,description,product_type,sticker_number,pack_count,stickers_per_pack,price_cents,point_price,currency,active,metadata,image_url,display_section,sort_order,created_at,updated_at").order("sort_order").order("name"),
       admin.from("admin_redeem_code_metrics").select("*").order("active", { ascending: false }).order("code"),
+      admin.from("game_access_grants").select("id,user_id,game_key,is_active,granted_at,revoked_at").eq("game_key", "word_search").order("granted_at", { ascending: false }),
+      admin.from("game_settings").select("key,value,updated_at").eq("key", "word_search_enabled").maybeSingle(),
     ]);
     for (const result of [metricsResult, ordersResult, couponsResult, productsResult]) {
       if (result.error) throw new Error(result.error.message);
@@ -89,7 +91,11 @@ export const getAdminDashboard = createServerFn({ method: "POST" })
     const perPage = 50;
     const totalUsers = users.length;
     users = users.slice((data.page - 1) * perPage, data.page * perPage);
-    return { users, totalUsers, perPage, orders: ordersResult.data || [], coupons: couponsResult.data || [], products: productsResult.data || [], redeemCodes };
+    return {
+      users, totalUsers, perPage, orders: ordersResult.data || [], coupons: couponsResult.data || [],
+      products: productsResult.data || [], redeemCodes,
+      gameAccess: gameAccessResult.data || [], wordSearchEnabled: gameSettingResult.data?.value === true,
+    };
   });
 
 const couponSchema = z.object({
@@ -164,5 +170,38 @@ export const setAdminRedeemCodeActive = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     await audit(admin, context.userId, data.active ? "redeem_code.activate" : "redeem_code.deactivate", "redeem_code", data.code, before, saved);
+    return saved;
+  });
+
+export const setWordSearchEnabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => z.object({ enabled: z.boolean() }).parse(value))
+  .handler(async ({ context, data }) => {
+    const admin = await requireAdmin(context.userId);
+    const before = (await admin.from("game_settings").select("*").eq("key", "word_search_enabled").maybeSingle()).data;
+    const { data: saved, error } = await admin.from("game_settings").upsert({
+      key: "word_search_enabled", value: data.enabled, description: "Desliga ou liga globalmente o Caça-Palavras Sáfico.",
+      updated_at: new Date().toISOString(), updated_by: context.userId,
+    }).select().single();
+    if (error) throw new Error(error.message);
+    await audit(admin, context.userId, "game.feature_flag", "game_setting", "word_search_enabled", before, saved);
+    return saved;
+  });
+
+export const setWordSearchAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => z.object({ userId: z.string().uuid(), active: z.boolean() }).parse(value))
+  .handler(async ({ context, data }) => {
+    const admin = await requireAdmin(context.userId);
+    const { data: target, error: targetError } = await admin.auth.admin.getUserById(data.userId);
+    if (targetError || !target.user) throw new Error("Usuária não encontrada.");
+    const before = (await admin.from("game_access_grants").select("*").eq("user_id", data.userId).eq("game_key", "word_search").maybeSingle()).data;
+    const now = new Date().toISOString();
+    const payload = data.active
+      ? { user_id: data.userId, game_key: "word_search", is_active: true, granted_by: context.userId, granted_at: now, revoked_by: null, revoked_at: null, updated_at: now }
+      : { user_id: data.userId, game_key: "word_search", is_active: false, revoked_by: context.userId, revoked_at: now, updated_at: now };
+    const { data: saved, error } = await admin.from("game_access_grants").upsert(payload, { onConflict: "user_id,game_key" }).select().single();
+    if (error) throw new Error(error.message);
+    await audit(admin, context.userId, data.active ? "game.access.grant" : "game.access.revoke", "game_access_grant", data.userId, before, saved);
     return saved;
   });

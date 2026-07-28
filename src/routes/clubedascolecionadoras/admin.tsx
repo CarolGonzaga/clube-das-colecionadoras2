@@ -1,8 +1,8 @@
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { BadgePercent, Boxes, KeyRound, LayoutDashboard, LogOut, ReceiptText, Users } from "lucide-react";
+import { BadgePercent, Boxes, Gamepad2, KeyRound, LayoutDashboard, LogOut, ReceiptText, Users } from "lucide-react";
 import "@/admin.css";
-import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct, setAdminRedeemCodeActive } from "@/lib/admin";
+import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct, setAdminRedeemCodeActive, setWordSearchAccess, setWordSearchEnabled } from "@/lib/admin";
 import { dbService } from "@/lib/db";
 
 export const Route = createFileRoute("/clubedascolecionadoras/admin")({
@@ -19,7 +19,7 @@ function AdminPage() {
   const initial = Route.useLoaderData();
   const router = useRouter();
   const [data, setData] = useState(initial);
-  const [tab, setTab] = useState<"overview" | "users" | "sales" | "coupons" | "redeemCodes" | "products">("overview");
+  const [tab, setTab] = useState<"overview" | "users" | "sales" | "coupons" | "redeemCodes" | "products" | "games">("overview");
   const [search, setSearch] = useState("");
   const [codeSearch, setCodeSearch] = useState("");
   const [message, setMessage] = useState("");
@@ -43,6 +43,7 @@ function AdminPage() {
     ["coupons", "Cupons", BadgePercent],
     ["redeemCodes", "Resgates", KeyRound],
     ["products", "Loja", Boxes],
+    ["games", "Jogos", Gamepad2],
   ] as const;
 
   return <main className="admin-page">
@@ -97,6 +98,14 @@ function AdminPage() {
 
     {tab === "products" && <section className="admin-panel"><h2>{data.products.some((p:any)=>p.id===product.id) ? "Editar produto" : "Novo produto"}</h2><div className="admin-form"><label>ID<input value={product.id} onChange={(e)=>setProduct({...product,id:e.target.value})}/></label><label>Nome<input value={product.name} onChange={(e)=>setProduct({...product,name:e.target.value})}/></label><label>Descrição<textarea value={product.description} onChange={(e)=>setProduct({...product,description:e.target.value})}/></label><label>Imagem (URL/caminho)<input value={product.imageUrl} onChange={(e)=>setProduct({...product,imageUrl:e.target.value})}/></label><label>Preço (R$)<input type="number" step="0.01" value={product.price} onChange={(e)=>setProduct({...product,price:e.target.value})}/></label><label>Pontos<input type="number" value={product.pointPrice} onChange={(e)=>setProduct({...product,pointPrice:e.target.value})}/></label><label>Tipo<select value={product.productType} onChange={(e)=>setProduct({...product,productType:e.target.value})}><option value="pack">Pacote</option><option value="combo">Combo</option><option value="single_random">Unitária</option><option value="exclusive">Exclusiva</option></select></label><label>Pacotes<input type="number" value={product.packCount} onChange={(e)=>setProduct({...product,packCount:Number(e.target.value)})}/></label><label>Figurinhas/pacote<input type="number" value={product.stickersPerPack} onChange={(e)=>setProduct({...product,stickersPerPack:Number(e.target.value)})}/></label><label>Nº exclusiva<input type="number" value={product.stickerNumber} onChange={(e)=>setProduct({...product,stickerNumber:e.target.value})}/></label><label><input type="checkbox" checked={product.active} onChange={(e)=>setProduct({...product,active:e.target.checked})}/> Ativo</label><button onClick={()=>run(()=>saveAdminProduct({data:{...product,stickerNumber:product.stickerNumber?Number(product.stickerNumber):null,priceCents:Math.round(Number(product.price)*100),pointPrice:Number(product.pointPrice||0),sortOrder:Number(product.sortOrder||100)}}))}>Salvar</button></div>
       <div className="admin-cards">{data.products.map((p:any)=><article key={p.id}><b>{p.name}</b><span>{p.id} · {money(p.price_cents)}</span><span>{p.active?"Ativo":"Pausado"} · {p.description}</span><div><button onClick={()=>setProduct({id:p.id,name:p.name,description:p.description||"",productType:p.product_type,stickerNumber:p.sticker_number||"",packCount:p.pack_count,stickersPerPack:p.stickers_per_pack,price:p.price_cents/100,pointPrice:p.point_price,imageUrl:p.image_url||"",displaySection:p.display_section,sortOrder:p.sort_order,active:p.active})}>Editar</button><button onClick={()=>run(()=>archiveAdminProduct({data:{id:p.id}}))}>Pausar</button></div></article>)}</div>
+    </section>}
+
+    {tab === "games" && <section className="admin-panel">
+      <div className="admin-panel-title"><div><h2>Caça-Palavras Sáfico</h2><p>A flag global prevalece sobre todas as permissões individuais.</p></div><button className={data.wordSearchEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setWordSearchEnabled({data:{enabled:!data.wordSearchEnabled}}))}>{data.wordSearchEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
+      <p><b>Status:</b> {data.wordSearchEnabled ? "Ativo para testadoras autorizadas" : "Desativado para todas as contas"}</p>
+      <div className="admin-table-wrap"><table><thead><tr><th>Usuária</th><th>Acesso</th><th>Concedido em</th><th>Revogado em</th><th>Ação</th></tr></thead><tbody>
+        {data.users.map((user:any)=>{const grant=data.gameAccess.find((item:any)=>item.user_id===user.id);const active=Boolean(grant?.is_active&&!grant?.revoked_at);return <tr key={user.id}><td><b>@{user.nick||"sem-nick"}</b><small>{user.email}</small><small>{user.id}</small></td><td>{active?"Autorizada":"Sem acesso"}</td><td>{date(grant?.granted_at)}</td><td>{date(grant?.revoked_at)}</td><td><button className={active?"admin-danger-soft":"admin-success-soft"} onClick={()=>run(()=>setWordSearchAccess({data:{userId:user.id,active:!active}}))}>{active?"Revogar":"Conceder"}</button></td></tr>})}
+      </tbody></table></div>
     </section>}
     </div>
   </main>;

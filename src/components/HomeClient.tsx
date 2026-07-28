@@ -10,6 +10,7 @@ import { useUI } from "@/components/UIProvider";
 import { claimDailyElementAction, completeMissionAction, logoutAction } from "@/lib/actions";
 import PosterModal from "./PosterModal";
 import PackOpener from "./PackOpener";
+import GameMissions from "./GameMissions";
 import {
   Instagram,
   Twitter,
@@ -1511,6 +1512,8 @@ export default function HomeClient({
       )}
 
       {/* ===== CLICK MISSIONS ===== */}
+      <GameMissions />
+
       <div className="home-dashboard-missions mx-4 mb-4">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[11px] font-semibold text-[#9e1b4a] flex items-center gap-1">

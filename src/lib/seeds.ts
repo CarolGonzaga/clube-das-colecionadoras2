@@ -4002,6 +4002,60 @@ export const SEED_REDEEM_CODES: SeedRedeemCode[] = [
     active: true,
     release_day: 1,
   },
+  {
+    code: "R4T7Y2U9",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "E7W3Q8P2",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "L5K8J2H6",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "S4D7F1G9",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "U6I3O8P2",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "C4V7B1N9",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "A8Z3X6C2",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "T7R4E9W1",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
+  {
+    code: "G5H8J2K6",
+    element: null,
+    active: true,
+    release_day: 1,
+  },
 ];
 
 export const SEED_REDEEM_POOLS: SeedRedeemPool[] = [
@@ -7622,7 +7676,9 @@ for (const { code } of SEED_REDEEM_CODES) {
     "K9P2X5Y1", "M8N5Q1R7", "D6E9F2G8", "J1K4L7M3", "P3Q6R9S5",
     "B2V8C5X1", "F9H4J7K2", "W3E6R9T1", "Y5U8I1O4", "Z2X5C8V1",
     "N7M3L9K2", "G8F4D2S6", "H1J4K7L3", "Q9W5E1R8", "T2Y5U8I1",
-    "A6S3D9F2", "P8O4I2U7", "V2B5N8M1", "C9X5Z1A7", "K3L7J9H2"
+    "A6S3D9F2", "P8O4I2U7", "V2B5N8M1", "C9X5Z1A7", "K3L7J9H2",
+    "R4T7Y2U9", "E7W3Q8P2", "L5K8J2H6", "S4D7F1G9", "U6I3O8P2",
+    "C4V7B1N9", "A8Z3X6C2", "T7R4E9W1", "G5H8J2K6"
   ].includes(code)) {
     minSticker = 21;
     maxSticker = 193;
