@@ -184,8 +184,10 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           <span className="inline-flex items-center gap-1 rounded-full bg-[#fce4ec] px-3 py-1 text-[10px] font-bold uppercase text-[#9e1b4a]">
             <Sparkles className="h-3 w-3" /> Missão diária
           </span>
-          <h1 className="mt-2 text-2xl font-black text-[#6e1638]">Caça-Palavras Sáfico</h1>
-          <p className="mt-1 text-xs text-[#a52b59]">
+          <h1 className="mt-2 text-2xl font-black text-[#6e1638] dark:text-[#ffd1e5]">
+            Caça-Palavras Sáfico
+          </h1>
+          <p className="mt-1 text-xs text-[#a52b59] dark:text-[#f7a8cb]">
             Encontre todas as palavras e ganhe uma figurinha entre 21 e 193.
           </p>
         </div>
