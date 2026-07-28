@@ -2,13 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ArrowLeft, Check, Gift, RotateCcw, Sparkles, X } from "lucide-react";
-import {
-  abandonWordSearch,
-  claimDailyGameReward,
-  startWordSearch,
-  submitWordPath,
-} from "@/lib/games";
+import { ArrowLeft, Check, Gift, Sparkles, Trophy, X } from "lucide-react";
+import { claimDailyGameReward, startWordSearch, submitWordPath } from "@/lib/games";
 import type { CellCoordinate, WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 import Stamp from "@/components/Stamp";
 
@@ -37,6 +32,8 @@ type InitialGameState = {
   usedDifficulties?: WordSearchDifficulty[];
 };
 
+const HIGHLIGHT_COLORS = ["#fde047", "#86efac", "#7dd3fc", "#f9a8d4", "#c4b5fd", "#fdba74"];
+
 export default function WordSearchClient({ initialState }: { initialState: InitialGameState }) {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(initialState?.session || null);
@@ -49,16 +46,23 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [reward, setReward] = useState<Reward | null>(initialState?.reward || null);
-  const [showReward, setShowReward] = useState(Boolean(initialState?.reward));
+  const [showReward, setShowReward] = useState(false);
 
   const selectedKeys = useMemo(
     () => new Set(selection.map((cell) => `${cell.row}:${cell.col}`)),
     [selection],
   );
-  const foundKeys = useMemo(
-    () => new Set((session?.foundPaths || []).flat().map((cell) => `${cell.row}:${cell.col}`)),
-    [session],
-  );
+  const foundCellColors = useMemo(() => {
+    const colors = new Map<string, string[]>();
+    (session?.foundPaths || []).forEach((path, pathIndex) => {
+      const color = HIGHLIGHT_COLORS[pathIndex % HIGHLIGHT_COLORS.length];
+      path.forEach((cell) => {
+        const key = `${cell.row}:${cell.col}`;
+        colors.set(key, [...(colors.get(key) || []), color]);
+      });
+    });
+    return colors;
+  }, [session]);
 
   if (!initialState?.available) {
     return (
@@ -88,26 +92,6 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
       setSelection([]);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível iniciar.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const restart = async () => {
-    if (
-      session?.status === "in_progress" &&
-      !window.confirm("O progresso atual será reiniciado. Continuar?")
-    )
-      return;
-    setLoading(true);
-    try {
-      if (session?.status === "in_progress")
-        await abandonWordSearch({ data: { sessionId: session.id } });
-      setSession(null);
-      setSelection([]);
-      setMessage("");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível reiniciar.");
     } finally {
       setLoading(false);
     }
@@ -206,7 +190,15 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           </p>
         </div>
 
-        {!session ? (
+        {!session && reward ? (
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+            <Trophy className="mx-auto h-8 w-8 text-emerald-600" />
+            <h2 className="mt-2 text-base font-black text-emerald-800">Missão concluída hoje!</h2>
+            <p className="mt-1 text-xs font-semibold text-emerald-700">
+              Sua figurinha já foi resgatada. Volte amanhã para jogar novamente.
+            </p>
+          </div>
+        ) : !session ? (
           <div className="mx-auto mt-6 max-w-sm">
             <fieldset>
               <legend className="mb-2 text-xs font-bold text-[#6e1638]">
@@ -240,28 +232,35 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           </div>
         ) : (
           <>
-            <div className="mt-5 flex items-center justify-between rounded-2xl bg-[#fff4f8] px-4 py-3">
+            <div className="mt-5 flex items-center justify-center rounded-2xl bg-[#fff4f8] px-4 py-3">
               <span className="text-xs font-bold text-[#6e1638]">
                 {session.foundWords} de {session.totalWords} palavras
               </span>
-              <button
-                onClick={restart}
-                className="flex items-center gap-1 text-[10px] font-bold text-[#9e1b4a]"
-              >
-                <RotateCcw className="h-3 w-3" /> Trocar nível
-              </button>
             </div>
             {session.difficulty !== "hard" ? (
               <ul className="mt-3 flex flex-wrap justify-center gap-2">
-                {session.words.map((word) => (
-                  <li
-                    key={word.id}
-                    className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${word.found ? "border-emerald-300 bg-emerald-50 text-emerald-700 line-through" : "border-pink-200 text-[#9e1b4a]"}`}
-                  >
-                    {word.found && <Check className="mr-1 inline h-3 w-3" />}
-                    {word.displayWord}
-                  </li>
-                ))}
+                {session.words.map((word) => {
+                  const foundIndex = session.words
+                    .filter((candidate) => candidate.found)
+                    .findIndex((candidate) => candidate.id === word.id);
+                  return (
+                    <li
+                      key={word.id}
+                      style={
+                        word.found
+                          ? {
+                              backgroundColor:
+                                HIGHLIGHT_COLORS[foundIndex % HIGHLIGHT_COLORS.length],
+                            }
+                          : undefined
+                      }
+                      className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${word.found ? "border-black/15 text-[#3f1830] line-through" : "border-pink-200 text-[#9e1b4a]"}`}
+                    >
+                      {word.found && <Check className="mr-1 inline h-3 w-3" />}
+                      {word.displayWord}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="mt-3 text-center text-xs font-bold text-[#9e1b4a]">
@@ -270,20 +269,31 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
             )}
 
             <div
-              className="mx-auto mt-5 grid aspect-square w-full max-w-[520px] gap-0.5 rounded-2xl bg-[#f8dbe8] p-1.5"
+              className="word-search-board mx-auto mt-5 grid aspect-square w-full max-w-[520px] gap-0.5 p-2"
               style={{ gridTemplateColumns: `repeat(${session.board.length}, minmax(0, 1fr))` }}
             >
               {session.board.map((row, rowIndex) =>
                 row.map((letter, colIndex) => {
                   const key = `${rowIndex}:${colIndex}`;
                   const selected = selectedKeys.has(key);
-                  const found = foundKeys.has(key);
+                  const colors = foundCellColors.get(key) || [];
+                  const found = colors.length > 0;
+                  const highlightBackground =
+                    colors.length === 1
+                      ? colors[0]
+                      : `linear-gradient(135deg, ${colors
+                          .map(
+                            (color, index) =>
+                              `${color} ${(index / colors.length) * 100}%, ${color} ${((index + 1) / colors.length) * 100}%`,
+                          )
+                          .join(", ")})`;
                   return (
                     <button
                       key={key}
                       aria-label={`Linha ${rowIndex + 1}, coluna ${colIndex + 1}, letra ${letter}${selected ? ", selecionada" : found ? ", encontrada" : ""}`}
                       onClick={() => chooseCell(rowIndex, colIndex)}
-                      className={`aspect-square min-w-0 rounded-[4px] border text-[clamp(8px,2.6vw,16px)] font-black leading-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#6e1638] ${selected ? "border-[#6e1638] bg-[#f5a9cb] text-[#4d0d26] ring-1 ring-[#6e1638]" : found ? "border-emerald-500 bg-emerald-100 text-emerald-800" : "border-white/70 bg-white text-[#6e1638]"}`}
+                      style={found && !selected ? { background: highlightBackground } : undefined}
+                      className={`aspect-square min-w-0 rounded-[4px] border text-[clamp(8px,2.6vw,16px)] font-black leading-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#6e1638] ${selected ? "border-[#6e1638] bg-[#f5a9cb] text-[#4d0d26] ring-1 ring-[#6e1638]" : found ? "border-black/15 text-[#301224]" : "word-search-cell border-white/70 bg-white text-[#6e1638]"}`}
                     >
                       {found && <span className="sr-only">Encontrada: </span>}
                       {letter}
@@ -334,12 +344,12 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           role="dialog"
           aria-modal="true"
           aria-label="Figurinha resgatada"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#4d0d26]/60 p-5"
+          className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-[#4d0d26]/60 p-5 fade-in duration-300"
         >
-          <div className="w-full max-w-xs rounded-3xl bg-white p-6 text-center shadow-2xl">
-            <Sparkles className="mx-auto h-7 w-7 text-[#d63384]" />
+          <div className="w-full max-w-xs animate-in rounded-3xl bg-white p-6 text-center shadow-2xl zoom-in-75 duration-500">
+            <Sparkles className="mx-auto h-7 w-7 animate-bounce text-[#d63384]" />
             <h2 className="mt-2 text-xl font-black text-[#6e1638]">Figurinha resgatada!</h2>
-            <div className="mx-auto my-4 h-56 w-40">
+            <div className="mx-auto my-4 h-56 w-40 animate-in zoom-in-50 duration-700">
               <Stamp number={reward.sticker_number} owned auto={Boolean(reward.is_rare)} />
             </div>
             <p className="text-sm font-bold text-[#9e1b4a]">Figurinha #{reward.sticker_number}</p>

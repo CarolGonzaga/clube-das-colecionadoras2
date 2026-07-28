@@ -187,19 +187,7 @@ export const startWordSearch = createServerFn({ method: "POST" })
       throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
     }
     const active = await loadSession(admin, context.userId);
-    if (active && active.raw.difficulty === data.difficulty) return active.public;
-    if (active) {
-      const { error } = await admin
-        .from("word_search_sessions")
-        .update({
-          status: "abandoned",
-          abandoned_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", active.raw.id)
-        .eq("user_id", context.userId);
-      if (error) throw new Error("Não foi possível reiniciar a partida.");
-    }
+    if (active) return active.public;
 
     const [{ data: bank, error: bankError }, { data: stickers, error: stickerError }] =
       await Promise.all([

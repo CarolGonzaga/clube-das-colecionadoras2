@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { BookOpenText, Brain, Gamepad2, Gift, Grid3X3, LockKeyhole, Puzzle } from "lucide-react";
+import {
+  BookOpenText,
+  Brain,
+  Check,
+  Gamepad2,
+  Gift,
+  Grid3X3,
+  LockKeyhole,
+  Puzzle,
+} from "lucide-react";
 import { getDailyGamesState } from "@/lib/games";
 
 const UPCOMING = [
@@ -80,13 +89,20 @@ export default function GameMissions() {
                 </p>
               )}
               <button
-                className="mt-3 flex w-fit items-center gap-1.5 rounded-full bg-[#9e1b4a] px-4 py-2 text-[11px] font-bold text-white shadow-sm active:scale-95"
+                disabled={Boolean(state.reward)}
+                className="mt-3 flex w-fit items-center gap-1.5 rounded-full bg-[#9e1b4a] px-4 py-2 text-[11px] font-bold text-white shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-600 disabled:opacity-80"
                 onClick={() =>
                   router.navigate({ to: "/clubedascolecionadoras/jogos/caca-palavras" })
                 }
               >
-                {session ? <Puzzle className="h-3.5 w-3.5" /> : <Gift className="h-3.5 w-3.5" />}
-                {session ? "Continuar" : "Jogar agora"}
+                {state.reward ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : session ? (
+                  <Puzzle className="h-3.5 w-3.5" />
+                ) : (
+                  <Gift className="h-3.5 w-3.5" />
+                )}
+                {state.reward ? "Concluído hoje" : session ? "Continuar" : "Jogar agora"}
               </button>
             </div>
           </div>
