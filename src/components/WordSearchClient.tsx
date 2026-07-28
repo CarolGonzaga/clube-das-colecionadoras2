@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Check, Gift, Sparkles, Trophy, X } from "lucide-react";
+import { useUI } from "@/components/UIProvider";
 import { claimDailyGameReward, startWordSearch, submitWordPath } from "@/lib/games";
 import type { CellCoordinate, WordSearchDifficulty } from "@/lib/wordSearchGenerator";
-import Stamp from "@/components/Stamp";
 
 type Session = {
   id: string;
@@ -36,6 +36,7 @@ const HIGHLIGHT_COLORS = ["#fde047", "#86efac", "#7dd3fc", "#f9a8d4", "#c4b5fd",
 
 export default function WordSearchClient({ initialState }: { initialState: InitialGameState }) {
   const router = useRouter();
+  const ui = useUI();
   const [session, setSession] = useState<Session | null>(initialState?.session || null);
   const availableDifficulties = initialState.availableDifficulties || ["easy", "medium", "hard"];
   const [difficulty, setDifficulty] = useState<WordSearchDifficulty>(
@@ -46,7 +47,6 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [reward, setReward] = useState<Reward | null>(initialState?.reward || null);
-  const [showReward, setShowReward] = useState(false);
 
   const selectedKeys = useMemo(
     () => new Set(selection.map((cell) => `${cell.row}:${cell.col}`)),
@@ -162,8 +162,20 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
         result_type: result.resultType,
         is_rare: result.isRare,
       });
-      setShowReward(true);
       setSession({ ...session, status: "claimed" });
+      ui.showReveals(
+        [
+          {
+            slug: `sticker-${result.number}`,
+            number: result.number,
+            wasNew: result.wasNew,
+            isRare: result.isRare,
+            repeat: !result.wasNew,
+            reward: null,
+          },
+        ],
+        result.isRare ? "Figurinha Rara Desbloqueada! ✦" : "Figurinha Desbloqueada!",
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível resgatar.");
     } finally {
@@ -340,40 +352,6 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           </p>
         )}
       </section>
-
-      {showReward && reward && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Figurinha resgatada"
-          className="fixed inset-0 z-50 flex animate-in items-center justify-center bg-[#4d0d26]/60 p-5 fade-in duration-300"
-        >
-          <div className="w-full max-w-xs animate-in rounded-3xl bg-white p-6 text-center shadow-2xl zoom-in-75 duration-500">
-            <Sparkles className="mx-auto h-7 w-7 animate-bounce text-[#d63384]" />
-            <h2 className="mt-2 text-xl font-black text-[#6e1638]">Figurinha resgatada!</h2>
-            <div className="mx-auto my-4 h-56 w-40 animate-in zoom-in-50 duration-700">
-              <Stamp number={reward.sticker_number} owned auto={Boolean(reward.is_rare)} />
-            </div>
-            <p className="text-sm font-bold text-[#9e1b4a]">Figurinha #{reward.sticker_number}</p>
-            <p className="text-xs text-[#a52b59]">
-              {reward.result_type === "new"
-                ? "Nova na sua coleção"
-                : reward.is_rare
-                  ? "Versão rara"
-                  : "Figurinha repetida"}
-            </p>
-            <button
-              className="mt-5 w-full rounded-full bg-[#9e1b4a] py-2.5 text-sm font-bold text-white"
-              onClick={() => {
-                setShowReward(false);
-                router.invalidate();
-              }}
-            >
-              Continuar
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
