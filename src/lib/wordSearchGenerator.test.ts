@@ -4,6 +4,7 @@ import {
   generateWordSearch,
   isStraightContinuousPath,
   normalizeGameWord,
+  pathsMatch,
   type WordSource,
 } from "./wordSearchGenerator.ts";
 
@@ -39,6 +40,28 @@ test("normaliza acentos, espaços, hífens e pontuação sem alterar a origem", 
   const original = "Ficção científica!";
   assert.equal(normalizeGameWord(original), "FICCAOCIENTIFICA");
   assert.equal(original, "Ficção científica!");
+});
+
+test("compara coordenadas sem depender da ordem das chaves do JSONB", () => {
+  const selected = [
+    { row: 2, col: 4 },
+    { row: 3, col: 4 },
+    { row: 4, col: 4 },
+  ];
+  const fromJsonb = JSON.parse('[{"col":4,"row":2},{"col":4,"row":3},{"col":4,"row":4}]');
+  assert.equal(pathsMatch(selected, fromJsonb), true);
+  assert.equal(pathsMatch([...selected].reverse(), fromJsonb), true);
+  assert.equal(
+    pathsMatch(
+      [
+        { row: 2, col: 4 },
+        { row: 3, col: 5 },
+        { row: 4, col: 4 },
+      ],
+      fromJsonb,
+    ),
+    false,
+  );
 });
 
 test("fácil gera 7 palavras sem diagonais ou inversões", () => {

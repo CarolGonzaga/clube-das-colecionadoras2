@@ -5,6 +5,7 @@ import {
   generateWordSearch,
   isStraightContinuousPath,
   normalizeGameWord,
+  pathsMatch,
   type CellCoordinate,
   type WordSearchDifficulty,
   type WordSource,
@@ -242,12 +243,8 @@ export const submitWordPath = createServerFn({ method: "POST" })
       throw new Error("Esta partida não aceita novas palavras.");
     const size = Array.isArray(session.raw.board) ? session.raw.board.length : 0;
     if (!isStraightContinuousPath(data.path, size)) throw new Error("Seleção inválida.");
-    const signature = JSON.stringify(data.path);
-    const reverseSignature = JSON.stringify([...data.path].reverse());
     const match = session.words.find(
-      (word: any) =>
-        !word.found_at &&
-        (JSON.stringify(word.path) === signature || JSON.stringify(word.path) === reverseSignature),
+      (word: any) => !word.found_at && pathsMatch(data.path, word.path as CellCoordinate[]),
     );
     if (!match) return { matched: false, session: session.public };
     const foundAt = new Date().toISOString();

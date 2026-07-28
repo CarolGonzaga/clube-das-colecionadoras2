@@ -184,3 +184,20 @@ export function isStraightContinuousPath(path: CellCoordinate[], size: number) {
       (cell.row === path[0].row + rowDelta * index && cell.col === path[0].col + colDelta * index),
   );
 }
+
+export function pathsMatch(
+  selectedPath: CellCoordinate[],
+  storedPath: CellCoordinate[],
+  allowReverse = true,
+) {
+  if (selectedPath.length !== storedPath.length) return false;
+  const inOrder = selectedPath.every(
+    (cell, index) => cell.row === storedPath[index]?.row && cell.col === storedPath[index]?.col,
+  );
+  if (inOrder) return true;
+  if (!allowReverse) return false;
+  return selectedPath.every((cell, index) => {
+    const storedCell = storedPath[storedPath.length - 1 - index];
+    return cell.row === storedCell?.row && cell.col === storedCell?.col;
+  });
+}
