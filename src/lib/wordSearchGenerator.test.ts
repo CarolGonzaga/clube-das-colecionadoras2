@@ -64,29 +64,39 @@ test("compara coordenadas sem depender da ordem das chaves do JSONB", () => {
   );
 });
 
-test("fácil gera 7 palavras sem diagonais ou inversões", () => {
+test("fácil gera 7 palavras com horizontal, vertical e diagonal, sem inversões", () => {
   const game = generateWordSearch(candidates, "easy", "easy-test");
   assert.equal(game.words.length, 7);
-  assert.ok(game.words.every((word) => ["right", "down"].includes(word.direction)));
+  assert.ok(game.words.some((word) => word.direction === "right"));
+  assert.ok(game.words.some((word) => word.direction === "down"));
+  assert.ok(game.words.some((word) => word.direction === "downRight"));
   assert.ok(game.words.every((word) => !word.isReversed));
 });
 
 test("médio gera 5 palavras, pelo menos 2 diagonais e 2 inversões", () => {
   const game = generateWordSearch(candidates, "medium", "medium-test");
   assert.equal(game.words.length, 5);
+  assert.ok(game.words.some((word) => ["right", "left"].includes(word.direction)));
+  assert.ok(game.words.some((word) => ["down", "up"].includes(word.direction)));
   assert.ok(
-    game.words.filter(
-      (word) =>
-        word.direction.toLocaleLowerCase().includes("right") ||
-        word.direction.toLocaleLowerCase().includes("left"),
-    ).length >= 2,
+    game.words.some((word) =>
+      ["downRight", "downLeft", "upRight", "upLeft"].includes(word.direction),
+    ),
   );
   assert.ok(game.words.filter((word) => word.isReversed).length >= 2);
 });
 
-test("difícil gera exatamente 5 palavras completas", () => {
+test("difícil gera 5 palavras completas com direções variadas e inversões", () => {
   const game = generateWordSearch(candidates, "hard", "hard-test");
   assert.equal(game.words.length, 5);
+  assert.ok(game.words.some((word) => ["right", "left"].includes(word.direction)));
+  assert.ok(game.words.some((word) => ["down", "up"].includes(word.direction)));
+  assert.ok(
+    game.words.some((word) =>
+      ["downRight", "downLeft", "upRight", "upLeft"].includes(word.direction),
+    ),
+  );
+  assert.ok(game.words.filter((word) => word.isReversed).length >= 2);
   for (const word of game.words) {
     assert.equal(word.path.length, word.normalizedWord.length);
     assert.equal(

@@ -104,12 +104,43 @@ async function loadSession(admin: any, userId: string, sessionId?: string) {
   return { raw: data, words: words || [], public: publicSession(data, words || []) };
 }
 
+async function getDifficultyCycle(admin: any, userId: string) {
+  const difficulties: WordSearchDifficulty[] = ["easy", "medium", "hard"];
+  const { data: rewards, error: rewardError } = await admin
+    .from("daily_game_rewards")
+    .select("session_id,reward_date")
+    .eq("user_id", userId)
+    .eq("game_key", GAME_KEY)
+    .order("reward_date", { ascending: true })
+    .limit(500);
+  if (rewardError) throw new Error("Não foi possível carregar o ciclo de dificuldades.");
+  const sessionIds = (rewards || []).map((reward: any) => reward.session_id);
+  if (sessionIds.length === 0) return { used: [], available: difficulties };
+  const { data: sessions, error: sessionError } = await admin
+    .from("word_search_sessions")
+    .select("id,difficulty")
+    .in("id", sessionIds);
+  if (sessionError) throw new Error("Não foi possível carregar o ciclo de dificuldades.");
+  const byId = new Map((sessions || []).map((session: any) => [session.id, session.difficulty]));
+  const used = new Set<WordSearchDifficulty>();
+  for (const reward of rewards || []) {
+    const difficulty = byId.get(reward.session_id) as WordSearchDifficulty | undefined;
+    if (!difficulty) continue;
+    used.add(difficulty);
+    if (used.size === difficulties.length) used.clear();
+  }
+  return {
+    used: [...used],
+    available: difficulties.filter((difficulty) => !used.has(difficulty)),
+  };
+}
+
 export const getDailyGamesState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { admin, enabled, authorized, available } = await gameAdmin(context.userId);
     if (!available) return { enabled, authorized, available: false, session: null, reward: null };
-    const [session, rewardResult] = await Promise.all([
+    const [session, rewardResult, difficultyCycle] = await Promise.all([
       loadSession(admin, context.userId),
       admin
         .from("daily_game_rewards")
@@ -120,6 +151,7 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
           new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date()),
         )
         .maybeSingle(),
+      getDifficultyCycle(admin, context.userId),
     ]);
     return {
       enabled,
@@ -127,6 +159,8 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
       available: true,
       session: session?.public || null,
       reward: rewardResult.data || null,
+      availableDifficulties: difficultyCycle.available,
+      usedDifficulties: difficultyCycle.used,
     };
   });
 
@@ -136,6 +170,22 @@ export const startWordSearch = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { admin, available } = await gameAdmin(context.userId);
     if (!available) throw new Error(unavailable);
+    const localDate = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+    }).format(new Date());
+    const [{ data: claimedToday }, difficultyCycle] = await Promise.all([
+      admin
+        .from("daily_game_rewards")
+        .select("id")
+        .eq("user_id", context.userId)
+        .eq("reward_date", localDate)
+        .maybeSingle(),
+      getDifficultyCycle(admin, context.userId),
+    ]);
+    if (claimedToday) throw new Error("A recompensa de hoje já foi resgatada.");
+    if (!difficultyCycle.available.includes(data.difficulty)) {
+      throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
+    }
     const active = await loadSession(admin, context.userId);
     if (active && active.raw.difficulty === data.difficulty) return active.public;
     if (active) {
@@ -194,9 +244,6 @@ export const startWordSearch = createServerFn({ method: "POST" })
       candidates,
       data.difficulty,
       `${sessionId}:${context.userId}`,
-    );
-    const localDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(
-      new Date(),
     );
     const { error: sessionError } = await admin.from("word_search_sessions").insert({
       id: sessionId,

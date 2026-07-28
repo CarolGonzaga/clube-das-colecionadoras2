@@ -33,12 +33,18 @@ type InitialGameState = {
   available: boolean;
   session?: Session | null;
   reward?: Reward | null;
+  availableDifficulties?: WordSearchDifficulty[];
+  usedDifficulties?: WordSearchDifficulty[];
 };
 
 export default function WordSearchClient({ initialState }: { initialState: InitialGameState }) {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(initialState?.session || null);
-  const [difficulty, setDifficulty] = useState<WordSearchDifficulty>(session?.difficulty || "easy");
+  const availableDifficulties = initialState.availableDifficulties || ["easy", "medium", "hard"];
+  const [difficulty, setDifficulty] = useState<WordSearchDifficulty>(
+    session?.difficulty ||
+      (availableDifficulties.includes("easy") ? "easy" : availableDifficulties[0] || "easy"),
+  );
   const [selection, setSelection] = useState<CellCoordinate[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -130,8 +136,12 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
         setMessage("Escolha letras vizinhas e continue na mesma direção.");
         return;
       }
-      if (session.difficulty === "easy" && !((dr === 0 && dc === 1) || (dr === 1 && dc === 0))) {
-        setMessage("No nível fácil, selecione da esquerda para a direita ou de cima para baixo.");
+      const isEasyDirection =
+        (dr === 0 && dc === 1) || (dr === 1 && dc === 0) || (dr === 1 && dc === 1);
+      if (session.difficulty === "easy" && !isEasyDirection) {
+        setMessage(
+          "No nível fácil, selecione da esquerda para a direita, de cima para baixo ou na diagonal.",
+        );
         return;
       }
     }
@@ -206,10 +216,16 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
                 {(["easy", "medium", "hard"] as const).map((level) => (
                   <button
                     key={level}
+                    disabled={!availableDifficulties.includes(level)}
                     onClick={() => setDifficulty(level)}
-                    className={`rounded-xl border px-2 py-3 text-xs font-bold ${difficulty === level ? "border-[#9e1b4a] bg-[#fce4ec] text-[#6e1638]" : "border-pink-100 text-[#a52b59]"}`}
+                    className={`rounded-xl border px-2 py-3 text-xs font-bold disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 ${difficulty === level ? "border-[#9e1b4a] bg-[#fce4ec] text-[#6e1638]" : "border-pink-100 text-[#a52b59]"}`}
                   >
                     {level === "easy" ? "Fácil" : level === "medium" ? "Médio" : "Difícil"}
+                    {!availableDifficulties.includes(level) && (
+                      <span className="mt-1 block text-[8px] font-semibold uppercase">
+                        concluído neste ciclo
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

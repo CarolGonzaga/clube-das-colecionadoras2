@@ -59,8 +59,18 @@ function shuffle<T>(items: T[], random: () => number) {
 }
 
 function directionsFor(difficulty: WordSearchDifficulty) {
-  if (difficulty === "easy") return ["right", "down"] as (keyof typeof DIRECTIONS)[];
+  if (difficulty === "easy") return ["right", "down", "downRight"] as (keyof typeof DIRECTIONS)[];
   return Object.keys(DIRECTIONS) as (keyof typeof DIRECTIONS)[];
+}
+
+function requiredDirectionFor(
+  difficulty: WordSearchDifficulty,
+  wordIndex: number,
+): keyof typeof DIRECTIONS | null {
+  if (difficulty === "easy") {
+    return (["right", "down", "downRight"] as const)[wordIndex] || null;
+  }
+  return (["right", "down", "downRight", "left", "upLeft"] as const)[wordIndex] || null;
 }
 
 export function generateWordSearch(
@@ -102,15 +112,8 @@ export function generateWordSearch(
       const availableDirections = directionsFor(difficulty);
 
       for (let attempt = 0; attempt < attemptLimit && !didPlace; attempt += 1) {
-        let directionName = shuffle(availableDirections, random)[0];
-        if (difficulty === "medium" && wordIndex < 2) {
-          directionName = shuffle(
-            ["downRight", "downLeft", "upRight", "upLeft"] as const,
-            random,
-          )[0];
-        } else if (difficulty === "medium" && wordIndex < 4) {
-          directionName = shuffle(["left", "up", "upLeft", "upRight"] as const, random)[0];
-        }
+        const directionName =
+          requiredDirectionFor(difficulty, wordIndex) || shuffle(availableDirections, random)[0];
         const [rowDelta, colDelta] = DIRECTIONS[directionName];
         const row = Math.floor(random() * size);
         const col = Math.floor(random() * size);
@@ -144,8 +147,17 @@ export function generateWordSearch(
       if (!didPlace) break;
     }
 
-    const validMedium = difficulty !== "medium" || (diagonalCount >= 2 && reversedCount >= 2);
-    if (placed.length === targetCount && validMedium) {
+    const hasHorizontal = placed.some((word) => ["right", "left"].includes(word.direction));
+    const hasVertical = placed.some((word) => ["down", "up"].includes(word.direction));
+    const hasDiagonal = diagonalCount > 0;
+    const hasRequiredReversals = difficulty === "easy" || reversedCount >= 2;
+    if (
+      placed.length === targetCount &&
+      hasHorizontal &&
+      hasVertical &&
+      hasDiagonal &&
+      hasRequiredReversals
+    ) {
       const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       return {
         board: board.map((row) =>
