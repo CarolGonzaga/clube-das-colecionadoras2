@@ -8080,11 +8080,20 @@ html.dark .game-mission-action-button {
 
   .game-mission-content {
     display: flex !important;
+    width: 100% !important;
     min-width: 0 !important;
-    min-height: 300px !important;
+    min-height: 0 !important;
+    flex-direction: column !important;
+    padding-right: 0 !important;
+  }
+
+  .game-mission-top {
+    position: relative !important;
+    padding-right: clamp(140px, 20cqw, 200px) !important;
+    min-height: 110px !important;
+    display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
-    padding-right: clamp(230px, 29cqw, 310px) !important;
   }
 
   .game-mission-heading {
@@ -8095,15 +8104,17 @@ html.dark .game-mission-action-button {
   .game-mission-hero-image {
     top: 24px !important;
     right: 24px !important;
-    width: clamp(190px, 24cqw, 260px) !important;
-    height: calc(100% - 48px) !important;
-    border-radius: 20px !important;
+    width: clamp(120px, 16cqw, 180px) !important;
+    height: clamp(100px, 15cqw, 135px) !important;
+    border-radius: 16px !important;
     object-fit: contain !important;
   }
 
   .game-mission-actions {
+    margin-top: 20px !important;
+    width: 100% !important;
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) minmax(145px, 175px) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(170px, 210px) !important;
     align-items: center !important;
     gap: clamp(14px, 2cqw, 24px) !important;
   }
@@ -8121,12 +8132,17 @@ html.dark .game-mission-action-button {
 }
 
 @container (min-width: 900px) {
-  .game-mission-content {
-    padding-right: clamp(270px, 31cqw, 350px) !important;
+  .game-mission-top {
+    padding-right: clamp(170px, 22cqw, 230px) !important;
+  }
+
+  .game-mission-hero-image {
+    width: clamp(140px, 18cqw, 200px) !important;
+    height: clamp(115px, 15cqw, 145px) !important;
   }
 
   .game-mission-actions {
-    grid-template-columns: minmax(0, 1fr) 200px !important;
+    grid-template-columns: minmax(0, 1fr) 210px !important;
   }
 }
 
