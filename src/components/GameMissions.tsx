@@ -16,7 +16,7 @@ import {
 import { getDailyGamesState } from "@/lib/games";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 
-const GAME_IMAGE = "/covers-jogos/cacapalavras.png";
+const GAME_IMAGE = "/cacapalavras.png";
 
 const UPCOMING = [
   { name: "Jogo da Memória", description: "Encontre os pares de figurinhas.", Icon: Grid3X3 },
