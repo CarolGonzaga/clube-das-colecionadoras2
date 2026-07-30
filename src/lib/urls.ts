@@ -8,7 +8,8 @@ function trimTrailingSlash(value: string) {
 
 function normalizePath(path = "") {
   if (!path) return "";
-  return path.startsWith("/") ? path : `/${path}`;
+  const cleaned = path.replace(/^\/?public\//, "");
+  return cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
 }
 
 export function getPublicOrigin() {
