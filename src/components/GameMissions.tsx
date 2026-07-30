@@ -8,19 +8,15 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Gamepad2,
-  Gift,
   Grid3X3,
-  Heart,
   LockKeyhole,
-  Pencil,
   Puzzle,
-  Sparkles,
-  Star,
   X,
 } from "lucide-react";
 import { getDailyGamesState } from "@/lib/games";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
+
+const GAME_IMAGE = "/covers-jogos/caca-palavras-safico.png";
 
 const UPCOMING = [
   { name: "Jogo da Memória", description: "Encontre os pares de figurinhas.", Icon: Grid3X3 },
@@ -43,7 +39,6 @@ type GamesState = {
   available: boolean;
   reward?: { sticker_number: number } | null;
   usedDifficulties?: WordSearchDifficulty[];
-  availableDifficulties?: WordSearchDifficulty[];
   session?: {
     status: "in_progress" | "won" | "claimed";
     difficulty: WordSearchDifficulty;
@@ -90,14 +85,10 @@ export default function GameMissions() {
     ? "Recompensa já resgatada hoje"
     : session?.status === "won"
       ? "Você venceu! Resgate sua figurinha"
-      : session?.status === "in_progress"
-        ? "Partida em andamento"
-        : "Recompensa disponível hoje";
+      : "Partida em andamento";
   const progress = state.reward
     ? "Missão concluída"
-    : session
-      ? `${session.foundWords} de ${session.totalWords} palavras`
-      : "Escolha um nível para começar";
+    : `${session?.foundWords || 0} de ${session?.totalWords || 0} palavras`;
   const upcoming = UPCOMING[carouselIndex];
   const UpcomingIcon = upcoming.Icon;
 
@@ -106,78 +97,65 @@ export default function GameMissions() {
   };
 
   return (
-    <section className="home-dashboard-games mx-4 mb-4 min-w-0" aria-labelledby="new-game-missions">
+    <section className="home-dashboard-games mx-4 mb-4 min-w-0" aria-labelledby="daily-mission">
       <div className="mb-2 flex items-center justify-between">
         <p
-          id="new-game-missions"
+          id="daily-mission"
           className="flex items-center gap-1 text-[11px] font-semibold text-[#9e1b4a]"
         >
-          <Gamepad2 className="h-3.5 w-3.5" /> Novas missões
+          <Puzzle className="h-3.5 w-3.5" /> Missão diária
         </p>
-        <span className="text-[10px] font-semibold text-[#bf2a5e]">1 figurinha por dia</span>
+        <span className="text-[10px] font-semibold text-[#bf2a5e]">1 resgate por dia</span>
       </div>
 
-      <article className="relative overflow-hidden rounded-[28px] border border-pink-300/80 bg-gradient-to-br from-white via-[#fffafd] to-[#fff0f7] p-5 shadow-[0_12px_35px_rgba(158,27,74,0.09)] dark:from-[#1a0718] dark:via-[#180615] dark:to-[#22091b] sm:p-7 lg:p-9">
-        <Heart className="pointer-events-none absolute right-7 top-7 h-7 w-7 rotate-12 text-pink-200 dark:text-pink-800" />
-        <Star className="pointer-events-none absolute right-24 top-16 h-3 w-3 fill-pink-300 text-pink-300" />
-        <Sparkles className="pointer-events-none absolute bottom-8 left-[29%] h-5 w-5 text-pink-300" />
+      <article className="relative overflow-hidden rounded-[28px] border border-pink-300/80 bg-gradient-to-br from-white via-[#fffafd] to-[#fff0f7] p-5 shadow-[0_12px_35px_rgba(158,27,74,0.09)] dark:from-[#1a0718] dark:via-[#180615] dark:to-[#22091b] sm:p-7 lg:p-8">
+        <img
+          src={GAME_IMAGE}
+          alt=""
+          aria-hidden="true"
+          className="absolute right-3 top-3 h-[112px] w-[112px] rounded-2xl object-cover shadow-sm md:hidden"
+        />
 
-        <div className="grid items-center gap-6 md:grid-cols-[220px_minmax(0,1fr)] md:gap-8 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-12">
-          <div className="relative mx-auto hidden h-[220px] w-[220px] md:block" aria-hidden="true">
-            <div className="absolute left-5 top-1 h-[188px] w-[168px] rotate-[-2deg] rounded-2xl border-2 border-pink-200 bg-white p-4 shadow-lg dark:bg-[#260c20]">
-              <div className="mb-3 flex justify-around">
-                {[0, 1, 2, 3, 4].map((ring) => (
-                  <span
-                    key={ring}
-                    className="h-7 w-2 -translate-y-6 rounded-full border-2 border-pink-300 bg-white dark:bg-[#260c20]"
-                  />
-                ))}
-              </div>
-              <div className="grid grid-cols-5 gap-1 text-center text-sm font-black text-[#9e1b4a]">
-                {"AMORXLIVROSAFICSONHOELAS".split("").map((letter, index) => (
-                  <span
-                    key={`${letter}-${index}`}
-                    className="flex aspect-square items-center justify-center rounded border border-pink-200 bg-pink-50 dark:bg-[#351027]"
-                  >
-                    {letter}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <Pencil className="absolute bottom-3 right-3 h-28 w-28 rotate-[18deg] fill-pink-400 text-[#9e1b4a]" />
-            <BookOpenText className="absolute -right-4 top-5 h-12 w-12 rotate-12 text-pink-200" />
+        <div className="grid items-stretch gap-6 md:grid-cols-[minmax(190px,26%)_minmax(0,1fr)] md:gap-8 lg:gap-10">
+          <div className="hidden min-h-[300px] overflow-hidden rounded-2xl md:block">
+            <img
+              src={GAME_IMAGE}
+              alt="Livros cor-de-rosa, uma caneca e corações"
+              className="h-full w-full object-cover"
+            />
           </div>
 
-          <div className="min-w-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fce4ec] px-3 py-1.5 text-[9px] font-black uppercase tracking-wide text-[#9e1b4a]">
-              <Puzzle className="h-3.5 w-3.5" /> Missão diária
-            </span>
-            <h3 className="mt-4 text-xl font-black text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
-              Caça-Palavras Sáfico
-            </h3>
-            <p className="mt-1.5 text-xs font-semibold text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
-              Encontre todas as palavras e ganhe 1 figurinha.
-            </p>
-            <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#fce4ec] px-4 py-2 text-[10px] font-bold text-[#9e1b4a]">
-              <Sparkles className="h-4 w-4" /> 1 figurinha por dia
-            </span>
-
-            <div className="mt-5 grid gap-2 border-y border-pink-100 py-3 text-[10px] font-bold sm:grid-cols-2 sm:text-xs">
-              <span className="text-[#9e1b4a]">{progress}</span>
-              <span className="flex items-center gap-1 text-[#bf2a5e] sm:justify-end">
-                {state.reward && <Check className="h-3.5 w-3.5" />} {status}
+          <div className="min-w-0 md:flex md:flex-col md:justify-center">
+            <div className="min-h-[112px] pr-[122px] md:min-h-0 md:pr-0">
+              <h3 className="text-xl font-black text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
+                Caça-Palavras Sáfico
+              </h3>
+              <p className="mt-1.5 text-xs font-semibold text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
+                Encontre todas as palavras para resgatar a recompensa.
+              </p>
+              <span className="mt-4 inline-flex rounded-full bg-[#fce4ec] px-4 py-2 text-[10px] font-bold text-[#9e1b4a]">
+                1 resgate por dia
               </span>
             </div>
 
-            <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
-              <div className="grid flex-1 grid-cols-3 gap-2">
+            {(state.reward || session) && (
+              <div className="mt-5 grid gap-2 border-y border-pink-100 py-3 text-[10px] font-bold sm:grid-cols-2 sm:text-xs">
+                <span className="text-[#9e1b4a]">{progress}</span>
+                <span className="flex items-center gap-1 text-[#bf2a5e] sm:justify-end">
+                  {state.reward && <Check className="h-3.5 w-3.5" />} {status}
+                </span>
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:gap-5">
+              <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
                 {LEVELS.map((level) => {
                   const used = usedDifficulties.includes(level.id);
                   const current = session?.difficulty === level.id;
                   return (
                     <div
                       key={level.id}
-                      className={`rounded-2xl border px-2 py-2.5 text-center text-[9px] font-bold sm:text-[10px] ${
+                      className={`min-w-0 rounded-xl border px-1.5 py-2 text-center text-[9px] font-bold sm:px-2 sm:text-[10px] ${
                         used
                           ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                           : current
@@ -187,14 +165,14 @@ export default function GameMissions() {
                     >
                       <span className="flex items-center justify-center gap-1">
                         {used ? (
-                          <Check className="h-3 w-3" />
+                          <Check className="h-3 w-3 shrink-0" />
                         ) : current ? (
-                          <Puzzle className="h-3 w-3" />
+                          <Puzzle className="h-3 w-3 shrink-0" />
                         ) : null}
-                        {level.label}
+                        <span className="truncate">{level.label}</span>
                       </span>
-                      <span className="mt-0.5 block text-[8px] font-semibold opacity-75">
-                        {used ? "Concluído" : current ? "Em andamento" : "Disponível"}
+                      <span className="mt-0.5 block truncate text-[8px] font-semibold opacity-80">
+                        {used ? "Já usado" : current ? "Em andamento" : "Disponível"}
                       </span>
                     </div>
                   );
@@ -203,16 +181,9 @@ export default function GameMissions() {
 
               <button
                 disabled={Boolean(state.reward)}
-                className="flex min-w-[170px] items-center justify-center gap-2 self-start rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none md:ml-auto md:self-center"
+                className="mx-auto flex min-w-[170px] items-center justify-center self-center rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none md:ml-auto md:mr-0"
                 onClick={() => setShowRules(true)}
               >
-                {state.reward ? (
-                  <Check className="h-4 w-4" />
-                ) : session ? (
-                  <Sparkles className="h-4 w-4" />
-                ) : (
-                  <Gift className="h-4 w-4" />
-                )}
                 {state.reward ? "Concluído hoje" : session ? "Continuar" : "Jogar agora"}
               </button>
             </div>
@@ -281,7 +252,7 @@ export default function GameMissions() {
           aria-labelledby="word-search-rules-title"
           className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#3f0b27]/65 p-4 backdrop-blur-sm"
         >
-          <div className="relative w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl dark:bg-[#1c0819] sm:p-8">
+          <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl dark:bg-[#1c0819] sm:p-8">
             <button
               type="button"
               aria-label="Fechar regras"
@@ -299,23 +270,39 @@ export default function GameMissions() {
             >
               Como jogar
             </h3>
-            <ol className="mt-4 space-y-3 text-xs font-semibold text-[#7f3152] dark:text-[#f7a8cb]">
-              <li>1. Escolha um dos níveis ainda disponíveis antes de começar.</li>
-              <li>2. Selecione letras vizinhas em linha horizontal, vertical ou diagonal.</li>
-              <li>3. No médio e difícil, algumas palavras podem estar ao contrário.</li>
-              <li>4. Encontre todas as palavras para liberar a recompensa do dia.</li>
-              <li>5. Cada nível concluído fica bloqueado até completar o ciclo dos três níveis.</li>
+            <ol className="mt-4 list-decimal space-y-3 pl-5 text-xs font-semibold leading-relaxed text-[#7f3152] dark:text-[#f7a8cb]">
+              <li>
+                Escolha um nível disponível antes de iniciar a partida: Fácil, Médio ou Difícil.
+              </li>
+              <li>
+                Clique nas letras em sequência, sempre escolhendo células vizinhas na horizontal,
+                vertical ou diagonal.
+              </li>
+              <li>
+                A seleção deve seguir uma única direção, sem pular letras ou mudar de sentido
+                durante a palavra.
+              </li>
+              <li>
+                Nos níveis Médio e Difícil, algumas palavras podem aparecer de trás para frente.
+              </li>
+              <li>
+                Encontre todas as palavras da partida para concluir o nível e liberar a recompensa
+                diária.
+              </li>
+              <li>
+                Você pode receber apenas 1 recompensa por dia, mesmo que conclua mais de um nível.
+              </li>
+              <li>
+                Depois de concluído, o nível ficará bloqueado até você completar os outros dois. Ao
+                finalizar o ciclo de Fácil, Médio e Difícil, todos os níveis serão liberados
+                novamente.
+              </li>
             </ol>
-            <div className="mt-5 flex items-center gap-2 rounded-2xl bg-pink-50 p-3 text-[10px] font-bold text-[#9e1b4a] dark:bg-[#321027]">
-              <Heart className="h-4 w-4 fill-pink-300 text-pink-400" />
-              Você pode ganhar apenas uma figurinha por dia.
-            </div>
             <button
               type="button"
               onClick={() => router.navigate({ to: "/clubedascolecionadoras/jogos/caca-palavras" })}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] py-3 text-xs font-black text-white"
+              className="mt-6 w-full rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] py-3 text-xs font-black text-white"
             >
-              <Sparkles className="h-4 w-4" />
               {session ? "Continuar partida" : "Escolher dificuldade"}
             </button>
           </div>
