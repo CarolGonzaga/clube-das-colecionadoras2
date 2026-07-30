@@ -118,12 +118,12 @@ export default function GameMissions() {
         <img
           src={cacapalavrasImg || getClubAssetUrl(GAME_IMAGE_PATH)}
           alt="Caça-Palavras Sáfico"
-          className="game-mission-hero-image absolute right-3 top-3 h-[112px] w-[112px] select-none pointer-events-none object-contain"
+          className="game-mission-hero-image absolute right-5 top-5 h-[64px] w-[90px] select-none pointer-events-none object-contain object-right-top"
         />
 
         <div className="game-mission-layout">
           <div className="game-mission-content min-w-0">
-            <div className="game-mission-top pr-[110px] sm:pr-0">
+            <div className="game-mission-top pr-[95px] sm:pr-0">
               <div className="game-mission-heading">
                 <h3 className="text-xl font-black text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
                   Caça-Palavras Sáfico

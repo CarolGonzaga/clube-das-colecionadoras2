@@ -8089,11 +8089,11 @@ html.dark .game-mission-action-button {
 
   .game-mission-top {
     position: relative !important;
-    padding-right: clamp(140px, 20cqw, 200px) !important;
-    min-height: 110px !important;
+    padding-right: clamp(130px, 18cqw, 190px) !important;
+    min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
   }
 
   .game-mission-heading {
@@ -8102,12 +8102,13 @@ html.dark .game-mission-action-button {
   }
 
   .game-mission-hero-image {
-    top: 24px !important;
-    right: 24px !important;
-    width: clamp(120px, 16cqw, 180px) !important;
-    height: clamp(100px, 15cqw, 135px) !important;
+    top: 28px !important;
+    right: 28px !important;
+    width: clamp(110px, 15cqw, 160px) !important;
+    height: clamp(75px, 10cqw, 100px) !important;
     border-radius: 16px !important;
     object-fit: contain !important;
+    object-position: top right !important;
   }
 
   .game-mission-actions {
@@ -8133,12 +8134,15 @@ html.dark .game-mission-action-button {
 
 @container (min-width: 900px) {
   .game-mission-top {
-    padding-right: clamp(170px, 22cqw, 230px) !important;
+    padding-right: clamp(160px, 20cqw, 220px) !important;
   }
 
   .game-mission-hero-image {
-    width: clamp(140px, 18cqw, 200px) !important;
-    height: clamp(115px, 15cqw, 145px) !important;
+    top: 32px !important;
+    right: 32px !important;
+    width: clamp(130px, 17cqw, 180px) !important;
+    height: clamp(85px, 11cqw, 110px) !important;
+    object-position: top right !important;
   }
 
   .game-mission-actions {
