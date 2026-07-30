@@ -8063,6 +8063,70 @@ html.dark .word-search-cell {
   color: #fff7fb !important;
 }
 
+/* The dashboard can be narrower than the physical desktop viewport because of
+   browser zoom and the desktop shell. Base this composition on the card width. */
+.game-mission-section {
+  container-type: inline-size;
+}
+
+@container (min-width: 640px) {
+  .game-mission-mobile-image {
+    display: none !important;
+  }
+
+  .game-mission-layout {
+    display: grid !important;
+    grid-template-columns: minmax(210px, 28%) minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: clamp(28px, 4cqw, 48px) !important;
+  }
+
+  .game-mission-desktop-image {
+    display: block !important;
+    min-height: 320px !important;
+  }
+
+  .game-mission-content {
+    display: flex !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  .game-mission-heading {
+    min-height: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .game-mission-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 180px) !important;
+    align-items: center !important;
+    gap: clamp(14px, 2cqw, 24px) !important;
+  }
+
+  .game-mission-levels {
+    width: 100% !important;
+  }
+
+  .game-mission-action-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    justify-self: end !important;
+  }
+}
+
+@container (min-width: 900px) {
+  .game-mission-layout {
+    grid-template-columns: minmax(250px, 30%) minmax(0, 1fr) !important;
+  }
+
+  .game-mission-actions {
+    grid-template-columns: minmax(0, 1fr) 200px !important;
+  }
+}
+
 /* Isolated desktop-first administrative workspace. */
 .admin-page {
   min-height: 100vh;

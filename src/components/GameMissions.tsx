@@ -97,7 +97,10 @@ export default function GameMissions() {
   };
 
   return (
-    <section className="home-dashboard-games mx-4 mb-4 min-w-0" aria-labelledby="daily-mission">
+    <section
+      className="game-mission-section home-dashboard-games mx-4 mb-4 min-w-0"
+      aria-labelledby="daily-mission"
+    >
       <div className="mb-2 flex items-center justify-between">
         <p
           id="daily-mission"
@@ -113,11 +116,11 @@ export default function GameMissions() {
           src={GAME_IMAGE}
           alt=""
           aria-hidden="true"
-          className="absolute right-3 top-3 h-[112px] w-[112px] rounded-2xl object-cover shadow-sm sm:hidden"
+          className="game-mission-mobile-image absolute right-3 top-3 h-[112px] w-[112px] rounded-2xl object-cover shadow-sm sm:hidden"
         />
 
-        <div className="grid items-stretch gap-6 sm:grid-cols-[minmax(180px,27%)_minmax(0,1fr)] sm:gap-7 lg:grid-cols-[minmax(220px,28%)_minmax(0,1fr)] lg:gap-10">
-          <div className="hidden min-h-[300px] overflow-hidden rounded-2xl sm:block">
+        <div className="game-mission-layout grid items-stretch gap-6">
+          <div className="game-mission-desktop-image hidden min-h-[300px] overflow-hidden rounded-2xl">
             <img
               src={GAME_IMAGE}
               alt="Livros cor-de-rosa, uma caneca e corações"
@@ -125,8 +128,8 @@ export default function GameMissions() {
             />
           </div>
 
-          <div className="min-w-0 sm:flex sm:flex-col sm:justify-center">
-            <div className="min-h-[112px] pr-[122px] sm:min-h-0 sm:pr-0">
+          <div className="game-mission-content min-w-0">
+            <div className="game-mission-heading min-h-[112px] pr-[122px]">
               <h3 className="text-xl font-black text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
                 Caça-Palavras Sáfico
               </h3>
@@ -147,8 +150,8 @@ export default function GameMissions() {
               </div>
             )}
 
-            <div className="mt-5 flex flex-col gap-4 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(150px,auto)] sm:items-center sm:gap-4">
-              <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
+            <div className="game-mission-actions mt-5 flex flex-col gap-4">
+              <div className="game-mission-levels grid min-w-0 flex-1 grid-cols-3 gap-2">
                 {LEVELS.map((level) => {
                   const used = usedDifficulties.includes(level.id);
                   const current = session?.difficulty === level.id;
@@ -181,7 +184,7 @@ export default function GameMissions() {
 
               <button
                 disabled={Boolean(state.reward)}
-                className="mx-auto flex min-w-[170px] items-center justify-center self-center rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none sm:ml-auto sm:mr-0 sm:min-w-[150px]"
+                className="game-mission-action-button mx-auto flex min-w-[170px] items-center justify-center self-center rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none"
                 onClick={() => setShowRules(true)}
               >
                 {state.reward ? "Concluído hoje" : session ? "Continuar" : "Jogar agora"}
