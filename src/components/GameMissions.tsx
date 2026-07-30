@@ -16,10 +16,19 @@ import {
 } from "lucide-react";
 import { getDailyGamesState } from "@/lib/games";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
-import { getClubAssetUrl } from "@/lib/urls";
+import { getClubAssetUrl, getClubUrl } from "@/lib/urls";
 
 const GAME_IMAGE_PATH = "public/cacapalavras.png";
-const GAME_IMAGE = getClubAssetUrl(GAME_IMAGE_PATH);
+
+const IMAGE_FALLBACKS = [
+  getClubAssetUrl(GAME_IMAGE_PATH),
+  getClubUrl("cacapalavras.png"),
+  "/clubedascolecionadoras/cacapalavras.png",
+  "/cacapalavras.png",
+  "public/cacapalavras.png",
+  "/public/cacapalavras.png",
+  "cacapalavras.png",
+];
 
 const UPCOMING = [
   { name: "Jogo da Memória", description: "Encontre os pares de figurinhas.", Icon: Grid3X3 },
@@ -56,6 +65,16 @@ export default function GameMissions() {
   const [showRules, setShowRules] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [carouselPaused, setCarouselPaused] = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);
+  const [imgError, setImgError] = useState(false);
+
+  const handleImgError = () => {
+    if (imgIndex < IMAGE_FALLBACKS.length - 1) {
+      setImgIndex((prev) => prev + 1);
+    } else {
+      setImgError(true);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -115,12 +134,18 @@ export default function GameMissions() {
       </div>
 
       <article className="relative overflow-hidden rounded-[28px] border border-pink-300/80 bg-gradient-to-br from-white via-[#fffafd] to-[#fff0f7] p-5 shadow-[0_12px_35px_rgba(158,27,74,0.09)] dark:from-[#1a0718] dark:via-[#180615] dark:to-[#22091b] sm:p-7 lg:p-8">
-        <img
-          src={GAME_IMAGE}
-          alt=""
-          aria-hidden="true"
-          className="game-mission-hero-image absolute right-3 top-3 h-[112px] w-[112px] object-contain"
-        />
+        {!imgError ? (
+          <img
+            src={IMAGE_FALLBACKS[imgIndex]}
+            alt="Caça-Palavras Sáfico"
+            onError={handleImgError}
+            className="game-mission-hero-image absolute right-3 top-3 h-[112px] w-[112px] select-none pointer-events-none object-contain"
+          />
+        ) : (
+          <div className="game-mission-hero-image absolute right-3 top-3 flex h-[112px] w-[112px] items-center justify-center rounded-2xl bg-pink-100/60 p-4 text-[#9e1b4a]">
+            <Gamepad2 className="h-12 w-12 opacity-80" />
+          </div>
+        )}
 
         <div className="game-mission-layout">
           <div className="game-mission-content min-w-0">
