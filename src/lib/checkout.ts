@@ -110,6 +110,14 @@ function centsToMoney(cents: number) {
   return Math.round(cents) / 100;
 }
 
+function isMercadoPagoCheckoutEnabled() {
+  return (
+    String(process.env.MERCADO_PAGO_CHECKOUT_ENABLED || "")
+      .trim()
+      .toLowerCase() === "true"
+  );
+}
+
 async function createMercadoPagoPreference({
   orderId,
   payerEmail,
@@ -245,10 +253,7 @@ export const getPaymentProviderAvailability = createServerFn({ method: "GET" })
       // Keep Mercado Pago visible but unavailable while its production
       // credentials/webhook flow are under maintenance. Re-enable it from
       // Vercel without another code change by setting this variable to "true".
-      mercadopago:
-        String(process.env.MERCADO_PAGO_CHECKOUT_ENABLED || "")
-          .trim()
-          .toLowerCase() === "true",
+      mercadopago: isMercadoPagoCheckoutEnabled(),
       infinitepay: isInfinitePayEnabled(),
     };
   });
@@ -329,6 +334,24 @@ export const createMercadoPagoCheckout = createServerFn({ method: "POST" })
         pointsUsed,
         requiresMercadoPago: false,
       };
+    }
+
+    // Enforce the provider kill switch on the server. Old cached clients may
+    // still render an enabled button, but they must never be able to create a
+    // new Mercado Pago preference while the provider is disabled.
+    if (data.provider === "mercadopago" && !isMercadoPagoCheckoutEnabled()) {
+      const { error: cancelError } = await supabase.rpc("cancel_failed_purchase_checkout", {
+        order_id_param: orderId,
+      });
+      if (cancelError) {
+        console.error("[Mercado Pago Disabled Compensation Error]", {
+          orderId,
+          message: cancelError.message,
+        });
+      }
+      throw new Error(
+        "Mercado Pago está temporariamente indisponível. Escolha outra forma de pagamento.",
+      );
     }
 
     if (!data.payer) {
