@@ -8,6 +8,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Gamepad2,
   Grid3X3,
   LockKeyhole,
   Puzzle,
@@ -106,7 +107,7 @@ export default function GameMissions() {
           id="daily-mission"
           className="flex items-center gap-1 text-[11px] font-semibold text-[#9e1b4a]"
         >
-          <Puzzle className="h-3.5 w-3.5" /> Missão diária
+          <Gamepad2 className="h-3.5 w-3.5" /> Missão diária
         </p>
         <span className="text-[10px] font-semibold text-[#bf2a5e]">1 resgate por dia</span>
       </div>
