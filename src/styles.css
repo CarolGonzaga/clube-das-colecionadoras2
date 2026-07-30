@@ -8069,6 +8069,10 @@ html.dark .word-search-cell {
   container-type: inline-size;
 }
 
+html.dark .game-mission-action-button {
+  box-shadow: none !important;
+}
+
 @container (min-width: 640px) {
   .game-mission-layout {
     display: block !important;

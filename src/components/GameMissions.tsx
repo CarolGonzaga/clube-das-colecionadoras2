@@ -17,7 +17,8 @@ import {
 import { getDailyGamesState } from "@/lib/games";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 
-const GAME_IMAGE = "/cacapalavras.png";
+const GAME_IMAGE_PATH = "public/cacapalavras.png";
+const GAME_IMAGE = `/${GAME_IMAGE_PATH.replace(/^public\//, "")}`;
 
 const UPCOMING = [
   { name: "Jogo da Memória", description: "Encontre os pares de figurinhas.", Icon: Grid3X3 },
@@ -177,7 +178,7 @@ export default function GameMissions() {
 
               <button
                 disabled={Boolean(state.reward)}
-                className="game-mission-action-button mx-auto flex min-w-[170px] items-center justify-center self-center rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none"
+                className="game-mission-action-button mx-auto flex min-w-[170px] items-center justify-center self-center rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-7 py-3 text-xs font-black text-white shadow-lg shadow-pink-200/60 transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:from-emerald-600 disabled:to-emerald-600 disabled:shadow-none dark:shadow-none"
                 onClick={() => setShowRules(true)}
               >
                 {state.reward ? "Concluído hoje" : session ? "Continuar" : "Jogar agora"}
