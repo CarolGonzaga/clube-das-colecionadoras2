@@ -30,16 +30,18 @@ export function getClubUrl(path = "") {
 }
 
 /**
- * Public visual files from the Clube deployment. They are intentionally served
- * from its own Vercel origin: this keeps the Clube independent from rewrites in
- * the main Lendo Sáficos project and preserves CORS for the story canvas.
+ * Keep visual files on the same origin as the page whenever possible. This
+ * avoids iOS privacy and content filters treating album covers as third-party
+ * resources. During SSR, use the configured public origin.
  */
 export function getClubAssetUrl(path: string) {
   const normalizedPath = normalizePath(path);
   if (import.meta.env.DEV) {
     return normalizedPath;
   }
-  return `${DEFAULT_PUBLIC_ORIGIN}${normalizedPath}`;
+  const assetOrigin =
+    typeof window !== "undefined" ? window.location.origin : getPublicOrigin();
+  return `${trimTrailingSlash(assetOrigin)}${normalizedPath}`;
 }
 
 export function getStickerCoverUrl(coverFilename: string) {
