@@ -130,9 +130,6 @@ export default function GameMissions() {
               <p className="mt-1.5 text-xs font-semibold text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
                 Encontre todas as palavras para resgatar a recompensa.
               </p>
-              <span className="mt-4 inline-flex rounded-full bg-[#fce4ec] px-4 py-2 text-[10px] font-bold text-[#9e1b4a]">
-                1 resgate por dia
-              </span>
             </div>
 
             {(state.reward || session) && (
