@@ -15,9 +15,10 @@ import {
   X,
 } from "lucide-react";
 import { getDailyGamesState } from "@/lib/games";
+import { getClubAssetUrl } from "@/lib/urls";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 
-const GAME_IMAGE = "/cacapalavras.png";
+const GAME_IMAGE = getClubAssetUrl("/cacapalavras.png");
 
 const UPCOMING = [
   { name: "Jogo da Memória", description: "Encontre os pares de figurinhas.", Icon: Grid3X3 },
