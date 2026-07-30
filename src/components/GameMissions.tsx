@@ -15,10 +15,9 @@ import {
   X,
 } from "lucide-react";
 import { getDailyGamesState } from "@/lib/games";
-import { getClubAssetUrl } from "@/lib/urls";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 
-const GAME_IMAGE = getClubAssetUrl("/cacapalavras.png");
+const GAME_IMAGE = "/cacapalavras.png";
 
 const UPCOMING = [
   { name: "Jogo da Memória", description: "Encontre os pares de figurinhas.", Icon: Grid3X3 },
@@ -118,18 +117,10 @@ export default function GameMissions() {
           src={GAME_IMAGE}
           alt=""
           aria-hidden="true"
-          className="game-mission-mobile-image absolute right-3 top-3 h-[112px] w-[112px] rounded-2xl object-cover shadow-sm sm:hidden"
+          className="game-mission-hero-image absolute right-3 top-3 h-[112px] w-[112px] object-contain"
         />
 
-        <div className="game-mission-layout grid items-stretch gap-6">
-          <div className="game-mission-desktop-image hidden min-h-[300px] overflow-hidden rounded-2xl">
-            <img
-              src={GAME_IMAGE}
-              alt="Livros cor-de-rosa, uma caneca e corações"
-              className="h-full w-full object-cover"
-            />
-          </div>
-
+        <div className="game-mission-layout">
           <div className="game-mission-content min-w-0">
             <div className="game-mission-heading min-h-[112px] pr-[122px]">
               <h3 className="text-xl font-black text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
@@ -293,6 +284,10 @@ export default function GameMissions() {
               <li>
                 Encontre todas as palavras da partida para concluir o nível e liberar a recompensa
                 diária.
+              </li>
+              <li>
+                Não conseguiu terminar hoje? Tudo bem! Seu progresso ficará salvo e você poderá
+                continuar a mesma partida no dia seguinte, exatamente de onde parou.
               </li>
               <li>
                 Você pode receber apenas 1 recompensa por dia, mesmo que conclua mais de um nível.

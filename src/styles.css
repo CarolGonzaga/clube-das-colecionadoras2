@@ -8070,27 +8070,17 @@ html.dark .word-search-cell {
 }
 
 @container (min-width: 640px) {
-  .game-mission-mobile-image {
-    display: none !important;
-  }
-
   .game-mission-layout {
-    display: grid !important;
-    grid-template-columns: minmax(210px, 28%) minmax(0, 1fr) !important;
-    align-items: stretch !important;
-    gap: clamp(28px, 4cqw, 48px) !important;
-  }
-
-  .game-mission-desktop-image {
     display: block !important;
-    min-height: 320px !important;
   }
 
   .game-mission-content {
     display: flex !important;
     min-width: 0 !important;
+    min-height: 300px !important;
     flex-direction: column !important;
     justify-content: center !important;
+    padding-right: clamp(230px, 29cqw, 310px) !important;
   }
 
   .game-mission-heading {
@@ -8098,9 +8088,18 @@ html.dark .word-search-cell {
     padding-right: 0 !important;
   }
 
+  .game-mission-hero-image {
+    top: 24px !important;
+    right: 24px !important;
+    width: clamp(190px, 24cqw, 260px) !important;
+    height: calc(100% - 48px) !important;
+    border-radius: 20px !important;
+    object-fit: contain !important;
+  }
+
   .game-mission-actions {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) minmax(150px, 180px) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(145px, 175px) !important;
     align-items: center !important;
     gap: clamp(14px, 2cqw, 24px) !important;
   }
@@ -8118,8 +8117,8 @@ html.dark .word-search-cell {
 }
 
 @container (min-width: 900px) {
-  .game-mission-layout {
-    grid-template-columns: minmax(250px, 30%) minmax(0, 1fr) !important;
+  .game-mission-content {
+    padding-right: clamp(270px, 31cqw, 350px) !important;
   }
 
   .game-mission-actions {
