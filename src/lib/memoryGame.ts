@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { normalizeMemoryCoverPath } from "@/lib/memoryImagePath";
+import { getMemoryCoverPath } from "@/lib/memoryImagePath";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type MemoryDifficulty = "easy" | "medium" | "hard";
@@ -57,13 +57,6 @@ async function load(admin: any, userId: string, sessionId?: string) {
     .eq("session_id", session.id)
     .order("board_position");
   if (cardsError) throw new Error("Não foi possível carregar o tabuleiro.");
-  const sourceIds = [...new Set((cards || []).map((card: any) => card.source_sticker_id))];
-  const { data: catalog, error: catalogError } = await admin
-    .from("memory_game_stickers")
-    .select("id,front_image_path,back_image_path")
-    .in("id", sourceIds);
-  if (catalogError) throw new Error("Não foi possível carregar as imagens das cartas.");
-  const imagesById = new Map((catalog || []).map((item: any) => [item.id, item]));
   return {
     id: session.id,
     difficulty: session.difficulty as MemoryDifficulty,
@@ -71,13 +64,12 @@ async function load(admin: any, userId: string, sessionId?: string) {
     totalPairs: session.total_pairs,
     matchedPairs: session.matched_pairs,
     cards: (cards || []).map((card: any) => {
-      const images = imagesById.get(card.source_sticker_id);
       return {
         id: card.card_instance_id,
         position: card.board_position,
         matched: Boolean(card.matched_at),
         frontImage: card.matched_at
-          ? normalizeMemoryCoverPath(images?.front_image_path) || undefined
+          ? getMemoryCoverPath(card.source_sticker_id) || undefined
           : undefined,
         backImage: "/verso-card.webp",
       };
@@ -139,12 +131,12 @@ export const revealMemoryCard = createServerFn({ method: "POST" })
       throw new Error("Carta inválida ou partida encerrada.");
     const { data: image, error: imageError } = await admin
       .from("memory_game_stickers")
-      .select("front_image_path")
+      .select("id")
       .eq("id", cardRow.source_sticker_id)
       .eq("is_active", true)
       .contains("allowed_game_keys", [GAME_KEY])
       .maybeSingle();
-    const frontImage = normalizeMemoryCoverPath(image?.front_image_path);
+    const frontImage = getMemoryCoverPath(image?.id);
     if (imageError || !frontImage) throw new Error("A imagem desta carta não está disponível.");
     return { cardId: cardRow.card_instance_id, frontImage };
   });

@@ -192,7 +192,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
             Encontre todos os pares para liberar a recompensa diária.
           </p>
         </header>
-        {!session && !reward && (
+        {!session && (
           <div className="mt-6">
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
               <summary className="cursor-pointer font-black">Como jogar</summary>
@@ -229,12 +229,12 @@ export default function MemoryGameClient({ initialState }: { initialState: State
           </div>
         )}
         {reward && (
-          <div className="mt-7 text-center text-emerald-700">
-            <Trophy className="mx-auto h-9 w-9" />
-            <h2 className="mt-2 font-black">Recompensa já resgatada hoje</h2>
+          <div className="mx-auto mt-3 max-w-sm rounded-xl bg-emerald-50 px-3 py-2 text-center text-xs font-bold text-emerald-700">
+            <Trophy className="mr-1 inline h-4 w-4" /> Recompensa diária já resgatada. Você ainda
+            pode jogar.
           </div>
         )}
-        {session && !reward && (
+        {session && (
           <>
             <div className="mt-5 flex items-center justify-between gap-3 border-y border-pink-100 py-3">
               <div>
@@ -304,7 +304,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                 );
               })}
             </div>
-            {session.status === "won" && (
+            {session.status === "won" && !reward && (
               <div className="mt-6 text-center">
                 <Gift className="mx-auto h-8 w-8 text-[#c2185b]" />
                 <button
@@ -315,6 +315,11 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                   Resgatar figurinha
                 </button>
               </div>
+            )}
+            {session.status === "won" && reward && (
+              <p className="mt-4 text-center text-xs font-bold text-emerald-700">
+                Partida concluída! A recompensa diária já havia sido resgatada.
+              </p>
             )}
           </>
         )}

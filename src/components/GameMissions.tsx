@@ -333,14 +333,14 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
             ))}
           </div>
           <button
-            disabled={!available || Boolean(state?.reward)}
+            disabled={!available}
             onClick={onPlay}
             className="mx-auto min-w-[150px] rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none sm:mx-0"
           >
-            {state?.reward
-              ? "Concluído hoje"
-              : session
-                ? "Continuar"
+            {session
+              ? "Continuar"
+              : state?.reward
+                ? "Jogar sem resgate"
                 : available
                   ? "Jogar agora"
                   : "Em breve"}
