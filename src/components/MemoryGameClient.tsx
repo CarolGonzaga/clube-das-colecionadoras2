@@ -14,6 +14,7 @@ import {
   type MemoryDifficulty,
 } from "@/lib/memoryGame";
 import { getClubAssetUrl } from "@/lib/urls";
+import { getBundledMemoryCoverUrl } from "@/lib/memoryCoverAssets";
 
 type Card = {
   id: string;
@@ -272,6 +273,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
             >
               {session.cards.map((card) => {
                 const face = card.matched ? card.frontImage : open[card.id];
+                const faceUrl = getBundledMemoryCoverUrl(face);
                 return (
                   <button
                     key={card.id}
@@ -287,7 +289,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                     className="group aspect-[2/3] w-full min-w-0 rounded-lg focus:outline-none focus:ring-4 focus:ring-pink-300 disabled:opacity-90"
                   >
                     <span
-                      className={`relative block h-full w-full rounded-lg transition-transform duration-300 [transform-style:preserve-3d] motion-reduce:transition-none ${face ? "[transform:rotateY(180deg)]" : ""}`}
+                      className={`relative block h-full w-full rounded-lg transition-transform duration-300 [transform-style:preserve-3d] motion-reduce:transition-none ${faceUrl ? "[transform:rotateY(180deg)]" : ""}`}
                     >
                       <img
                         src={getClubAssetUrl(card.backImage)}
@@ -295,7 +297,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                         className="absolute inset-0 h-full w-full rounded-lg object-cover [backface-visibility:hidden]"
                       />
                       <img
-                        src={getClubAssetUrl(face || card.backImage)}
+                        src={faceUrl || getClubAssetUrl(card.backImage)}
                         alt=""
                         className="absolute inset-0 h-full w-full rounded-lg border border-pink-300 object-cover [backface-visibility:hidden] [transform:rotateY(180deg)]"
                       />

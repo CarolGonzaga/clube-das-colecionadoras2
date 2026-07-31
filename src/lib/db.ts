@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sticker,
   Profile,
@@ -49,20 +49,7 @@ export function validatePasswordOrPin(input: string): string | null {
   return input.length >= 6 ? null : "A senha deve ter no mínimo 6 caracteres.";
 }
 
-const supabaseUrl =
-  typeof window !== "undefined"
-    ? (window as any).env?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL
-    : import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey =
-  typeof window !== "undefined"
-    ? (window as any).env?.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
-    : import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase URL and Anon Key must be configured!");
-}
-
-export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey);
+export { supabase };
 
 const PUBLIC_MURAL_CACHE_TTL_MS = 60_000;
 let publicMuralCache: any[] | null = null;
