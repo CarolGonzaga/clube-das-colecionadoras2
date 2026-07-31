@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { getDailyGamesState } from "@/lib/games";
+import { getMemoryGameState } from "@/lib/memoryGame";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 import { getClubAssetUrl, getClubUrl } from "@/lib/urls";
 import cacapalavrasImg from "../../public/cacapalavras.png";
@@ -22,7 +23,6 @@ import cacapalavrasImg from "../../public/cacapalavras.png";
 const GAME_IMAGE_PATH = "public/cacapalavras.png";
 
 const UPCOMING = [
-  { name: "Jogo da Memória", description: "Encontre os pares de figurinhas.", Icon: Grid3X3 },
   { name: "Quiz Relâmpago", description: "Responda antes que o tempo acabe.", Icon: Brain },
   { name: "Quebra-Cabeça", description: "Monte a imagem da figurinha.", Icon: Puzzle },
   {
@@ -53,15 +53,23 @@ type GamesState = {
 export default function GameMissions() {
   const router = useRouter();
   const [state, setState] = useState<GamesState | null>(null);
+  const [memoryState, setMemoryState] = useState<{
+    available: boolean;
+    reward?: { sticker_number: number } | null;
+    session?: { status: string; matchedPairs: number; totalPairs: number } | null;
+  } | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [carouselPaused, setCarouselPaused] = useState(false);
 
   useEffect(() => {
     let active = true;
-    getDailyGamesState()
-      .then((result) => {
-        if (active) setState(result);
+    Promise.all([getDailyGamesState(), getMemoryGameState()])
+      .then(([wordSearch, memory]) => {
+        if (active) {
+          setState(wordSearch);
+          setMemoryState(memory);
+        }
       })
       .catch(() => {
         if (active) setState({ available: false });
@@ -186,6 +194,32 @@ export default function GameMissions() {
           </div>
         </div>
       </article>
+
+      {memoryState?.available && (
+        <article className="mt-4 flex min-h-[112px] items-center gap-4 rounded-2xl border border-pink-200 bg-white/80 p-4 dark:bg-[#1b0818] sm:px-6">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#fcecf3] text-[#a52b59]">
+            <Grid3X3 className="h-7 w-7" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-black text-[#6e1638] dark:text-[#ffd1e5]">Jogo da Memória</h4>
+            <p className="mt-1 text-[10px] text-[#a52b59] dark:text-[#f7a8cb]">
+              {memoryState.reward
+                ? "Recompensa já resgatada hoje"
+                : memoryState.session
+                  ? `${memoryState.session.matchedPairs} de ${memoryState.session.totalPairs} pares encontrados`
+                  : "Encontre os pares de figurinhas."}
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={Boolean(memoryState.reward)}
+            onClick={() => router.navigate({ to: "/clubedascolecionadoras/jogos/memoria" })}
+            className="shrink-0 rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-5 py-2.5 text-[10px] font-black text-white disabled:from-emerald-600 disabled:to-emerald-600"
+          >
+            {memoryState.reward ? "Concluído hoje" : memoryState.session ? "Continuar" : "Jogar agora"}
+          </button>
+        </article>
+      )}
 
       <div
         className="relative mt-4"

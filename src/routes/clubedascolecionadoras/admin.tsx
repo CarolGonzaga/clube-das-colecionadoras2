@@ -2,7 +2,7 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { BadgePercent, Boxes, Gamepad2, KeyRound, LayoutDashboard, LogOut, ReceiptText, Users } from "lucide-react";
 import "@/admin.css";
-import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct, setAdminRedeemCodeActive, setWordSearchAccess, setWordSearchEnabled } from "@/lib/admin";
+import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct, setAdminRedeemCodeActive, setMemoryGameAccess, setMemoryGameEnabled, setWordSearchAccess, setWordSearchEnabled } from "@/lib/admin";
 import { dbService } from "@/lib/db";
 
 export const Route = createFileRoute("/clubedascolecionadoras/admin")({
@@ -124,7 +124,13 @@ function AdminPage() {
       <div className="admin-toolbar"><input value={gameSearch} onChange={(event)=>setGameSearch(event.target.value)} placeholder="Buscar por e-mail, nick ou UUID"/></div>
       <p>{gameUsers.length} de {data.gameUsers.length} usuárias exibidas · autorizadas aparecem primeiro</p>
       <div className="admin-table-wrap"><table><thead><tr><th>Usuária</th><th>Acesso</th><th>Concedido em</th><th>Revogado em</th><th>Ação</th></tr></thead><tbody>
-        {gameUsers.map((user:any)=>{const grant=data.gameAccess.find((item:any)=>item.user_id===user.id);const active=Boolean(grant?.is_active&&!grant?.revoked_at);return <tr key={user.id}><td><b>@{user.nick||"sem-nick"}</b><small>{user.email}</small><small>{user.id}</small></td><td>{active?"Autorizada":"Sem acesso"}</td><td>{date(grant?.granted_at)}</td><td>{date(grant?.revoked_at)}</td><td><button className={active?"admin-danger-soft":"admin-success-soft"} onClick={()=>run(()=>setWordSearchAccess({data:{userId:user.id,active:!active}}))}>{active?"Revogar":"Conceder"}</button></td></tr>})}
+        {gameUsers.map((user:any)=>{const grant=data.gameAccess.find((item:any)=>item.user_id===user.id&&item.game_key==="word_search");const active=Boolean(grant?.is_active&&!grant?.revoked_at);return <tr key={user.id}><td><b>@{user.nick||"sem-nick"}</b><small>{user.email}</small><small>{user.id}</small></td><td>{active?"Autorizada":"Sem acesso"}</td><td>{date(grant?.granted_at)}</td><td>{date(grant?.revoked_at)}</td><td><button className={active?"admin-danger-soft":"admin-success-soft"} onClick={()=>run(()=>setWordSearchAccess({data:{userId:user.id,active:!active}}))}>{active?"Revogar":"Conceder"}</button></td></tr>})}
+      </tbody></table></div>
+      <div className="admin-panel-title" style={{marginTop:32}}><div><h2>Jogo da Memória</h2><p>Catálogo privado com 67 cartas. A flag permanece desligada até a homologação.</p></div><button className={data.memoryGameEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setMemoryGameEnabled({data:{enabled:!data.memoryGameEnabled}}))}>{data.memoryGameEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
+      <p><b>Status:</b> {data.memoryGameEnabled ? "Ativo para testadoras autorizadas" : "Desativado para todas as contas"}</p>
+      {!data.memoryGameEnabled && <p className="admin-message">Nenhuma conta verá o Jogo da Memória enquanto a flag global estiver desativada.</p>}
+      <div className="admin-table-wrap"><table><thead><tr><th>Usuária</th><th>Acesso</th><th>Concedido em</th><th>Revogado em</th><th>Ação</th></tr></thead><tbody>
+        {gameUsers.map((user:any)=>{const grant=data.gameAccess.find((item:any)=>item.user_id===user.id&&item.game_key==="memory_game");const active=Boolean(grant?.is_active&&!grant?.revoked_at);return <tr key={user.id}><td><b>@{user.nick||"sem-nick"}</b><small>{user.email}</small><small>{user.id}</small></td><td>{active?"Autorizada":"Sem acesso"}</td><td>{date(grant?.granted_at)}</td><td>{date(grant?.revoked_at)}</td><td><button className={active?"admin-danger-soft":"admin-success-soft"} onClick={()=>run(()=>setMemoryGameAccess({data:{userId:user.id,active:!active}}))}>{active?"Revogar":"Conceder"}</button></td></tr>})}
       </tbody></table></div>
     </section>}
     </div>

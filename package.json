@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "auth:reset-pin": "node src/scripts/reset_auth_user_password.mjs",
     "lint": "eslint .",
-    "test:games": "node --experimental-strip-types --test src/lib/wordSearchGenerator.test.ts",
+    "test:games": "node --experimental-strip-types --test src/lib/wordSearchGenerator.test.ts src/lib/memoryGameRules.test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

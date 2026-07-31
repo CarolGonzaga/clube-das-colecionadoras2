@@ -33,6 +33,7 @@ import { Route as ClubedascolecionadorasDashboardPagamentoSucessoRouteImport } f
 import { Route as ClubedascolecionadorasDashboardPagamentoPendenteRouteImport } from './routes/clubedascolecionadoras/_dashboard/pagamento/pendente'
 import { Route as ClubedascolecionadorasDashboardPagamentoInfinitepayRouteImport } from './routes/clubedascolecionadoras/_dashboard/pagamento/infinitepay'
 import { Route as ClubedascolecionadorasDashboardPagamentoFalhaRouteImport } from './routes/clubedascolecionadoras/_dashboard/pagamento/falha'
+import { Route as ClubedascolecionadorasDashboardJogosMemoriaRouteImport } from './routes/clubedascolecionadoras/_dashboard/jogos.memoria'
 import { Route as ClubedascolecionadorasDashboardJogosCacaPalavrasRouteImport } from './routes/clubedascolecionadoras/_dashboard/jogos.caca-palavras'
 
 const IndexRoute = IndexRouteImport.update({
@@ -177,6 +178,12 @@ const ClubedascolecionadorasDashboardPagamentoFalhaRoute =
     path: '/pagamento/falha',
     getParentRoute: () => ClubedascolecionadorasDashboardRoute,
   } as any)
+const ClubedascolecionadorasDashboardJogosMemoriaRoute =
+  ClubedascolecionadorasDashboardJogosMemoriaRouteImport.update({
+    id: '/jogos/memoria',
+    path: '/jogos/memoria',
+    getParentRoute: () => ClubedascolecionadorasDashboardRoute,
+  } as any)
 const ClubedascolecionadorasDashboardJogosCacaPalavrasRoute =
   ClubedascolecionadorasDashboardJogosCacaPalavrasRouteImport.update({
     id: '/jogos/caca-palavras',
@@ -205,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/clubedascolecionadoras/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras/': typeof ClubedascolecionadorasDashboardIndexRoute
   '/clubedascolecionadoras/jogos/caca-palavras': typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
+  '/clubedascolecionadoras/jogos/memoria': typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   '/clubedascolecionadoras/pagamento/falha': typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
   '/clubedascolecionadoras/pagamento/infinitepay': typeof ClubedascolecionadorasDashboardPagamentoInfinitepayRoute
   '/clubedascolecionadoras/pagamento/pendente': typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
@@ -231,6 +239,7 @@ export interface FileRoutesByTo {
   '/clubedascolecionadoras/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras': typeof ClubedascolecionadorasDashboardIndexRoute
   '/clubedascolecionadoras/jogos/caca-palavras': typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
+  '/clubedascolecionadoras/jogos/memoria': typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   '/clubedascolecionadoras/pagamento/falha': typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
   '/clubedascolecionadoras/pagamento/infinitepay': typeof ClubedascolecionadorasDashboardPagamentoInfinitepayRoute
   '/clubedascolecionadoras/pagamento/pendente': typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
@@ -259,6 +268,7 @@ export interface FileRoutesById {
   '/clubedascolecionadoras/_dashboard/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras/_dashboard/': typeof ClubedascolecionadorasDashboardIndexRoute
   '/clubedascolecionadoras/_dashboard/jogos/caca-palavras': typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
+  '/clubedascolecionadoras/_dashboard/jogos/memoria': typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   '/clubedascolecionadoras/_dashboard/pagamento/falha': typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
   '/clubedascolecionadoras/_dashboard/pagamento/infinitepay': typeof ClubedascolecionadorasDashboardPagamentoInfinitepayRoute
   '/clubedascolecionadoras/_dashboard/pagamento/pendente': typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/trocas'
     | '/clubedascolecionadoras/'
     | '/clubedascolecionadoras/jogos/caca-palavras'
+    | '/clubedascolecionadoras/jogos/memoria'
     | '/clubedascolecionadoras/pagamento/falha'
     | '/clubedascolecionadoras/pagamento/infinitepay'
     | '/clubedascolecionadoras/pagamento/pendente'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/trocas'
     | '/clubedascolecionadoras'
     | '/clubedascolecionadoras/jogos/caca-palavras'
+    | '/clubedascolecionadoras/jogos/memoria'
     | '/clubedascolecionadoras/pagamento/falha'
     | '/clubedascolecionadoras/pagamento/infinitepay'
     | '/clubedascolecionadoras/pagamento/pendente'
@@ -341,6 +353,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/_dashboard/trocas'
     | '/clubedascolecionadoras/_dashboard/'
     | '/clubedascolecionadoras/_dashboard/jogos/caca-palavras'
+    | '/clubedascolecionadoras/_dashboard/jogos/memoria'
     | '/clubedascolecionadoras/_dashboard/pagamento/falha'
     | '/clubedascolecionadoras/_dashboard/pagamento/infinitepay'
     | '/clubedascolecionadoras/_dashboard/pagamento/pendente'
@@ -530,6 +543,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubedascolecionadorasDashboardPagamentoFalhaRouteImport
       parentRoute: typeof ClubedascolecionadorasDashboardRoute
     }
+    '/clubedascolecionadoras/_dashboard/jogos/memoria': {
+      id: '/clubedascolecionadoras/_dashboard/jogos/memoria'
+      path: '/jogos/memoria'
+      fullPath: '/clubedascolecionadoras/jogos/memoria'
+      preLoaderRoute: typeof ClubedascolecionadorasDashboardJogosMemoriaRouteImport
+      parentRoute: typeof ClubedascolecionadorasDashboardRoute
+    }
     '/clubedascolecionadoras/_dashboard/jogos/caca-palavras': {
       id: '/clubedascolecionadoras/_dashboard/jogos/caca-palavras'
       path: '/jogos/caca-palavras'
@@ -553,6 +573,7 @@ interface ClubedascolecionadorasDashboardRouteChildren {
   ClubedascolecionadorasDashboardTrocasRoute: typeof ClubedascolecionadorasDashboardTrocasRoute
   ClubedascolecionadorasDashboardIndexRoute: typeof ClubedascolecionadorasDashboardIndexRoute
   ClubedascolecionadorasDashboardJogosCacaPalavrasRoute: typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
+  ClubedascolecionadorasDashboardJogosMemoriaRoute: typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   ClubedascolecionadorasDashboardPagamentoFalhaRoute: typeof ClubedascolecionadorasDashboardPagamentoFalhaRoute
   ClubedascolecionadorasDashboardPagamentoInfinitepayRoute: typeof ClubedascolecionadorasDashboardPagamentoInfinitepayRoute
   ClubedascolecionadorasDashboardPagamentoPendenteRoute: typeof ClubedascolecionadorasDashboardPagamentoPendenteRoute
@@ -585,6 +606,8 @@ const ClubedascolecionadorasDashboardRouteChildren: ClubedascolecionadorasDashbo
       ClubedascolecionadorasDashboardIndexRoute,
     ClubedascolecionadorasDashboardJogosCacaPalavrasRoute:
       ClubedascolecionadorasDashboardJogosCacaPalavrasRoute,
+    ClubedascolecionadorasDashboardJogosMemoriaRoute:
+      ClubedascolecionadorasDashboardJogosMemoriaRoute,
     ClubedascolecionadorasDashboardPagamentoFalhaRoute:
       ClubedascolecionadorasDashboardPagamentoFalhaRoute,
     ClubedascolecionadorasDashboardPagamentoInfinitepayRoute:
