@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { normalizeMemoryCoverPath } from "@/lib/memoryImagePath";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type MemoryDifficulty = "easy" | "medium" | "hard";
@@ -75,8 +76,10 @@ async function load(admin: any, userId: string, sessionId?: string) {
         id: card.card_instance_id,
         position: card.board_position,
         matched: Boolean(card.matched_at),
-        frontImage: card.matched_at ? images?.front_image_path : undefined,
-        backImage: images?.back_image_path || "/verso-card.webp",
+        frontImage: card.matched_at
+          ? normalizeMemoryCoverPath(images?.front_image_path) || undefined
+          : undefined,
+        backImage: "/verso-card.webp",
       };
     }),
   };
@@ -141,9 +144,9 @@ export const revealMemoryCard = createServerFn({ method: "POST" })
       .eq("is_active", true)
       .contains("allowed_game_keys", [GAME_KEY])
       .maybeSingle();
-    if (imageError || !image?.front_image_path)
-      throw new Error("A imagem desta carta não está disponível.");
-    return { cardId: cardRow.card_instance_id, frontImage: image.front_image_path };
+    const frontImage = normalizeMemoryCoverPath(image?.front_image_path);
+    if (imageError || !frontImage) throw new Error("A imagem desta carta não está disponível.");
+    return { cardId: cardRow.card_instance_id, frontImage };
   });
 
 export const compareMemoryCards = createServerFn({ method: "POST" })
