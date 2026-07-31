@@ -37,6 +37,22 @@ export function normalizeGameWord(value: string) {
     .replace(/[^A-Z]/g, "");
 }
 
+export function maskHardModeWord(value: string) {
+  const characters = Array.from(value);
+  const visibleCharacterIndexes = characters
+    .map((character, index) => (/^[\p{L}\p{N}]$/u.test(character) ? index : -1))
+    .filter((index) => index >= 0);
+  if (visibleCharacterIndexes.length <= 2) return value;
+  const first = visibleCharacterIndexes[0];
+  const last = visibleCharacterIndexes[visibleCharacterIndexes.length - 1];
+  return characters
+    .map((character, index) => {
+      if (index === first || index === last) return character;
+      return /^[\p{L}\p{N}]$/u.test(character) ? "_" : character;
+    })
+    .join("");
+}
+
 function seededRandom(seed: string) {
   let state = 2166136261;
   for (const char of seed) state = Math.imul(state ^ char.charCodeAt(0), 16777619);

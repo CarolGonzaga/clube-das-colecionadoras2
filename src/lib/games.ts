@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   generateWordSearch,
   isStraightContinuousPath,
+  maskHardModeWord,
   normalizeGameWord,
   pathsMatch,
   type CellCoordinate,
@@ -51,20 +52,18 @@ async function gameAdmin(userId: string) {
 
 function publicSession(session: any, words: any[]) {
   const found = words.filter((word) => word.found_at);
-  const visibleWords =
-    session.difficulty === "hard"
-      ? found.map((word) => ({
-          id: word.id,
-          displayWord: word.display_word,
-          category: word.category,
-          found: true,
-        }))
-      : words.map((word) => ({
-          id: word.id,
-          displayWord: word.display_word,
-          category: word.category,
-          found: Boolean(word.found_at),
-        }));
+  const visibleWords = words.map((word) => {
+    const isFound = Boolean(word.found_at);
+    return {
+      id: word.id,
+      displayWord:
+        session.difficulty === "hard" && !isFound
+          ? maskHardModeWord(word.display_word)
+          : word.display_word,
+      category: word.category,
+      found: isFound,
+    };
+  });
   return {
     id: session.id,
     difficulty: session.difficulty as WordSearchDifficulty,

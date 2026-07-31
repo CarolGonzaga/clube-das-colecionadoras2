@@ -251,36 +251,29 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
                 {session.foundWords} de {session.totalWords} palavras
               </span>
             </div>
-            {session.difficulty !== "hard" ? (
-              <ul className="mt-3 flex flex-wrap justify-center gap-2">
-                {session.words.map((word) => {
-                  const foundIndex = session.words
-                    .filter((candidate) => candidate.found)
-                    .findIndex((candidate) => candidate.id === word.id);
-                  return (
-                    <li
-                      key={word.id}
-                      style={
-                        word.found
-                          ? {
-                              backgroundColor:
-                                HIGHLIGHT_COLORS[foundIndex % HIGHLIGHT_COLORS.length],
-                            }
-                          : undefined
-                      }
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${word.found ? "border-black/15 text-[#3f1830] line-through" : "border-pink-200 text-[#9e1b4a]"}`}
-                    >
-                      {word.found && <Check className="mr-1 inline h-3 w-3" />}
-                      {word.displayWord}
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="mt-3 text-center text-xs font-bold text-[#9e1b4a]">
-                {session.foundWords} de 5 palavras encontradas
-              </p>
-            )}
+            <ul className="mt-3 flex flex-wrap justify-center gap-2">
+              {session.words.map((word) => {
+                const foundIndex = session.words
+                  .filter((candidate) => candidate.found)
+                  .findIndex((candidate) => candidate.id === word.id);
+                return (
+                  <li
+                    key={word.id}
+                    style={
+                      word.found
+                        ? {
+                            backgroundColor: HIGHLIGHT_COLORS[foundIndex % HIGHLIGHT_COLORS.length],
+                          }
+                        : undefined
+                    }
+                    className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${word.found ? "border-black/15 text-[#3f1830] line-through" : "border-pink-200 text-[#9e1b4a]"}`}
+                  >
+                    {word.found && <Check className="mr-1 inline h-3 w-3" />}
+                    {word.displayWord}
+                  </li>
+                );
+              })}
+            </ul>
 
             <div
               className="word-search-board mx-auto mt-5 grid aspect-square w-full max-w-[520px] gap-0.5 p-2"

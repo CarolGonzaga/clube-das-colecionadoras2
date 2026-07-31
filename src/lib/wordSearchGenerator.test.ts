@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   generateWordSearch,
   isStraightContinuousPath,
+  maskHardModeWord,
   normalizeGameWord,
   pathsMatch,
   type WordSource,
@@ -40,6 +41,12 @@ test("normaliza acentos, espaços, hífens e pontuação sem alterar a origem", 
   const original = "Ficção científica!";
   assert.equal(normalizeGameWord(original), "FICCAOCIENTIFICA");
   assert.equal(original, "Ficção científica!");
+});
+
+test("oculta palavras do nível difícil mantendo somente a primeira e a última letra", () => {
+  assert.equal(maskHardModeWord("Romance"), "R_____e");
+  assert.equal(maskHardModeWord("Maré alta"), "M___ ___a");
+  assert.equal(maskHardModeWord("Oi"), "Oi");
 });
 
 test("compara coordenadas sem depender da ordem das chaves do JSONB", () => {
