@@ -52,25 +52,33 @@ async function load(admin: any, userId: string, sessionId?: string) {
   if (!session) return null;
   const { data: cards, error: cardsError } = await admin
     .from("memory_game_cards")
-    .select(
-      "card_instance_id,board_position,matched_at,source_sticker_id,memory_game_stickers(front_image_path,back_image_path)",
-    )
+    .select("card_instance_id,board_position,matched_at,source_sticker_id")
     .eq("session_id", session.id)
     .order("board_position");
   if (cardsError) throw new Error("Não foi possível carregar o tabuleiro.");
+  const sourceIds = [...new Set((cards || []).map((card: any) => card.source_sticker_id))];
+  const { data: catalog, error: catalogError } = await admin
+    .from("memory_game_stickers")
+    .select("id,front_image_path,back_image_path")
+    .in("id", sourceIds);
+  if (catalogError) throw new Error("Não foi possível carregar as imagens das cartas.");
+  const imagesById = new Map((catalog || []).map((item: any) => [item.id, item]));
   return {
     id: session.id,
     difficulty: session.difficulty as MemoryDifficulty,
     status: session.status as "in_progress" | "won" | "claimed",
     totalPairs: session.total_pairs,
     matchedPairs: session.matched_pairs,
-    cards: (cards || []).map((card: any) => ({
-      id: card.card_instance_id,
-      position: card.board_position,
-      matched: Boolean(card.matched_at),
-      frontImage: card.matched_at ? card.memory_game_stickers?.front_image_path : undefined,
-      backImage: card.memory_game_stickers?.back_image_path || "/verso-card.webp",
-    })),
+    cards: (cards || []).map((card: any) => {
+      const images = imagesById.get(card.source_sticker_id);
+      return {
+        id: card.card_instance_id,
+        position: card.board_position,
+        matched: Boolean(card.matched_at),
+        frontImage: card.matched_at ? images?.front_image_path : undefined,
+        backImage: images?.back_image_path || "/verso-card.webp",
+      };
+    }),
   };
 }
 
@@ -119,19 +127,23 @@ export const revealMemoryCard = createServerFn({ method: "POST" })
     if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
     const { data: cardRow, error } = await admin
       .from("memory_game_cards")
-      .select(
-        "card_instance_id,matched_at,memory_game_sessions!inner(user_id,status),memory_game_stickers!inner(front_image_path)",
-      )
+      .select("card_instance_id,source_sticker_id,memory_game_sessions!inner(user_id,status)")
       .eq("session_id", data.sessionId)
       .eq("card_instance_id", data.cardId)
       .eq("memory_game_sessions.user_id", context.userId)
       .maybeSingle();
     if (error || !cardRow || !["in_progress", "won"].includes(cardRow.memory_game_sessions.status))
       throw new Error("Carta inválida ou partida encerrada.");
-    return {
-      cardId: cardRow.card_instance_id,
-      frontImage: cardRow.memory_game_stickers.front_image_path,
-    };
+    const { data: image, error: imageError } = await admin
+      .from("memory_game_stickers")
+      .select("front_image_path")
+      .eq("id", cardRow.source_sticker_id)
+      .eq("is_active", true)
+      .contains("allowed_game_keys", [GAME_KEY])
+      .maybeSingle();
+    if (imageError || !image?.front_image_path)
+      throw new Error("A imagem desta carta não está disponível.");
+    return { cardId: cardRow.card_instance_id, frontImage: image.front_image_path };
   });
 
 export const compareMemoryCards = createServerFn({ method: "POST" })

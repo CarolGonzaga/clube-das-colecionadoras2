@@ -171,21 +171,16 @@ export default function MemoryGameClient({ initialState }: { initialState: State
     }
   };
 
-  const columns =
-    session?.difficulty === "hard"
-      ? "grid-cols-4 sm:grid-cols-6"
-      : session?.difficulty === "medium"
-        ? "grid-cols-4"
-        : "grid-cols-3 sm:grid-cols-4";
+  const boardColumns = session?.difficulty === "hard" ? 6 : 4;
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-3 pb-24 pt-5 sm:px-6">
+    <main className="mx-auto min-h-screen max-w-3xl px-3 pb-16 pt-3 sm:px-6">
       <button
         className="mb-4 flex items-center gap-1 text-xs font-bold text-[#9e1b4a]"
         onClick={() => router.navigate({ to: "/clubedascolecionadoras" })}
       >
         <ArrowLeft className="h-4 w-4" /> Voltar
       </button>
-      <section className="rounded-[28px] border border-pink-200 bg-white p-4 shadow-sm dark:bg-[#180615] sm:p-7">
+      <section className="rounded-[28px] border border-pink-200 bg-white p-3 shadow-sm dark:bg-[#180615] sm:p-5">
         <header className="text-center">
           <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[10px] font-bold uppercase text-[#9e1b4a]">
             <Gamepad2 className="h-3 w-3" /> Missão diária
@@ -269,7 +264,10 @@ export default function MemoryGameClient({ initialState }: { initialState: State
               )}
             </div>
             <div
-              className={`mx-auto mt-5 grid ${columns} max-w-2xl gap-2 sm:gap-3`}
+              className="mx-auto mt-3 grid w-fit gap-[clamp(4px,1vh,8px)]"
+              style={{
+                gridTemplateColumns: `repeat(${boardColumns}, clamp(42px, calc((100dvh - 300px) / 6), 70px))`,
+              }}
               aria-busy={busy}
             >
               {session.cards.map((card) => {
@@ -286,20 +284,20 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                           : `Virar carta ${card.position + 1}`
                     }
                     onClick={() => flip(card)}
-                    className="group aspect-[2/3] min-w-0 rounded-xl focus:outline-none focus:ring-4 focus:ring-pink-300 disabled:opacity-90"
+                    className="group aspect-[2/3] w-full min-w-0 rounded-lg focus:outline-none focus:ring-4 focus:ring-pink-300 disabled:opacity-90"
                   >
                     <span
-                      className={`relative block h-full w-full rounded-xl transition-transform duration-300 [transform-style:preserve-3d] motion-reduce:transition-none ${face ? "[transform:rotateY(180deg)]" : ""}`}
+                      className={`relative block h-full w-full rounded-lg transition-transform duration-300 [transform-style:preserve-3d] motion-reduce:transition-none ${face ? "[transform:rotateY(180deg)]" : ""}`}
                     >
                       <img
                         src={getClubAssetUrl(card.backImage)}
                         alt=""
-                        className="absolute inset-0 h-full w-full rounded-xl object-cover [backface-visibility:hidden]"
+                        className="absolute inset-0 h-full w-full rounded-lg object-cover [backface-visibility:hidden]"
                       />
                       <img
                         src={getClubAssetUrl(face || card.backImage)}
                         alt=""
-                        className="absolute inset-0 h-full w-full rounded-xl border-2 border-pink-300 object-cover [backface-visibility:hidden] [transform:rotateY(180deg)]"
+                        className="absolute inset-0 h-full w-full rounded-lg border border-pink-300 object-cover [backface-visibility:hidden] [transform:rotateY(180deg)]"
                       />
                     </span>
                   </button>
