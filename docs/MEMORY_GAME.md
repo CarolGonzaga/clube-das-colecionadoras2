@@ -27,9 +27,9 @@ O sorteio preserva:
 1. Fazer backup do banco.
 2. Aplicar `20260731000300_memory_game.sql` em homologação.
 3. Executar `supabase/tests/verify_word_search_security.sql` e `supabase/tests/verify_memory_game_security.sql`.
-4. Publicar o frontend com a flag ainda desligada.
-5. Conceder acesso a uma conta administrativa pelo painel.
-6. Ativar `memory_game_enabled` pelo painel somente após a homologação.
+4. Aplicar `20260731000400_activate_memory_game_testers.sql` somente quando o teste fechado for autorizado.
+5. Essa migration ativa a flag e concede acesso exclusivamente aos três UUIDs de teste do Caça-Palavras.
+6. Novos acessos podem ser concedidos posteriormente pelo painel administrativo.
 7. Validar os níveis Fácil, Médio e Difícil, atualização de página, duas abas e resgate concorrente com o Caça-Palavras.
 
 Não há nova variável de ambiente. Permanecem necessárias `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` e `SUPABASE_SERVICE_ROLE_KEY`; a chave privilegiada é carregada somente no servidor.
