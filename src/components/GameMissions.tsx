@@ -266,38 +266,29 @@ export default function GameMissions() {
             >
               Como jogar
             </h3>
-            <ol className="mt-4 list-decimal space-y-3 pl-5 text-xs font-semibold leading-relaxed text-[#7f3152] dark:text-[#f7a8cb]">
-              <li>
-                Escolha um nível disponível antes de iniciar a partida: Fácil, Médio ou Difícil.
-              </li>
-              <li>
-                Clique nas letras em sequência, sempre escolhendo células vizinhas na horizontal,
-                vertical ou diagonal.
-              </li>
-              <li>
-                A seleção deve seguir uma única direção, sem pular letras ou mudar de sentido
-                durante a palavra.
-              </li>
-              <li>
-                Nos níveis Médio e Difícil, algumas palavras podem aparecer de trás para frente.
-              </li>
-              <li>
-                Encontre todas as palavras da partida para concluir o nível e liberar a recompensa
-                diária.
-              </li>
-              <li>
-                Não conseguiu terminar hoje? Tudo bem! Seu progresso ficará salvo e você poderá
-                continuar a mesma partida no dia seguinte, exatamente de onde parou.
-              </li>
-              <li>
-                Você pode receber apenas 1 recompensa por dia, mesmo que conclua mais de um nível.
-              </li>
-              <li>
-                Depois de concluído, o nível ficará bloqueado até você completar os outros dois. Ao
-                finalizar o ciclo de Fácil, Médio e Difícil, todos os níveis serão liberados
-                novamente.
-              </li>
-            </ol>
+            <div className="mt-4 space-y-3 text-xs font-semibold leading-relaxed text-[#7f3152] dark:text-[#f7a8cb]">
+              <p>Antes de começar, escolha um nível: Fácil, Médio ou Difícil.</p>
+              <p>
+                Para encontrar as palavras, clique nas letras em sequência, sempre passando por
+                células vizinhas (horizontal, vertical ou diagonal). Não é permitido pular letras
+                nem mudar de direção no meio da palavra.
+              </p>
+              <p>Nos níveis Médio e Difícil, algumas palavras podem aparecer ao contrário.</p>
+              <p>
+                Para concluir o nível, encontre todas as palavras da partida. Ao finalizar, você
+                libera a recompensa diária.
+              </p>
+              <p>
+                Não conseguiu terminar no mesmo dia? Sem problema! Seu progresso fica salvo e você
+                pode continuar depois, exatamente de onde parou.
+              </p>
+              <p>Você só pode receber 1 recompensa por dia.</p>
+              <p>
+                Depois de concluir um nível de dificuldade (Fácil, Médio ou Difícil), ele ficará
+                bloqueado até que você finalize os outros dois níveis. Quando completar os três
+                níveis de dificuldade, todos serão liberados novamente para jogar.
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => router.navigate({ to: "/clubedascolecionadoras/jogos/caca-palavras" })}
