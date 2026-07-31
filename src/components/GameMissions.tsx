@@ -62,6 +62,9 @@ export default function GameMissions() {
   const [showRules, setShowRules] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const slides = SLIDES.filter(
+    (item) => item.key !== "memory_game" || Boolean(memoryState?.available),
+  );
 
   useEffect(() => {
     let active = true;
@@ -78,17 +81,21 @@ export default function GameMissions() {
   useEffect(() => {
     if (paused) return;
     const timer = window.setInterval(
-      () => setSlideIndex((current) => (current + 1) % SLIDES.length),
+      () => setSlideIndex((current) => (current + 1) % slides.length),
       12000,
     );
     return () => window.clearInterval(timer);
-  }, [paused]);
+  }, [paused, slides.length]);
+
+  useEffect(() => {
+    setSlideIndex((current) => current % slides.length);
+  }, [slides.length]);
 
   const move = (direction: number) => {
-    setSlideIndex((current) => (current + direction + SLIDES.length) % SLIDES.length);
+    setSlideIndex((current) => (current + direction + slides.length) % slides.length);
   };
 
-  const slide = SLIDES[slideIndex];
+  const slide = slides[slideIndex % slides.length];
 
   return (
     <section className="home-dashboard-games mx-4 mb-4 min-w-0" aria-labelledby="daily-mission">
@@ -160,9 +167,9 @@ export default function GameMissions() {
 
       <div
         className="mt-3 flex items-center justify-center gap-2"
-        aria-label={`Slide ${slideIndex + 1} de ${SLIDES.length}`}
+        aria-label={`Slide ${slideIndex + 1} de ${slides.length}`}
       >
-        {SLIDES.map((item, index) => (
+        {slides.map((item, index) => (
           <button
             key={item.key}
             type="button"
@@ -256,7 +263,7 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
             })}
           </div>
           <button
-            disabled={!available || Boolean(state?.reward)}
+            disabled={!available || Boolean(state?.reward && !session)}
             onClick={onPlay}
             className="mx-auto min-w-[150px] rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none sm:mx-0"
           >
@@ -283,7 +290,7 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
         {Array.from({ length: 6 }, (_, i) => (
           <div
             key={i}
-            className="rounded-lg border border-pink-300 bg-[url('/verso-card.webp')] bg-cover bg-center shadow-sm"
+            className="border border-pink-300 bg-[url('/verso-card.webp')] bg-cover bg-center shadow-sm"
           />
         ))}
       </div>
@@ -333,14 +340,14 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
             ))}
           </div>
           <button
-            disabled={!available}
+            disabled={!available || Boolean(state?.reward)}
             onClick={onPlay}
             className="mx-auto min-w-[150px] rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none sm:mx-0"
           >
             {session
               ? "Continuar"
               : state?.reward
-                ? "Jogar sem resgate"
+                ? "Concluído hoje"
                 : available
                   ? "Jogar agora"
                   : "Em breve"}

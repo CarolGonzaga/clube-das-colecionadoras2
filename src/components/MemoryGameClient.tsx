@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ArrowLeft, Gamepad2, Gift, RotateCcw, Trophy } from "lucide-react";
+import { ArrowLeft, Gamepad2, Gift, Trophy } from "lucide-react";
 import { useUI } from "@/components/UIProvider";
 import {
-  abandonMemoryGame,
   claimMemoryGameReward,
   compareMemoryCards,
   getMemoryGameState,
@@ -77,27 +76,6 @@ export default function MemoryGameClient({ initialState }: { initialState: State
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível iniciar.");
     } finally {
-      setBusy(false);
-    }
-  };
-  const changeLevel = async (next: MemoryDifficulty) => {
-    if (
-      session &&
-      session.status === "in_progress" &&
-      !window.confirm("Trocar o nível apagará o progresso desta partida. Deseja continuar?")
-    )
-      return;
-    setBusy(true);
-    try {
-      if (session?.status === "in_progress")
-        await abandonMemoryGame({ data: { sessionId: session.id } });
-      setSession(null);
-      setDifficulty(next);
-      setOpen({});
-      setSelected([]);
-      await start(next);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível trocar o nível.");
       setBusy(false);
     }
   };
@@ -193,7 +171,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
             Encontre todos os pares para liberar a recompensa diária.
           </p>
         </header>
-        {!session && (
+        {!session && !reward && (
           <div className="mt-6">
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
               <summary className="cursor-pointer font-black">Como jogar</summary>
@@ -201,7 +179,12 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                 <li>Escolha Fácil (6 pares), Médio (8 pares) ou Difícil (12 pares).</li>
                 <li>Vire duas cartas por vez. Se forem iguais, elas permanecem abertas.</li>
                 <li>Encontre todos os pares para liberar a recompensa diária.</li>
-                <li>Seu progresso fica salvo. Ao trocar de nível, a partida atual é abandonada.</li>
+                <li>Ao iniciar, o nível escolhido fica bloqueado até o fim da partida.</li>
+                <li>Você pode iniciar somente uma partida por dia.</li>
+                <li>
+                  Se sair antes de terminar, a partida continuará salva, inclusive depois da virada
+                  do dia.
+                </li>
                 <li>Há apenas uma recompensa por dia, compartilhada entre todos os jogos.</li>
               </ul>
             </details>
@@ -231,8 +214,10 @@ export default function MemoryGameClient({ initialState }: { initialState: State
         )}
         {reward && (
           <div className="mx-auto mt-3 max-w-sm rounded-xl bg-emerald-50 px-3 py-2 text-center text-xs font-bold text-emerald-700">
-            <Trophy className="mr-1 inline h-4 w-4" /> Recompensa diária já resgatada. Você ainda
-            pode jogar.
+            <Trophy className="mr-1 inline h-4 w-4" /> Recompensa diária já resgatada.
+            {session
+              ? " Você pode concluir a partida pendente, mas não receberá outro resgate hoje."
+              : " Uma nova partida estará disponível no próximo dia."}
           </div>
         )}
         {session && (
@@ -247,21 +232,9 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                 </span>
               </div>
               {session.status === "in_progress" && (
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    changeLevel(
-                      session.difficulty === "easy"
-                        ? "medium"
-                        : session.difficulty === "medium"
-                          ? "hard"
-                          : "easy",
-                    )
-                  }
-                  className="flex items-center gap-1 text-[10px] font-bold text-[#9e1b4a]"
-                >
-                  <RotateCcw className="h-3 w-3" /> Trocar nível
-                </button>
+                <span className="text-[10px] font-bold text-[#9e1b4a] dark:text-[#f7a8cb]">
+                  Nível bloqueado nesta partida
+                </span>
               )}
             </div>
             <div
@@ -286,20 +259,20 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                           : `Virar carta ${card.position + 1}`
                     }
                     onClick={() => flip(card)}
-                    className="group aspect-[2/3] w-full min-w-0 rounded-lg focus:outline-none focus:ring-4 focus:ring-pink-300 disabled:opacity-90"
+                    className="group aspect-[2/3] w-full min-w-0 focus:outline-none focus:ring-4 focus:ring-pink-300 disabled:opacity-90"
                   >
                     <span
-                      className={`relative block h-full w-full rounded-lg transition-transform duration-300 [transform-style:preserve-3d] motion-reduce:transition-none ${faceUrl ? "[transform:rotateY(180deg)]" : ""}`}
+                      className={`relative block h-full w-full transition-transform duration-300 [transform-style:preserve-3d] motion-reduce:transition-none ${faceUrl ? "[transform:rotateY(180deg)]" : ""}`}
                     >
                       <img
                         src={getClubAssetUrl(card.backImage)}
                         alt=""
-                        className="absolute inset-0 h-full w-full rounded-lg object-cover [backface-visibility:hidden]"
+                        className="absolute inset-0 h-full w-full object-cover [backface-visibility:hidden]"
                       />
                       <img
                         src={faceUrl || getClubAssetUrl(card.backImage)}
                         alt=""
-                        className="absolute inset-0 h-full w-full rounded-lg border border-pink-300 object-cover [backface-visibility:hidden] [transform:rotateY(180deg)]"
+                        className="absolute inset-0 h-full w-full border border-pink-300 object-cover [backface-visibility:hidden] [transform:rotateY(180deg)]"
                       />
                     </span>
                   </button>
