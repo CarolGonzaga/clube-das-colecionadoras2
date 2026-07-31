@@ -37,6 +37,54 @@ export function normalizeGameWord(value: string) {
     .replace(/[^A-Z]/g, "");
 }
 
+export function expandGameNumbers(value: string) {
+  const names: Record<string, string> = {
+    "0": "zero",
+    "1": "um",
+    "2": "dois",
+    "3": "três",
+    "4": "quatro",
+    "5": "cinco",
+    "6": "seis",
+    "7": "sete",
+    "8": "oito",
+    "9": "nove",
+    "10": "dez",
+    "11": "onze",
+    "12": "doze",
+    "13": "treze",
+    "14": "quatorze",
+    "15": "quinze",
+    "16": "dezesseis",
+    "17": "dezessete",
+    "18": "dezoito",
+    "19": "dezenove",
+    "20": "vinte",
+  };
+  return value.replace(/\d+/g, (digits) => {
+    if (names[digits]) return names[digits];
+    const number = Number(digits);
+    if (Number.isSafeInteger(number) && number < 100) {
+      const tens: Record<number, string> = {
+        2: "vinte",
+        3: "trinta",
+        4: "quarenta",
+        5: "cinquenta",
+        6: "sessenta",
+        7: "setenta",
+        8: "oitenta",
+        9: "noventa",
+      };
+      const tensDigit = Math.floor(number / 10);
+      const unitDigit = number % 10;
+      if (tens[tensDigit]) {
+        return unitDigit ? `${tens[tensDigit]} e ${names[String(unitDigit)]}` : tens[tensDigit];
+      }
+    }
+    return Array.from(digits, (digit) => names[digit]).join(" ");
+  });
+}
+
 export function maskHardModeWord(value: string) {
   const characters = Array.from(value);
   const visibleCharacterIndexes = characters
@@ -96,12 +144,19 @@ export function generateWordSearch(
   attemptLimit = 200,
 ): GeneratedWordSearch {
   const targetCount = difficulty === "easy" ? 7 : 5;
+  const maximumWordLength = difficulty === "easy" ? 10 : difficulty === "medium" ? 13 : 16;
   const random = seededRandom(seed);
   const unique = [
     ...new Map(
       candidates
-        .map((item) => ({ ...item, normalizedWord: normalizeGameWord(item.displayWord) }))
-        .filter((item) => item.normalizedWord.length >= 4)
+        .map((item) => {
+          const displayWord = expandGameNumbers(item.displayWord);
+          return { ...item, displayWord, normalizedWord: normalizeGameWord(displayWord) };
+        })
+        .filter(
+          (item) =>
+            item.normalizedWord.length >= 4 && item.normalizedWord.length <= maximumWordLength,
+        )
         .map((item) => [item.normalizedWord, item]),
     ).values(),
   ];
@@ -112,7 +167,7 @@ export function generateWordSearch(
   for (let setAttempt = 0; setAttempt < 12; setAttempt += 1) {
     const selected = shuffle(unique, random).slice(0, targetCount);
     const longest = Math.max(...selected.map((word) => word.normalizedWord.length));
-    const size = Math.min(16, Math.max(baseSize, longest));
+    const size = Math.min(maximumWordLength, Math.max(baseSize, longest));
     if (longest > size) continue;
 
     const board: (string | null)[][] = Array.from({ length: size }, () =>

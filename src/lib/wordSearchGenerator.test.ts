@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  expandGameNumbers,
   generateWordSearch,
   isStraightContinuousPath,
   maskHardModeWord,
@@ -43,6 +44,12 @@ test("normaliza acentos, espaços, hífens e pontuação sem alterar a origem", 
   assert.equal(original, "Ficção científica!");
 });
 
+test("transforma números em palavras sem alterar o valor original", () => {
+  const original = "Os 4 amores em 21 dias";
+  assert.equal(expandGameNumbers(original), "Os quatro amores em vinte e um dias");
+  assert.equal(original, "Os 4 amores em 21 dias");
+});
+
 test("oculta palavras do nível difícil mantendo somente a primeira e a última letra", () => {
   assert.equal(maskHardModeWord("Romance"), "R_____e");
   assert.equal(maskHardModeWord("Maré alta"), "M___ ___a");
@@ -78,6 +85,7 @@ test("fácil gera 7 palavras com horizontal, vertical e diagonal, sem inversões
   assert.ok(game.words.some((word) => word.direction === "down"));
   assert.ok(game.words.some((word) => word.direction === "downRight"));
   assert.ok(game.words.every((word) => !word.isReversed));
+  assert.ok(game.words.every((word) => word.normalizedWord.length <= 10));
 });
 
 test("médio gera 5 palavras, pelo menos 2 diagonais e 2 inversões", () => {
@@ -91,6 +99,7 @@ test("médio gera 5 palavras, pelo menos 2 diagonais e 2 inversões", () => {
     ),
   );
   assert.ok(game.words.filter((word) => word.isReversed).length >= 2);
+  assert.ok(game.words.every((word) => word.normalizedWord.length <= 13));
 });
 
 test("difícil gera 5 palavras completas com direções variadas e inversões", () => {
@@ -104,6 +113,7 @@ test("difícil gera 5 palavras completas com direções variadas e inversões", 
     ),
   );
   assert.ok(game.words.filter((word) => word.isReversed).length >= 2);
+  assert.ok(game.words.every((word) => word.normalizedWord.length <= 16));
   for (const word of game.words) {
     assert.equal(word.path.length, word.normalizedWord.length);
     assert.equal(
