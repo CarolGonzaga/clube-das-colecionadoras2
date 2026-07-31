@@ -41,7 +41,15 @@ export default function PosterModal({
 
   const ownedCount = ownedSlugs.length;
   const albumTotal = Math.max(stickers.length, TOTAL_ALBUM_STICKERS);
-  const pct = Math.round((ownedCount / albumTotal) * 100);
+  const ownedSlugSet = new Set(ownedSlugs);
+  const basicOwnedCount = stickers.filter(
+    (sticker) =>
+      sticker.number >= 1 && sticker.number <= 193 && ownedSlugSet.has(sticker.slug),
+  ).length;
+  const pct =
+    mode === "final"
+      ? Math.round((basicOwnedCount / 193) * 100)
+      : Math.round((ownedCount / albumTotal) * 100);
   const exclusiveCount =
     explicitExclusiveCount ??
     ownedSlugs.filter((slug) => {
@@ -229,7 +237,8 @@ export default function PosterModal({
         // 4. CONTENT INNER
         const cx = W / 2;
 
-        const { statusText } = getCollectionStatus(ownedCount);
+        const { statusText: progressStatusText } = getCollectionStatus(ownedCount);
+        const statusText = mode === "final" ? "Álbum Básico completo" : progressStatusText;
 
         ctx.save();
         ctx.fillStyle = "#E8C1CD";
@@ -391,7 +400,7 @@ export default function PosterModal({
         }
       },
     );
-  }, [nick, ownedSlugs, avatarUrl, avatarEmoji, rareCount, exclusiveCount, pct, commonCount]);
+  }, [nick, ownedSlugs, avatarUrl, avatarEmoji, rareCount, exclusiveCount, pct, commonCount, mode, premiumLayout]);
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
@@ -411,7 +420,7 @@ export default function PosterModal({
     >
       <div className="modal" style={{ textAlign: "center" }}>
         <div className="grab" onClick={onClose} />
-        <h2>Story de progresso</h2>
+        <h2>{mode === "final" ? "Pôster final" : "Story de progresso"}</h2>
         <div className="poster-wrap flex justify-center my-4">
           <canvas
             ref={canvasRef}

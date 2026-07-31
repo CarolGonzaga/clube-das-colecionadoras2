@@ -347,6 +347,12 @@ export default function HomeClient({
 
   const ownedCount = ownedSlugs.length;
   const { pct, statusText, titleIcon } = getCollectionStatus(ownedCount);
+  const ownedSlugSet = new Set(ownedSlugs);
+  const basicAlbumComplete =
+    stickers.filter(
+      (sticker) =>
+        sticker.number >= 1 && sticker.number <= 193 && ownedSlugSet.has(sticker.slug),
+    ).length === 193;
   const exclusiveCount = ownedSlugs.filter((slug) => {
     const sticker = stickers.find((item) => item.slug === slug);
     return sticker ? isExclusiveSticker(sticker) : false;
@@ -1474,7 +1480,7 @@ export default function HomeClient({
       </div>
 
       {/* ===== POSTER SECTION ===== */}
-      {pct === 100 && (
+      {basicAlbumComplete && (
         <div className="home-dashboard-poster mx-4 mb-4">
           <div className="relative overflow-hidden bg-white rounded-2xl border border-pink-200/60 shadow-sm p-4">
             <div className="relative z-10 pr-[92px] max-[335px]:pr-[70px]">
