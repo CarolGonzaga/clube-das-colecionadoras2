@@ -32,8 +32,12 @@ type Session = {
 };
 type State = {
   available: boolean;
+  canPlay?: boolean;
+  blockedByGame?: "word_search" | "memory_game" | null;
   session?: Session | null;
   reward?: { sticker_number: number } | null;
+  availableDifficulties?: MemoryDifficulty[];
+  usedDifficulties?: MemoryDifficulty[];
 };
 const levels: { id: MemoryDifficulty; label: string; pairs: number }[] = [
   { id: "easy", label: "Fácil", pairs: 6 },
@@ -51,6 +55,9 @@ export default function MemoryGameClient({ initialState }: { initialState: State
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [reward, setReward] = useState(initialState.reward || null);
+  const availableDifficulties =
+    initialState.availableDifficulties || levels.map((level) => level.id);
+  const usedDifficulties = initialState.usedDifficulties || [];
   const [errorCards, setErrorCards] = useState<Set<string>>(() => new Set());
   const [matchedCards, setMatchedCards] = useState<Set<string>>(() => new Set());
   const feedbackTimers = useRef<number[]>([]);
@@ -198,7 +205,12 @@ export default function MemoryGameClient({ initialState }: { initialState: State
             Encontre todos os pares para liberar a recompensa diária.
           </p>
         </header>
-        {!session && !reward && (
+        {!session && !reward && initialState.canPlay === false && (
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-pink-200 bg-pink-50 p-5 text-center text-xs font-semibold text-[#8e1745] dark:bg-[#260c20] dark:text-[#f7a8cb]">
+            Você já tem uma partida em andamento. Conclua o jogo atual antes de iniciar outro.
+          </div>
+        )}
+        {!session && !reward && initialState.canPlay !== false && (
           <div className="mt-6">
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
               <summary className="cursor-pointer font-black">Como jogar</summary>
@@ -207,12 +219,12 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                 <li>Vire duas cartas por vez. Se forem iguais, elas permanecem abertas.</li>
                 <li>Encontre todos os pares para liberar a recompensa diária.</li>
                 <li>Ao iniciar, o nível escolhido fica bloqueado até o fim da partida.</li>
-                <li>Você pode iniciar somente uma partida por dia.</li>
+                <li>Você pode vencer somente uma partida por dia, considerando todos os jogos.</li>
                 <li>
-                  Se sair antes de terminar, a partida continuará salva, inclusive depois da virada
-                  do dia.
+                  Se sair, seu progresso fica salvo até o fim do dia. Na virada do dia, partidas não
+                  concluídas são reiniciadas e o nível volta a ficar disponível.
                 </li>
-                <li>Há apenas uma recompensa por dia, compartilhada entre todos os jogos.</li>
+                <li>Conclua e resgate a recompensa antes da virada do dia.</li>
               </ul>
             </details>
             <h2 className="text-center text-sm font-bold text-[#6e1638] dark:text-[#ffd1e5]">
@@ -222,16 +234,25 @@ export default function MemoryGameClient({ initialState }: { initialState: State
               {levels.map((level) => (
                 <button
                   key={level.id}
+                  disabled={
+                    !availableDifficulties.includes(level.id) || initialState.canPlay === false
+                  }
                   onClick={() => setDifficulty(level.id)}
-                  className={`rounded-2xl border p-3 text-xs font-bold ${difficulty === level.id ? "border-pink-500 bg-pink-100 text-[#8e1745]" : "border-pink-200 text-[#a52b59] dark:bg-[#260c20]"}`}
+                  className={`rounded-2xl border p-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50 ${difficulty === level.id ? "border-pink-500 bg-pink-100 text-[#8e1745]" : "border-pink-200 text-[#a52b59] dark:bg-[#260c20]"}`}
                 >
                   {level.label}
-                  <span className="mt-1 block text-[9px] font-medium">{level.pairs} pares</span>
+                  <span className="mt-1 block text-[9px] font-medium">
+                    {usedDifficulties.includes(level.id) ? "Já usado" : `${level.pairs} pares`}
+                  </span>
                 </button>
               ))}
             </div>
             <button
-              disabled={busy}
+              disabled={
+                busy ||
+                initialState.canPlay === false ||
+                !availableDifficulties.includes(difficulty)
+              }
               onClick={() => start()}
               className="mx-auto mt-5 block rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-8 py-3 text-xs font-black text-white disabled:opacity-60"
             >
@@ -241,10 +262,8 @@ export default function MemoryGameClient({ initialState }: { initialState: State
         )}
         {reward && (
           <div className="mx-auto mt-3 max-w-sm rounded-xl bg-emerald-50 px-3 py-2 text-center text-xs font-bold text-emerald-700">
-            <Trophy className="mr-1 inline h-4 w-4" /> Recompensa diária já resgatada.
-            {session
-              ? " Você pode concluir a partida pendente, mas não receberá outro resgate hoje."
-              : " Uma nova partida estará disponível no próximo dia."}
+            <Trophy className="mr-1 inline h-4 w-4" /> Recompensa diária já resgatada. Uma nova
+            partida estará disponível no próximo dia.
           </div>
         )}
         {session && (

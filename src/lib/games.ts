@@ -11,6 +11,12 @@ import {
   type WordSearchDifficulty,
   type WordSource,
 } from "@/lib/wordSearchGenerator";
+import {
+  expireStaleDailyGameSessions,
+  getActiveDailyGame,
+  getDailyGameDate,
+  getDailyGameDifficultyCycle,
+} from "@/lib/dailyGamesPolicy";
 
 // The generated Supabase types predate the incremental game migration. Keep the
 // escape hatch isolated here until types are regenerated after the migration.
@@ -103,37 +109,6 @@ async function loadSession(admin: any, userId: string, sessionId?: string) {
   return { raw: data, words: words || [], public: publicSession(data, words || []) };
 }
 
-async function getDifficultyCycle(admin: any, userId: string) {
-  const difficulties: WordSearchDifficulty[] = ["easy", "medium", "hard"];
-  const { data: rewards, error: rewardError } = await admin
-    .from("daily_game_rewards")
-    .select("session_id,reward_date")
-    .eq("user_id", userId)
-    .eq("game_key", GAME_KEY)
-    .order("reward_date", { ascending: true })
-    .limit(500);
-  if (rewardError) throw new Error("Não foi possível carregar o ciclo de dificuldades.");
-  const sessionIds = (rewards || []).map((reward: any) => reward.session_id);
-  if (sessionIds.length === 0) return { used: [], available: difficulties };
-  const { data: sessions, error: sessionError } = await admin
-    .from("word_search_sessions")
-    .select("id,difficulty")
-    .in("id", sessionIds);
-  if (sessionError) throw new Error("Não foi possível carregar o ciclo de dificuldades.");
-  const byId = new Map((sessions || []).map((session: any) => [session.id, session.difficulty]));
-  const used = new Set<WordSearchDifficulty>();
-  for (const reward of rewards || []) {
-    const difficulty = byId.get(reward.session_id) as WordSearchDifficulty | undefined;
-    if (!difficulty) continue;
-    used.add(difficulty);
-    if (used.size === difficulties.length) used.clear();
-  }
-  return {
-    used: [...used],
-    available: difficulties.filter((difficulty) => !used.has(difficulty)),
-  };
-}
-
 export const getDailyGamesState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -147,24 +122,25 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
         session: null,
         reward: null,
       };
-    const [session, rewardResult, difficultyCycle] = await Promise.all([
+    const today = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, today);
+    const [session, rewardResult, difficultyCycle, activeGame] = await Promise.all([
       loadSession(admin, context.userId),
       admin
         .from("daily_game_rewards")
         .select("sticker_number,result_type,is_rare,created_at")
         .eq("user_id", context.userId)
-        .eq(
-          "reward_date",
-          new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date()),
-        )
+        .eq("reward_date", today)
         .maybeSingle(),
-      getDifficultyCycle(admin, context.userId),
+      getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
+      getActiveDailyGame(admin, context.userId, today),
     ]);
     return {
       enabled,
       authorized,
       available: true,
-      canPlay: !rewardResult.data,
+      canPlay: !rewardResult.data && (!activeGame || activeGame.gameKey === GAME_KEY),
+      blockedByGame: activeGame && activeGame.gameKey !== GAME_KEY ? activeGame.gameKey : null,
       session: session?.public || null,
       reward: rewardResult.data || null,
       availableDifficulties: difficultyCycle.available,
@@ -178,24 +154,27 @@ export const startWordSearch = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { admin, available } = await gameAdmin(context.userId);
     if (!available) throw new Error(unavailable);
-    const localDate = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Sao_Paulo",
-    }).format(new Date());
-    const [{ data: claimedToday }, difficultyCycle] = await Promise.all([
+    const localDate = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, localDate);
+    const [{ data: claimedToday }, difficultyCycle, activeGame] = await Promise.all([
       admin
         .from("daily_game_rewards")
         .select("id")
         .eq("user_id", context.userId)
         .eq("reward_date", localDate)
         .maybeSingle(),
-      getDifficultyCycle(admin, context.userId),
+      getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
+      getActiveDailyGame(admin, context.userId, localDate),
     ]);
     if (claimedToday) throw new Error("A recompensa de hoje já foi resgatada.");
     if (!difficultyCycle.available.includes(data.difficulty)) {
       throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
     }
-    const active = await loadSession(admin, context.userId);
-    if (active) return active.public;
+    if (activeGame?.gameKey === GAME_KEY) {
+      const active = await loadSession(admin, context.userId, activeGame.session.id);
+      if (active) return active.public;
+    }
+    if (activeGame) throw new Error("Conclua a partida atual antes de iniciar outro jogo.");
 
     const [{ data: bank, error: bankError }, { data: stickers, error: stickerError }] =
       await Promise.all([
@@ -281,6 +260,8 @@ export const submitWordPath = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { admin, available } = await gameAdmin(context.userId);
     if (!available) throw new Error(unavailable);
+    const today = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, today);
     const session = await loadSession(admin, context.userId, data.sessionId);
     if (!session || session.raw.status !== "in_progress")
       throw new Error("Esta partida não aceita novas palavras.");

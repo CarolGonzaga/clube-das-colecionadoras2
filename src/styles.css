@@ -2280,7 +2280,7 @@ canvas {
 .memory-card__inner {
   transform: rotateY(0deg) translateZ(0);
   transform-style: preserve-3d;
-  transition: transform 620ms cubic-bezier(0.22, 0.82, 0.24, 1.08);
+  transition: transform 480ms cubic-bezier(0.22, 0.82, 0.24, 1.08);
   will-change: transform;
 }
 

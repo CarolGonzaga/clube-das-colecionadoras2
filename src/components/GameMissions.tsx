@@ -42,6 +42,7 @@ type WordState = {
   canPlay?: boolean;
   reward?: { sticker_number: number } | null;
   usedDifficulties?: WordSearchDifficulty[];
+  blockedByGame?: "word_search" | "memory_game" | null;
   session?: {
     status: "in_progress" | "won" | "claimed";
     difficulty: WordSearchDifficulty;
@@ -54,6 +55,8 @@ type MemoryState = {
   available: boolean;
   canPlay?: boolean;
   reward?: { sticker_number: number } | null;
+  usedDifficulties?: ("easy" | "medium" | "hard")[];
+  blockedByGame?: "word_search" | "memory_game" | null;
   session?: {
     status: "in_progress" | "won" | "claimed";
     difficulty: "easy" | "medium" | "hard";
@@ -279,13 +282,15 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
     ? "Carregando..."
     : rewardClaimed
       ? "Recompensa já resgatada hoje"
-      : session?.status === "won"
-        ? "Você venceu! Resgate sua figurinha"
-        : session
-          ? "Partida em andamento"
-          : available
-            ? "Pronto para jogar"
-            : "Disponível em breve";
+      : state.blockedByGame
+        ? "Finalize a partida atual"
+        : session?.status === "won"
+          ? "Você venceu! Resgate sua figurinha"
+          : session
+            ? "Partida em andamento"
+            : available
+              ? "Pronto para jogar"
+              : "Disponível em breve";
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
@@ -361,17 +366,20 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
 
 function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay: () => void }) {
   const session = state?.session;
+  const used = state?.usedDifficulties || [];
   const rewardClaimed = Boolean(state?.reward);
   const available = Boolean(state?.available && state?.canPlay !== false) && !rewardClaimed;
   const status = !state
     ? "Carregando..."
     : rewardClaimed
       ? "Recompensa já resgatada hoje"
-      : session
-        ? "Partida em andamento"
-        : available
-          ? "Pronto para jogar"
-          : "Disponível em breve";
+      : state.blockedByGame
+        ? "Finalize a partida atual"
+        : session
+          ? "Partida em andamento"
+          : available
+            ? "Pronto para jogar"
+            : "Disponível em breve";
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
@@ -403,17 +411,21 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
                 ["easy", "Fácil", "6 pares"],
                 ["medium", "Médio", "8 pares"],
                 ["hard", "Difícil", "12 pares"],
-              ].map(([id, name, pairs]) => (
-                <div
-                  key={name}
-                  className={`flex min-h-[54px] min-w-0 flex-col items-center justify-center rounded-xl border px-1.5 py-2 text-center text-[9px] font-bold leading-tight ${session?.difficulty === id ? "border-pink-400 bg-pink-100 text-[#8e1745]" : "border-pink-200 bg-white/70 text-[#a52b59] dark:bg-[#240b1f]"}`}
-                >
-                  <span>{name}</span>
-                  <small className="mt-1 block text-[7px] leading-none">
-                    {session?.difficulty === id ? "Em andamento" : pairs}
-                  </small>
-                </div>
-              ))}
+              ].map(([id, name, pairs]) => {
+                const completed = used.includes(id as "easy" | "medium" | "hard");
+                const current = session?.difficulty === id;
+                return (
+                  <div
+                    key={name}
+                    className={`flex min-h-[54px] min-w-0 flex-col items-center justify-center rounded-xl border px-1.5 py-2 text-center text-[9px] font-bold leading-tight ${completed ? "border-emerald-300 bg-emerald-50 text-emerald-700" : current ? "border-pink-400 bg-pink-100 text-[#8e1745]" : "border-pink-200 bg-white/70 text-[#a52b59] dark:bg-[#240b1f]"}`}
+                  >
+                    <span>{name}</span>
+                    <small className="mt-1 block text-[7px] leading-none">
+                      {completed ? "Já usado" : current ? "Em andamento" : pairs}
+                    </small>
+                  </div>
+                );
+              })}
             </div>
             <button
               disabled={!available}
@@ -517,10 +529,14 @@ function WordSearchRules({
           </p>
           <p>Nos níveis Médio e Difícil, algumas palavras aparecem de trás para frente.</p>
           <p>
-            Encontre todas as palavras para liberar a recompensa diária. Seu progresso fica salvo se
-            você sair.
+            Encontre todas as palavras para liberar a recompensa diária. Se sair, seu progresso fica
+            salvo somente até o fim do dia.
           </p>
-          <p>Você pode receber apenas uma recompensa por dia entre todos os jogos.</p>
+          <p>
+            Na virada do dia, uma partida não concluída é reiniciada e o nível volta a ficar
+            disponível.
+          </p>
+          <p>Você pode vencer e resgatar apenas uma partida por dia entre todos os jogos.</p>
         </div>
         <button
           type="button"

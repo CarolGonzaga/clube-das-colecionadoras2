@@ -26,6 +26,8 @@ type Reward = {
 
 type InitialGameState = {
   available: boolean;
+  canPlay?: boolean;
+  blockedByGame?: "word_search" | "memory_game" | null;
   session?: Session | null;
   reward?: Reward | null;
   availableDifficulties?: WordSearchDifficulty[];
@@ -216,6 +218,10 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
               Sua figurinha já foi resgatada. Volte amanhã para jogar novamente.
             </p>
           </div>
+        ) : !session && initialState.canPlay === false ? (
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-pink-200 bg-pink-50 p-5 text-center text-xs font-semibold text-[#8e1745]">
+            Você já tem uma partida em andamento. Conclua o jogo atual antes de iniciar outro.
+          </div>
         ) : !session ? (
           <div className="mx-auto mt-6 max-w-sm">
             <fieldset>
@@ -241,7 +247,7 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
               </div>
             </fieldset>
             <button
-              disabled={loading}
+              disabled={loading || initialState.canPlay === false}
               onClick={start}
               className="mt-5 w-full rounded-full bg-[#9e1b4a] py-3 text-sm font-black text-white disabled:opacity-50"
             >

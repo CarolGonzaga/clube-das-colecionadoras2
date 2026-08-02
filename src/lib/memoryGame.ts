@@ -2,6 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getMemoryCoverPath } from "@/lib/memoryImagePath";
+import {
+  expireStaleDailyGameSessions,
+  getActiveDailyGame,
+  getDailyGameDate,
+  getDailyGameDifficultyCycle,
+} from "@/lib/dailyGamesPolicy";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type MemoryDifficulty = "easy" | "medium" | "hard";
@@ -95,10 +101,9 @@ export const getMemoryGameState = createServerFn({ method: "GET" })
         session: null,
         reward: null,
       };
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(
-      new Date(),
-    );
-    const [session, reward] = await Promise.all([
+    const today = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, today);
+    const [session, reward, difficultyCycle, activeGame] = await Promise.all([
       load(admin, context.userId),
       admin
         .from("daily_game_rewards")
@@ -106,14 +111,19 @@ export const getMemoryGameState = createServerFn({ method: "GET" })
         .eq("user_id", context.userId)
         .eq("reward_date", today)
         .maybeSingle(),
+      getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
+      getActiveDailyGame(admin, context.userId, today),
     ]);
     return {
       enabled,
       authorized,
       available,
-      canPlay: !reward.data,
+      canPlay: !reward.data && (!activeGame || activeGame.gameKey === GAME_KEY),
+      blockedByGame: activeGame && activeGame.gameKey !== GAME_KEY ? activeGame.gameKey : null,
       session,
       reward: reward.data || null,
+      availableDifficulties: difficultyCycle.available,
+      usedDifficulties: difficultyCycle.used,
     };
   });
 
@@ -123,6 +133,16 @@ export const startMemoryGame = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { admin, available } = await access(context.userId);
     if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
+    const today = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, today);
+    const [activeGame, difficultyCycle] = await Promise.all([
+      getActiveDailyGame(admin, context.userId, today),
+      getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
+    ]);
+    if (activeGame && activeGame.gameKey !== GAME_KEY)
+      throw new Error("Conclua a partida atual antes de iniciar outro jogo.");
+    if (!difficultyCycle.available.includes(data.difficulty))
+      throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
     const { data: sessionId, error } = await admin.rpc("start_memory_game", {
       p_user_id: context.userId,
       p_difficulty: data.difficulty,
@@ -140,14 +160,23 @@ export const revealMemoryCard = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { admin, available } = await access(context.userId);
     if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
+    const today = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, today);
     const { data: cardRow, error } = await admin
       .from("memory_game_cards")
-      .select("card_instance_id,source_sticker_id,memory_game_sessions!inner(user_id,status)")
+      .select(
+        "card_instance_id,source_sticker_id,memory_game_sessions!inner(user_id,status,local_date)",
+      )
       .eq("session_id", data.sessionId)
       .eq("card_instance_id", data.cardId)
       .eq("memory_game_sessions.user_id", context.userId)
       .maybeSingle();
-    if (error || !cardRow || !["in_progress", "won"].includes(cardRow.memory_game_sessions.status))
+    if (
+      error ||
+      !cardRow ||
+      cardRow.memory_game_sessions.local_date !== today ||
+      !["in_progress", "won"].includes(cardRow.memory_game_sessions.status)
+    )
       throw new Error("Carta inválida ou partida encerrada.");
     const { data: image, error: imageError } = await admin
       .from("memory_game_stickers")
@@ -167,6 +196,7 @@ export const compareMemoryCards = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { admin, available } = await access(context.userId);
     if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
+    await expireStaleDailyGameSessions(admin, context.userId, getDailyGameDate());
     const { data: result, error } = await admin.rpc("compare_memory_cards", {
       p_user_id: context.userId,
       p_session_id: data.sessionId,
