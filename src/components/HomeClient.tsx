@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { Donation, Profile, Sticker, UserStyle, RevealItem } from "@/lib/types";
 import { getClubAssetUrl, getPublicAlbumUrl } from "@/lib/urls";
-import { ALL_RARE_STICKER_NUMBERS, getCollectionStatus, isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
+import { ALL_RARE_STICKER_NUMBERS, getCollectionStatus, getStickerCategory, isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
 import { dbService, getLocalDateStr } from "@/lib/db";
 import { useUI } from "@/components/UIProvider";
 import { claimDailyElementAction, completeMissionAction, logoutAction } from "@/lib/actions";
@@ -357,7 +357,11 @@ export default function HomeClient({
     const sticker = stickers.find((item) => item.slug === slug);
     return sticker ? isExclusiveSticker(sticker) : false;
   }).length;
-  const commonCount = Math.max(0, ownedCount - rareCount - exclusiveCount);
+  const bonusCount = ownedSlugs.filter((slug) => {
+    const sticker = stickers.find((item) => item.slug === slug);
+    return sticker ? getStickerCategory(sticker) === "bonus" : false;
+  }).length;
+  const commonCount = Math.max(0, ownedCount - rareCount - exclusiveCount - bonusCount);
 
   // Active category evolution achievements
   const [activeAchievements, setActiveAchievements] = useState<string[]>([]);
@@ -1486,16 +1490,20 @@ export default function HomeClient({
             <div className="relative z-10 pr-[92px] max-[335px]:pr-[70px]">
               <p className="text-[11px] font-semibold text-[#9e1b4a] flex items-center gap-1 mb-1">
                 <Crown className="w-3.5 h-3.5 text-[#9e1b4a] inline" />{" "}
-                <span className="font-extrabold">Pôster Álbum Básico Completo</span>
+                <span className="font-extrabold">
+                  {isStoryPremiumEnabled ? "Pôster Álbum Premium Completo" : "Pôster Álbum Básico Completo"}
+                </span>
               </p>
               <p className="text-[11px] text-[#bf2a5e] font-medium mb-3 leading-relaxed">
-                Você completou as figurinhas 1 a 193 e desbloqueou o pôster do Álbum Básico!
+                {isStoryPremiumEnabled
+                  ? "Você completou todas as figurinhas e desbloqueou o pôster final!"
+                  : "Você completou as figurinhas 1 a 193 e desbloqueou o pôster do Álbum Básico!"}
               </p>
               <button
                 className="px-5 py-2 rounded-full text-[11px] font-bold text-white shadow-sm cursor-pointer transition-transform active:scale-95"
                 style={{ background: "linear-gradient(135deg, #d63384, #bf2a5e)" }}
                 onClick={() => {
-                  setPosterMode("basic-complete");
+                  setPosterMode(isStoryPremiumEnabled ? "final" : "basic-complete");
                   setShowPoster(true);
                 }}
               >
@@ -1828,6 +1836,7 @@ export default function HomeClient({
           avatarEmoji={profile.avatar_emoji}
           rareCount={rareCount}
           exclusiveCount={exclusiveCount}
+          commonCount={commonCount}
           premiumLayout={!!isStoryPremiumEnabled}
           onClose={() => setShowPoster(false)}
         />

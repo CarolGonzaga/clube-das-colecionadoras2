@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { getCollectionStatus } from "@/lib/albumRules";
 import { Sticker, UserStyle } from "@/lib/types";
 import { getClubAssetUrl } from "@/lib/urls";
-import { isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
+import { getStickerCategory, isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
 
 interface PosterModalProps {
   mode: "progress" | "basic-complete" | "final";
@@ -18,6 +18,7 @@ interface PosterModalProps {
   avatarEmoji?: string | null;
   rareCount?: number;
   exclusiveCount?: number;
+  commonCount?: number;
   premiumLayout?: boolean;
   onClose: () => void;
 }
@@ -34,6 +35,7 @@ export default function PosterModal({
   avatarEmoji,
   rareCount = 0,
   exclusiveCount: explicitExclusiveCount,
+  commonCount: explicitCommonCount,
   premiumLayout = false,
   onClose,
 }: PosterModalProps) {
@@ -56,7 +58,11 @@ export default function PosterModal({
       const sticker = stickers.find((item) => item.slug === slug);
       return sticker ? isExclusiveSticker(sticker) : false;
     }).length;
-  const commonCount = Math.max(0, ownedCount - rareCount - exclusiveCount);
+  const bonusCount = ownedSlugs.filter((slug) => {
+    const sticker = stickers.find((item) => item.slug === slug);
+    return sticker ? getStickerCategory(sticker) === "bonus" : false;
+  }).length;
+  const commonCount = explicitCommonCount ?? Math.max(0, ownedCount - rareCount - exclusiveCount - bonusCount);
 
   useEffect(() => {
     const canvas = canvasRef.current;
