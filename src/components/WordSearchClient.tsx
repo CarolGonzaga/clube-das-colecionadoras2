@@ -144,6 +144,9 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           ? `Você encontrou “${result.foundWord}”!`
           : "Essa sequência não está na lista. Tente outra.",
       );
+      if (result.matched && result.session.status === "won" && session.status !== "won") {
+        ui.triggerHearts();
+      }
       setSelection([]);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível validar a palavra.");
@@ -163,6 +166,7 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
         is_rare: result.isRare,
       });
       setSession({ ...session, status: "claimed" });
+      ui.triggerHearts();
       ui.showReveals(
         [
           {

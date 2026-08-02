@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Gamepad2, Gift, Trophy } from "lucide-react";
 import { useUI } from "@/components/UIProvider";
@@ -51,6 +51,25 @@ export default function MemoryGameClient({ initialState }: { initialState: State
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [reward, setReward] = useState(initialState.reward || null);
+  const [errorCards, setErrorCards] = useState<Set<string>>(() => new Set());
+  const [matchedCards, setMatchedCards] = useState<Set<string>>(() => new Set());
+  const feedbackTimers = useRef<number[]>([]);
+
+  useEffect(
+    () => () => {
+      feedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
+    },
+    [],
+  );
+
+  const clearFeedbackAfter = (kind: "error" | "match", delay: number) => {
+    const timer = window.setTimeout(() => {
+      if (kind === "error") setErrorCards(new Set());
+      else setMatchedCards(new Set());
+      feedbackTimers.current = feedbackTimers.current.filter((item) => item !== timer);
+    }, delay);
+    feedbackTimers.current.push(timer);
+  };
 
   if (!initialState.available)
     return (
@@ -73,6 +92,8 @@ export default function MemoryGameClient({ initialState }: { initialState: State
       setSession((await startMemoryGame({ data: { difficulty: nextDifficulty } })) as Session);
       setOpen({});
       setSelected([]);
+      setErrorCards(new Set());
+      setMatchedCards(new Set());
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível iniciar.");
     } finally {
@@ -94,16 +115,21 @@ export default function MemoryGameClient({ initialState }: { initialState: State
         });
         if (!result.matched) {
           setMessage("Ainda não! Tente outro par.");
-          await new Promise((resolve) => window.setTimeout(resolve, 900));
+          setErrorCards(new Set(next));
+          await new Promise((resolve) => window.setTimeout(resolve, 720));
           setOpen((old) => {
             const copy = { ...old };
             delete copy[next[0]];
             delete copy[next[1]];
             return copy;
           });
+          clearFeedbackAfter("error", 180);
         } else {
           setMessage(result.won ? "Você encontrou todos os pares!" : "Par encontrado!");
           setSession(result.session as Session);
+          setMatchedCards(new Set(next));
+          clearFeedbackAfter("match", 760);
+          if (result.won) ui.triggerHearts();
         }
         setSelected([]);
       }
@@ -130,6 +156,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
       const result = await claimMemoryGameReward({ data: { sessionId: session.id } });
       setReward({ sticker_number: result.number });
       setSession({ ...session, status: "claimed" });
+      ui.triggerHearts();
       ui.showReveals(
         [
           {
@@ -259,28 +286,32 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                           : `Virar carta ${card.position + 1}`
                     }
                     onClick={() => flip(card)}
-                    className="group aspect-[2/3] w-full min-w-0 focus:outline-none focus:ring-4 focus:ring-pink-300 disabled:opacity-90"
+                    className={`memory-card group aspect-[2/3] w-full min-w-0 focus:outline-none focus:ring-4 focus:ring-pink-300 ${errorCards.has(card.id) ? "memory-card--error" : ""} ${matchedCards.has(card.id) ? "memory-card--match" : ""}`}
                   >
                     <span
-                      className={`relative block h-full w-full transition-transform duration-300 [transform-style:preserve-3d] motion-reduce:transition-none ${faceUrl ? "[transform:rotateY(180deg)]" : ""}`}
+                      className={`memory-card__inner relative block h-full w-full ${faceUrl ? "memory-card__inner--flipped" : ""}`}
                     >
-                      <img
-                        src={getClubAssetUrl(card.backImage)}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-cover [backface-visibility:hidden]"
-                      />
-                      <img
-                        src={faceUrl || getClubAssetUrl(card.backImage)}
-                        alt=""
-                        className="absolute inset-0 h-full w-full border border-pink-300 object-cover [backface-visibility:hidden] [transform:rotateY(180deg)]"
-                      />
+                      <span className="memory-card__face memory-card__back absolute inset-0">
+                        <img
+                          src={getClubAssetUrl(card.backImage)}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </span>
+                      <span className="memory-card__face memory-card__front absolute inset-0">
+                        <img
+                          src={faceUrl || getClubAssetUrl(card.backImage)}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </span>
                     </span>
                   </button>
                 );
               })}
             </div>
             {session.status === "won" && !reward && (
-              <div className="mt-6 text-center">
+              <div className="memory-reward-entrance mt-6 text-center">
                 <Gift className="mx-auto h-8 w-8 text-[#c2185b]" />
                 <button
                   disabled={busy}

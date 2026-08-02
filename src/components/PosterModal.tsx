@@ -76,9 +76,14 @@ export default function PosterModal({
         img.onerror = () => reject(new Error(`Failed: ${src}`));
       });
 
-    const loadBg = loadImage(getClubAssetUrl("/card story/fundo_ls.jpeg")).catch(() => null);
+    const isFinalPoster = mode === "final";
+    const loadBg = loadImage(
+      getClubAssetUrl(isFinalPoster ? "/card story/fundo-plus-ls.jpeg" : "/card story/fundo_ls.jpeg"),
+    ).catch(() => null);
     const loadLogo = loadImage(getClubAssetUrl("/card story/logo2.png")).catch(() => null);
-    const loadFooter = loadImage(getClubAssetUrl("/logo-ls.png")).catch(() => null);
+    const loadFooter = loadImage(
+      getClubAssetUrl(isFinalPoster ? "/card story/Lendo-Saficos.png" : "/logo-ls.png"),
+    ).catch(() => null);
     const loadStamp = loadImage(getClubAssetUrl("/card story/ficha-usuario-vazio.png")).catch(() => null);
     const loadRibbon = loadImage(getClubAssetUrl("/card story/faixa-sem-texto.png")).catch(() => null);
     const finalAvatarUrl =
@@ -94,28 +99,191 @@ export default function PosterModal({
       ([bgImg, logoImg, footerImg, stampImg, ribbonImg, avatarImg]) => {
         ctx.clearRect(0, 0, W, H);
 
+        const drawCover = (
+          image: HTMLImageElement,
+          x: number,
+          y: number,
+          width: number,
+          height: number,
+        ) => {
+          const sourceRatio = image.width / image.height;
+          const destinationRatio = width / height;
+          let sourceX = 0;
+          let sourceY = 0;
+          let sourceWidth = image.width;
+          let sourceHeight = image.height;
+
+          if (sourceRatio > destinationRatio) {
+            sourceWidth = image.height * destinationRatio;
+            sourceX = (image.width - sourceWidth) / 2;
+          } else {
+            sourceHeight = image.width / destinationRatio;
+            sourceY = (image.height - sourceHeight) / 2;
+          }
+
+          ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+        };
+
         // 1. BACKGROUND
         if (bgImg) {
-          const bAr = bgImg.width / bgImg.height;
-          const cAr = W / H;
-          let sx = 0,
-            sy = 0,
-            sw = bgImg.width,
-            sh = bgImg.height;
-          if (bAr > cAr) {
-            sw = sh * cAr;
-            sx = (bgImg.width - sw) / 2;
-          } else {
-            sh = sw / cAr;
-            sy = (bgImg.height - sh) / 2;
-          }
-          ctx.drawImage(bgImg, sx, sy, sw, sh, 0, 0, W, H);
+          drawCover(bgImg, 0, 0, W, H);
         } else {
           const g = ctx.createLinearGradient(0, 0, W, H);
           g.addColorStop(0, "#f7b8ce");
           g.addColorStop(1, "#d48dba");
           ctx.fillStyle = g;
           ctx.fillRect(0, 0, W, H);
+        }
+
+        if (isFinalPoster) {
+          const cx = W / 2;
+          const cardX = 108;
+          const cardY = 290;
+          const cardW = 864;
+          const cardH = 1342;
+          const cardRadius = 38;
+
+          ctx.save();
+          ctx.shadowColor = "rgba(186, 31, 132, 0.18)";
+          ctx.shadowBlur = 28;
+          ctx.fillStyle = "#fff3f3";
+          ctx.beginPath();
+          ctx.roundRect(cardX, cardY, cardW, cardH, cardRadius);
+          ctx.fill();
+          ctx.restore();
+
+          if (logoImg) {
+            const logoW = 384;
+            const logoH = Math.round(logoW * (logoImg.height / logoImg.width));
+            ctx.save();
+            ctx.globalAlpha = 0.92;
+            ctx.drawImage(logoImg, cx - logoW / 2, cardY + 48, logoW, logoH);
+            ctx.restore();
+          }
+
+          ctx.save();
+          ctx.fillStyle = "#d8a7ba";
+          ctx.textAlign = "center";
+          ctx.font = "800 44px 'Quicksand', 'Nunito', sans-serif";
+          ctx.fillText("Álbum Plus completo", cx, cardY + 178);
+          ctx.restore();
+
+          const avCY = cardY + 435;
+          const avR = 142;
+          ctx.save();
+          ctx.fillStyle = "#e6b8c8";
+          ctx.beginPath();
+          ctx.arc(cx, avCY, avR + 22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+
+          if (avatarImg) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, avCY, avR, 0, Math.PI * 2);
+            ctx.clip();
+            drawCover(avatarImg, cx - avR, avCY - avR, avR * 2, avR * 2);
+            ctx.restore();
+          } else {
+            const grad = ctx.createRadialGradient(cx, avCY - 20, 0, cx, avCY, avR);
+            grad.addColorStop(0, "#F9BC66");
+            grad.addColorStop(1, "#F09040");
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, avCY, avR, 0, Math.PI * 2);
+            ctx.fill();
+            const emoji = avatarEmoji && !avatarEmoji.startsWith("/avatar/") ? avatarEmoji : "💖";
+            ctx.font = `${Math.round(avR * 1.05)}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#fff";
+            ctx.fillText(emoji, cx, avCY + Math.round(avR * 0.36));
+          }
+
+          ctx.save();
+          ctx.fillStyle = "#a35d91";
+          ctx.textAlign = "center";
+          ctx.font = "900 58px 'Quicksand', 'Nunito', sans-serif";
+          ctx.fillText(nick, cx, cardY + 680);
+          ctx.restore();
+
+          const pillW = 620;
+          const pillX = cx - pillW / 2;
+          const barW = 510;
+          const barH = 30;
+          const barX = pillX;
+          const barY = cardY + 770;
+
+          ctx.fillStyle = "#eee1e8";
+          ctx.beginPath();
+          ctx.roundRect(barX, barY, barW, barH, barH / 2);
+          ctx.fill();
+
+          const fillGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+          fillGrad.addColorStop(0, "#d67ab8");
+          fillGrad.addColorStop(1, "#8d64a5");
+          ctx.fillStyle = fillGrad;
+          ctx.beginPath();
+          ctx.roundRect(barX, barY, barW, barH, barH / 2);
+          ctx.fill();
+
+          ctx.save();
+          ctx.fillStyle = "#a35d91";
+          ctx.textAlign = "left";
+          ctx.font = "900 38px 'Quicksand', 'Nunito', sans-serif";
+          ctx.fillText("100%", barX + barW + 24, barY + 30);
+          ctx.restore();
+
+          const pillH = 82;
+          const pill1Y = cardY + 855;
+          const pill2Y = cardY + 960;
+          const pill3Y = cardY + 1064;
+
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.roundRect(pillX, pill1Y, pillW, pillH, pillH / 2);
+          ctx.fill();
+          ctx.save();
+          ctx.fillStyle = "#c392a5";
+          ctx.textAlign = "center";
+          ctx.font = "900 44px 'Quicksand', 'Nunito', sans-serif";
+          ctx.fillText(`${commonCount} Comuns`, cx, pill1Y + 56);
+          ctx.restore();
+
+          ctx.fillStyle = "#e8d238";
+          ctx.beginPath();
+          ctx.roundRect(pillX, pill2Y, pillW, pillH, pillH / 2);
+          ctx.fill();
+          ctx.save();
+          ctx.fillStyle = "#e00078";
+          ctx.font = "58px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("★", pillX + 78, pill2Y + 57);
+          ctx.fillText("★", pillX + pillW - 78, pill2Y + 57);
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "900 44px 'Quicksand', 'Nunito', sans-serif";
+          ctx.fillText(`${rareCount} Raras`, cx, pill2Y + 56);
+          ctx.restore();
+
+          ctx.fillStyle = "#dfe7ef";
+          ctx.beginPath();
+          ctx.roundRect(pillX, pill3Y, pillW, pillH, pillH / 2);
+          ctx.fill();
+          ctx.save();
+          ctx.fillStyle = "#4e5967";
+          ctx.textAlign = "center";
+          ctx.font = "900 44px 'Quicksand', 'Nunito', sans-serif";
+          ctx.fillText(`${exclusiveCount} Exclusivas`, cx, pill3Y + 56);
+          ctx.restore();
+
+          if (footerImg) {
+            const footerW = 270;
+            const footerH = Math.round(footerW * (footerImg.height / footerImg.width));
+            ctx.save();
+            ctx.drawImage(footerImg, cx - footerW / 2, cardY + 1212, footerW, footerH);
+            ctx.restore();
+          }
+
+          return;
         }
 
         // 2. LOGO HEAD (clube das colecionadoras)

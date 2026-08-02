@@ -2255,6 +2255,141 @@ canvas {
   pointer-events: none;
   animation: fall linear forwards;
 }
+
+/* Memory game: transforms keep interactions fluid without changing the board layout. */
+.memory-card {
+  position: relative;
+  perspective: 900px;
+  transform: translateZ(0);
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.85, 0.3, 1.2),
+    filter 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.memory-card:not(:disabled):hover {
+  transform: translateY(-3px) scale(1.025);
+  filter: brightness(1.035);
+}
+
+.memory-card:not(:disabled):active {
+  transform: translateY(1px) scale(0.965);
+  transition-duration: 110ms;
+}
+
+.memory-card__inner {
+  transform: rotateY(0deg) translateZ(0);
+  transform-style: preserve-3d;
+  transition: transform 620ms cubic-bezier(0.22, 0.82, 0.24, 1.08);
+  will-change: transform;
+}
+
+.memory-card__inner--flipped {
+  transform: rotateY(180deg) translateZ(0);
+}
+
+.memory-card__face {
+  overflow: hidden;
+  border: 1px solid rgba(225, 52, 124, 0.38);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 224, 238, 0.86));
+  backface-visibility: hidden;
+  box-shadow:
+    0 1px 1px rgba(83, 10, 45, 0.14),
+    0 5px 10px rgba(142, 23, 69, 0.15),
+    0 12px 24px rgba(142, 23, 69, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.memory-card__face::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.25) 0%,
+    transparent 38%,
+    rgba(110, 22, 56, 0.08) 100%
+  );
+  content: "";
+  pointer-events: none;
+}
+
+.memory-card__front {
+  transform: rotateY(180deg);
+}
+
+.memory-card--error {
+  animation: memory-card-shake 560ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  filter: drop-shadow(0 0 7px rgba(225, 29, 72, 0.72));
+}
+
+.memory-card--match {
+  animation: memory-card-match 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  filter: drop-shadow(0 0 9px rgba(16, 185, 129, 0.8));
+}
+
+.memory-reward-entrance {
+  animation: memory-reward-enter 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes memory-card-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotateZ(0deg);
+  }
+  20% {
+    transform: translateX(-5px) rotateZ(-1.5deg);
+  }
+  40% {
+    transform: translateX(4px) rotateZ(1.2deg);
+  }
+  60% {
+    transform: translateX(-3px) rotateZ(-0.8deg);
+  }
+  80% {
+    transform: translateX(2px) rotateZ(0.5deg);
+  }
+}
+
+@keyframes memory-card-match {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  42% {
+    transform: translateY(-4px) scale(1.1);
+  }
+  70% {
+    transform: translateY(0) scale(0.985);
+  }
+}
+
+@keyframes memory-reward-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.78);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.045);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memory-card,
+  .memory-card__inner,
+  .memory-card--error,
+  .memory-card--match,
+  .memory-reward-entrance {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @keyframes fall {
   to {
     transform: translateY(112vh) rotate(380deg);
