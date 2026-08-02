@@ -298,7 +298,7 @@ export default function HomeClient({
   const [completedMissions, setCompletedMissions] = useState<string[]>(completedMissionIds);
   const [activeCountdown, setActiveCountdown] = useState<{ id: string; label: string; url: string; count: number } | null>(null);
   const [showPoster, setShowPoster] = useState(false);
-  const [posterMode, setPosterMode] = useState<"final" | "progress">("progress");
+  const [posterMode, setPosterMode] = useState<"progress" | "basic-complete" | "final">("progress");
 
   const [albumRewardClaimed, setAlbumRewardClaimed] = useState(initialAlbumRewardClaimed);
   const [albumRewardPacksOpened, setAlbumRewardPacksOpened] = useState(initialAlbumRewardPacksOpened);
@@ -1486,16 +1486,16 @@ export default function HomeClient({
             <div className="relative z-10 pr-[92px] max-[335px]:pr-[70px]">
               <p className="text-[11px] font-semibold text-[#9e1b4a] flex items-center gap-1 mb-1">
                 <Crown className="w-3.5 h-3.5 text-[#9e1b4a] inline" />{" "}
-                <span className="font-extrabold">Pôster final</span>
+                <span className="font-extrabold">Pôster Álbum Básico Completo</span>
               </p>
               <p className="text-[11px] text-[#bf2a5e] font-medium mb-3 leading-relaxed">
-                Você desbloqueou o pôster final!
+                Você completou as figurinhas 1 a 193 e desbloqueou o pôster do Álbum Básico!
               </p>
               <button
                 className="px-5 py-2 rounded-full text-[11px] font-bold text-white shadow-sm cursor-pointer transition-transform active:scale-95"
                 style={{ background: "linear-gradient(135deg, #d63384, #bf2a5e)" }}
                 onClick={() => {
-                  setPosterMode("final");
+                  setPosterMode("basic-complete");
                   setShowPoster(true);
                 }}
               >

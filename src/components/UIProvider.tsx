@@ -316,7 +316,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       if (!Array.isArray(existing)) {
         existing = [];
       }
-      const newStickers = safeItems.map((item) => item.number);
+      const newStickers = safeItems.map((item) => item.number).filter((number) => number > 0);
       // Prepend, deduplicate, and limit to 10
       const updated = Array.from(new Set([...newStickers, ...existing])).slice(0, 10);
       localStorage.setItem(recentKey, JSON.stringify(updated));

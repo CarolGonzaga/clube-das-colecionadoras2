@@ -7,7 +7,7 @@ import { getClubAssetUrl } from "@/lib/urls";
 import { isExclusiveSticker, TOTAL_ALBUM_STICKERS } from "@/lib/albumRules";
 
 interface PosterModalProps {
-  mode: "final" | "progress";
+  mode: "progress" | "basic-complete" | "final";
   nick: string;
   stickers: Sticker[];
   ownedSlugs: string[];
@@ -47,7 +47,7 @@ export default function PosterModal({
       sticker.number >= 1 && sticker.number <= 193 && ownedSlugSet.has(sticker.slug),
   ).length;
   const pct =
-    mode === "final"
+    mode === "basic-complete"
       ? Math.round((basicOwnedCount / 193) * 100)
       : Math.round((ownedCount / albumTotal) * 100);
   const exclusiveCount =
@@ -238,7 +238,12 @@ export default function PosterModal({
         const cx = W / 2;
 
         const { statusText: progressStatusText } = getCollectionStatus(ownedCount);
-        const statusText = mode === "final" ? "Álbum Básico completo" : progressStatusText;
+        const statusText =
+          mode === "basic-complete"
+            ? "Álbum Básico Completo"
+            : mode === "final"
+              ? "Álbum Completo"
+              : progressStatusText;
 
         ctx.save();
         ctx.fillStyle = "#E8C1CD";
@@ -395,7 +400,13 @@ export default function PosterModal({
           ctx.fillStyle = "#FFFFFF";
           ctx.textAlign = "center";
           ctx.font = "800 42px 'Fredoka', 'Quicksand', sans-serif";
-          ctx.fillText(pct >= 100 ? "álbum completo 🎉" : "já criou seu álbum?", 0, 0);
+          const ribbonText =
+            mode === "basic-complete"
+              ? "álbum básico completo 🎉"
+              : pct >= 100
+                ? "álbum completo 🎉"
+                : "já criou seu álbum?";
+          ctx.fillText(ribbonText, 0, 0);
           ctx.restore();
         }
       },
@@ -420,7 +431,13 @@ export default function PosterModal({
     >
       <div className="modal" style={{ textAlign: "center" }}>
         <div className="grab" onClick={onClose} />
-        <h2>{mode === "final" ? "Pôster final" : "Story de progresso"}</h2>
+        <h2>
+          {mode === "basic-complete"
+            ? "Pôster Álbum Básico Completo"
+            : mode === "final"
+              ? "Pôster final"
+              : "Story de progresso"}
+        </h2>
         <div className="poster-wrap flex justify-center my-4">
           <canvas
             ref={canvasRef}

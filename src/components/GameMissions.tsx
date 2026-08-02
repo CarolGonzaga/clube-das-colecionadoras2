@@ -311,13 +311,13 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
               Encontre todas as palavras para resgatar a recompensa.
             </p>
           </div>
-          <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-[10px] font-bold leading-snug text-[#9e1b4a] dark:text-[#f7a8cb] sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-4 sm:text-xs">
+          <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-center text-[10px] font-bold leading-snug text-[#9e1b4a] min-[330px]:grid-cols-[auto_minmax(0,1fr)] min-[330px]:items-center min-[330px]:gap-4 min-[330px]:text-left dark:text-[#f7a8cb] sm:text-xs">
             <span>
               {session
                 ? `${session.foundWords} de ${session.totalWords} palavras`
                 : "1 resgate por dia"}
             </span>
-            <span className="min-w-0 sm:text-right">{status}</span>
+            <span className="min-w-0 min-[330px]:text-right">{status}</span>
           </div>
           <div className="mt-auto flex flex-col items-center gap-4 pt-5 lg:flex-row lg:justify-between">
             <div className="grid w-full max-w-[340px] grid-cols-3 gap-2">
@@ -389,13 +389,13 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
               Encontre todos os pares de figurinhas para liberar a recompensa.
             </p>
           </div>
-          <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-[10px] font-bold leading-snug text-[#9e1b4a] dark:text-[#f7a8cb] sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-4 sm:text-xs">
+          <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-center text-[10px] font-bold leading-snug text-[#9e1b4a] min-[330px]:grid-cols-[auto_minmax(0,1fr)] min-[330px]:items-center min-[330px]:gap-4 min-[330px]:text-left dark:text-[#f7a8cb] sm:text-xs">
             <span>
               {session
                 ? `${session.matchedPairs} de ${session.totalPairs} pares`
                 : "1 resgate por dia"}
             </span>
-            <span className="min-w-0 sm:text-right">{status}</span>
+            <span className="min-w-0 min-[330px]:text-right">{status}</span>
           </div>
           <div className="mt-auto flex flex-col items-center gap-4 pt-5 lg:flex-row lg:justify-between">
             <div className="grid w-full max-w-[340px] grid-cols-3 gap-2">

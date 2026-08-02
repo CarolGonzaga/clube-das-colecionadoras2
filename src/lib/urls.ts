@@ -1,6 +1,6 @@
 export const CLUB_PATH = "/clubedascolecionadoras";
 
-const DEFAULT_PUBLIC_ORIGIN = "https://clube-das-colecionadoras2.vercel.app";
+const DEFAULT_PUBLIC_ORIGIN = "https://clube-das-colecionadoras.vercel.app";
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
@@ -40,8 +40,15 @@ export function getClubAssetUrl(path: string) {
   if (import.meta.env.DEV) {
     return normalizedPath;
   }
+  const configuredAssetOrigin =
+    import.meta.env.VITE_PUBLIC_ASSET_ORIGIN ||
+    import.meta.env.VITE_PUBLIC_SITE_URL ||
+    import.meta.env.VITE_SITE_URL;
+  const pageOrigin = typeof window !== "undefined" ? window.location.origin : "";
   const assetOrigin =
-    typeof window !== "undefined" ? window.location.origin : getPublicOrigin();
+    configuredAssetOrigin ||
+    (pageOrigin.includes("lendosaficos.com.br") ? DEFAULT_PUBLIC_ORIGIN : pageOrigin) ||
+    getPublicOrigin();
   return `${trimTrailingSlash(assetOrigin)}${normalizedPath}`;
 }
 

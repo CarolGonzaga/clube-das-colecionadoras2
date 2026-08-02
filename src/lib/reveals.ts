@@ -18,16 +18,18 @@ export function normalizeRevealItems(value: unknown): RevealItem[] {
 
     const candidate = entry as Record<string, unknown>;
     const number = Number(candidate.number);
-    if (!Number.isInteger(number) || number <= 0) return;
+    const reward = typeof candidate.reward === "string" ? candidate.reward : null;
+    const isRewardOnlyItem = reward === "poster";
+    if (!Number.isInteger(number) || (number <= 0 && !isRewardOnlyItem)) return;
 
     normalized.push({
       ...(candidate as unknown as RevealItem),
       number,
-      slug: typeof candidate.slug === "string" ? candidate.slug : `frase-${number}`,
+      slug: typeof candidate.slug === "string" ? candidate.slug : isRewardOnlyItem ? reward : `frase-${number}`,
       wasNew: candidate.wasNew === true,
       isRare: candidate.isRare === true,
       repeat: candidate.repeat === true,
-      reward: typeof candidate.reward === "string" ? candidate.reward : null,
+      reward,
     });
   };
 
