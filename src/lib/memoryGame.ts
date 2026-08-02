@@ -86,7 +86,15 @@ export const getMemoryGameState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { admin, enabled, authorized, available } = await access(context.userId);
-    if (!available) return { enabled, authorized, available: false, session: null, reward: null };
+    if (!available)
+      return {
+        enabled,
+        authorized,
+        available: false,
+        canPlay: false,
+        session: null,
+        reward: null,
+      };
     const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(
       new Date(),
     );
@@ -99,7 +107,14 @@ export const getMemoryGameState = createServerFn({ method: "GET" })
         .eq("reward_date", today)
         .maybeSingle(),
     ]);
-    return { enabled, authorized, available, session, reward: reward.data || null };
+    return {
+      enabled,
+      authorized,
+      available,
+      canPlay: !reward.data,
+      session,
+      reward: reward.data || null,
+    };
   });
 
 export const startMemoryGame = createServerFn({ method: "POST" })

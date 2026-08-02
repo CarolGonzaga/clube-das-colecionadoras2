@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import {
   BookOpenText,
   Brain,
-  Check,
   ChevronLeft,
   ChevronRight,
   Gamepad2,
@@ -17,7 +16,13 @@ import {
 import { getDailyGamesState } from "@/lib/games";
 import { getMemoryGameState } from "@/lib/memoryGame";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
-import { getClubAssetUrl } from "@/lib/urls";
+
+const bundledWordSearchArt = import.meta.glob("../../public/cacapalavras.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+const WORD_SEARCH_ART_URL = Object.values(bundledWordSearchArt)[0] || "/cacapalavras.png";
 
 const SLIDES = [
   { key: "word_search", name: "Caça-Palavras Sáfico", Icon: BookOpenText },
@@ -34,6 +39,7 @@ const LEVELS: { id: WordSearchDifficulty; label: string }[] = [
 
 type WordState = {
   available: boolean;
+  canPlay?: boolean;
   reward?: { sticker_number: number } | null;
   usedDifficulties?: WordSearchDifficulty[];
   session?: {
@@ -46,6 +52,7 @@ type WordState = {
 
 type MemoryState = {
   available: boolean;
+  canPlay?: boolean;
   reward?: { sticker_number: number } | null;
   session?: {
     status: "in_progress" | "won" | "claimed";
@@ -62,21 +69,72 @@ export default function GameMissions() {
   const [showRules, setShowRules] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const currentDateKey = useRef(
+    new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+  );
   const slides = SLIDES.filter(
     (item) => item.key !== "memory_game" || Boolean(memoryState?.available),
   );
 
+  const refreshStates = useCallback(async () => {
+    const [word, memory] = await Promise.allSettled([getDailyGamesState(), getMemoryGameState()]);
+    const nextWordState = word.status === "fulfilled" ? word.value : { available: false };
+    setWordState(nextWordState);
+    setMemoryState(memory.status === "fulfilled" ? memory.value : { available: false });
+    if ("reward" in nextWordState && nextWordState.reward) setShowRules(false);
+  }, []);
+
   useEffect(() => {
     let active = true;
-    Promise.allSettled([getDailyGamesState(), getMemoryGameState()]).then(([word, memory]) => {
+    refreshStates().catch(() => {
       if (!active) return;
-      setWordState(word.status === "fulfilled" ? word.value : { available: false });
-      setMemoryState(memory.status === "fulfilled" ? memory.value : { available: false });
+      setWordState({ available: false });
+      setMemoryState({ available: false });
     });
     return () => {
       active = false;
     };
-  }, []);
+  }, [refreshStates]);
+
+  useEffect(() => {
+    const checkForNewDay = () => {
+      const nextDateKey = new Date().toLocaleDateString("en-CA", {
+        timeZone: "America/Sao_Paulo",
+      });
+      if (nextDateKey !== currentDateKey.current) {
+        currentDateKey.current = nextDateKey;
+        void refreshStates();
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        checkForNewDay();
+        void refreshStates();
+      }
+    };
+    let midnightTimer: number;
+    const scheduleMidnightRefresh = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now);
+      nextMidnight.setHours(24, 0, 0, 250);
+      midnightTimer = window.setTimeout(() => {
+        checkForNewDay();
+        void refreshStates();
+        scheduleMidnightRefresh();
+      }, nextMidnight.getTime() - now.getTime());
+    };
+    scheduleMidnightRefresh();
+    const timer = window.setInterval(checkForNewDay, 30_000);
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(midnightTimer);
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refreshStates]);
 
   useEffect(() => {
     if (paused) return;
@@ -117,6 +175,18 @@ export default function GameMissions() {
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={() => setPaused(false)}
+        onTouchStart={(event) => {
+          touchStartX.current = event.touches[0]?.clientX ?? null;
+          setPaused(true);
+        }}
+        onTouchEnd={(event) => {
+          const startX = touchStartX.current;
+          const endX = event.changedTouches[0]?.clientX;
+          touchStartX.current = null;
+          setPaused(false);
+          if (startX == null || endX == null || Math.abs(startX - endX) < 45) return;
+          move(startX > endX ? 1 : -1);
+        }}
         aria-roledescription="carrossel"
         aria-label="Jogos disponíveis"
       >
@@ -124,7 +194,7 @@ export default function GameMissions() {
           type="button"
           aria-label="Jogo anterior"
           onClick={() => move(-1)}
-          className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-pink-200 bg-white/95 text-[#9e1b4a] shadow-md dark:bg-[#260c20] dark:text-[#ffd1e5] sm:-left-3"
+          className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-pink-200 bg-white/95 text-[#9e1b4a] shadow-md max-sm:hidden dark:bg-[#260c20] dark:text-[#ffd1e5] sm:-left-3"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -159,7 +229,7 @@ export default function GameMissions() {
           type="button"
           aria-label="Próximo jogo"
           onClick={() => move(1)}
-          className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-pink-200 bg-white/95 text-[#9e1b4a] shadow-md dark:bg-[#260c20] dark:text-[#ffd1e5] sm:-right-3"
+          className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-pink-200 bg-white/95 text-[#9e1b4a] shadow-md max-sm:hidden dark:bg-[#260c20] dark:text-[#ffd1e5] sm:-right-3"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -194,7 +264,7 @@ export default function GameMissions() {
 
 function CardShell({ children }: { children: React.ReactNode }) {
   return (
-    <article className="relative min-h-[310px] overflow-hidden rounded-[28px] border border-pink-300/80 bg-gradient-to-br from-white via-[#fffafd] to-[#fff0f7] p-6 shadow-[0_12px_35px_rgba(158,27,74,0.09)] dark:from-[#1a0718] dark:via-[#180615] dark:to-[#22091b] sm:min-h-[285px] sm:p-8">
+    <article className="relative min-h-[310px] overflow-hidden rounded-[28px] border border-pink-300/80 bg-gradient-to-br from-white via-[#fffafd] to-[#fff0f7] p-4 shadow-[0_12px_35px_rgba(158,27,74,0.09)] dark:from-[#1a0718] dark:via-[#180615] dark:to-[#22091b] sm:min-h-[285px] sm:p-7 lg:p-8">
       {children}
     </article>
   );
@@ -203,78 +273,86 @@ function CardShell({ children }: { children: React.ReactNode }) {
 function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: () => void }) {
   const session = state?.session;
   const used = state?.usedDifficulties || [];
-  const available = Boolean(state?.available);
-  const status = state?.reward
-    ? "Recompensa já resgatada hoje"
-    : session?.status === "won"
-      ? "Você venceu! Resgate sua figurinha"
-      : session
-        ? "Partida em andamento"
-        : available
-          ? "Pronto para jogar"
-          : "Disponível em breve";
+  const rewardClaimed = Boolean(state?.reward);
+  const available = Boolean(state?.available && state?.canPlay !== false) && !rewardClaimed;
+  const status = !state
+    ? "Carregando..."
+    : rewardClaimed
+      ? "Recompensa já resgatada hoje"
+      : session?.status === "won"
+        ? "Você venceu! Resgate sua figurinha"
+        : session
+          ? "Partida em andamento"
+          : available
+            ? "Pronto para jogar"
+            : "Disponível em breve";
   return (
     <CardShell>
-      <img
-        src={getClubAssetUrl("/cacapalavras.png")}
-        alt=""
-        className="pointer-events-none absolute right-5 top-5 h-[78px] w-[108px] object-contain object-right-top sm:bottom-6 sm:left-6 sm:top-auto sm:h-[190px] sm:w-[230px] sm:object-left-bottom"
-      />
-      <div className="relative z-10 flex min-h-[258px] flex-col pr-[105px] sm:ml-[250px] sm:min-h-[221px] sm:pr-0">
-        <div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
-            <Gamepad2 className="h-3 w-3" /> Missão diária
-          </span>
-          <h3 className="mt-3 text-xl font-black text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
-            Caça-Palavras Sáfico
-          </h3>
-          <p className="mt-1.5 text-xs font-semibold text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
-            Encontre todas as palavras para resgatar a recompensa.
-          </p>
-        </div>
-        <div className="mt-4 border-y border-pink-100 py-3 text-[10px] font-bold text-[#9e1b4a] dark:text-[#f7a8cb] sm:flex sm:justify-between sm:text-xs">
-          <span>
-            {session
-              ? `${session.foundWords} de ${session.totalWords} palavras`
-              : "1 resgate por dia"}
-          </span>
-          <span className="mt-1 flex items-center gap-1 sm:mt-0">
-            {state?.reward && <Check className="h-3.5 w-3.5" />}
-            {status}
-          </span>
-        </div>
-        <div className="mt-auto flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="grid grid-cols-3 gap-1.5">
-            {LEVELS.map((level) => {
-              const completed = used.includes(level.id);
-              const current = session?.difficulty === level.id;
-              return (
-                <div
-                  key={level.id}
-                  className={`rounded-xl border px-2 py-2 text-center text-[9px] font-bold ${completed ? "border-emerald-300 bg-emerald-50 text-emerald-700" : current ? "border-pink-400 bg-pink-100 text-[#8e1745]" : "border-pink-200 bg-white/70 text-[#a52b59] dark:bg-[#240b1f]"}`}
-                >
-                  {completed && <Check className="mx-auto h-3 w-3" />}
-                  <span>{level.label}</span>
-                  <small className="block text-[7px]">
-                    {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
-                  </small>
-                </div>
-              );
-            })}
+      <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
+        <img
+          src={WORD_SEARCH_ART_URL}
+          alt=""
+          className="pointer-events-none h-full max-h-[230px] w-full self-stretch object-contain max-lg:hidden"
+        />
+        <img
+          src={WORD_SEARCH_ART_URL}
+          alt=""
+          className="pointer-events-none absolute right-0 top-0 h-[104px] w-[clamp(84px,29vw,116px)] object-contain object-right-top lg:hidden"
+        />
+        <div className="flex min-w-0 flex-col">
+          <div className="min-w-0 pr-[clamp(92px,32vw,124px)] lg:pr-0">
+            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
+              <BookOpenText className="h-3 w-3" /> Missão diária
+            </span>
+            <h3 className="mt-3 text-[clamp(1.05rem,5vw,1.25rem)] font-black leading-[1.08] text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
+              Caça-Palavras Sáfico
+            </h3>
+            <p className="mt-1.5 max-w-xl text-[clamp(0.68rem,3vw,0.8rem)] font-semibold leading-snug text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
+              Encontre todas as palavras para resgatar a recompensa.
+            </p>
           </div>
-          <button
-            disabled={!available || Boolean(state?.reward && !session)}
-            onClick={onPlay}
-            className="mx-auto min-w-[150px] rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none sm:mx-0"
-          >
-            {state?.reward
-              ? "Concluído hoje"
-              : session
-                ? "Continuar"
-                : available
-                  ? "Jogar agora"
-                  : "Em breve"}
-          </button>
+          <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-[10px] font-bold leading-snug text-[#9e1b4a] dark:text-[#f7a8cb] sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-4 sm:text-xs">
+            <span>
+              {session
+                ? `${session.foundWords} de ${session.totalWords} palavras`
+                : "1 resgate por dia"}
+            </span>
+            <span className="min-w-0 sm:text-right">{status}</span>
+          </div>
+          <div className="mt-auto flex flex-col items-center gap-4 pt-5 lg:flex-row lg:justify-between">
+            <div className="grid w-full max-w-[340px] grid-cols-3 gap-2">
+              {LEVELS.map((level) => {
+                const completed = used.includes(level.id);
+                const current = session?.difficulty === level.id;
+                return (
+                  <div
+                    key={level.id}
+                    className={`flex min-h-[54px] min-w-0 flex-col items-center justify-center rounded-xl border px-1.5 py-2 text-center text-[9px] font-bold leading-tight ${completed ? "border-emerald-300 bg-emerald-50 text-emerald-700" : current ? "border-pink-400 bg-pink-100 text-[#8e1745]" : "border-pink-200 bg-white/70 text-[#a52b59] dark:bg-[#240b1f]"}`}
+                  >
+                    <span>{level.label}</span>
+                    <small className="mt-1 block text-[7px] leading-none">
+                      {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
+                    </small>
+                  </div>
+                );
+              })}
+            </div>
+            <button
+              disabled={!available}
+              onClick={onPlay}
+              className="mx-auto min-w-[150px] shrink-0 rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none lg:mx-0 lg:ml-auto"
+            >
+              {!state
+                ? "Carregando"
+                : rewardClaimed
+                  ? "Concluído hoje"
+                  : session
+                    ? "Continuar"
+                    : available
+                      ? "Jogar agora"
+                      : "Em breve"}
+            </button>
+          </div>
         </div>
       </div>
     </CardShell>
@@ -283,78 +361,95 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
 
 function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay: () => void }) {
   const session = state?.session;
-  const available = Boolean(state?.available);
+  const rewardClaimed = Boolean(state?.reward);
+  const available = Boolean(state?.available && state?.canPlay !== false) && !rewardClaimed;
+  const status = !state
+    ? "Carregando..."
+    : rewardClaimed
+      ? "Recompensa já resgatada hoje"
+      : session
+        ? "Partida em andamento"
+        : available
+          ? "Pronto para jogar"
+          : "Disponível em breve";
   return (
     <CardShell>
-      <div className="pointer-events-none absolute right-7 top-7 grid h-[92px] w-[110px] grid-cols-3 gap-1 opacity-80 sm:bottom-7 sm:left-8 sm:top-auto sm:h-[195px] sm:w-[235px] sm:gap-2">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div
-            key={i}
-            className="border border-pink-300 bg-[url('/verso-card.webp')] bg-cover bg-center shadow-sm"
-          />
-        ))}
-      </div>
-      <div className="relative z-10 flex min-h-[258px] flex-col pr-[120px] sm:ml-[270px] sm:min-h-[221px] sm:pr-0">
-        <div>
-          <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
-            <Gamepad2 className="h-3 w-3" /> Missão diária
-          </span>
-          <h3 className="mt-3 text-xl font-black text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
-            Jogo da Memória
-          </h3>
-          <p className="mt-1.5 text-xs font-semibold text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
-            Encontre todos os pares de figurinhas para liberar a recompensa.
-          </p>
-        </div>
-        <div className="mt-4 border-y border-pink-100 py-3 text-[10px] font-bold text-[#9e1b4a] dark:text-[#f7a8cb] sm:flex sm:justify-between sm:text-xs">
-          <span>
-            {session
-              ? `${session.matchedPairs} de ${session.totalPairs} pares`
-              : "1 resgate por dia"}
-          </span>
-          <span className="mt-1 flex items-center gap-1 sm:mt-0">
-            {state?.reward && <Check className="h-3.5 w-3.5" />}
-            {state?.reward
-              ? "Recompensa já resgatada hoje"
-              : session
-                ? "Partida em andamento"
-                : available
-                  ? "Pronto para jogar"
-                  : "Disponível em breve"}
-          </span>
-        </div>
-        <div className="mt-auto flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="grid grid-cols-3 gap-1.5">
-            {[
-              ["Fácil", "6 pares"],
-              ["Médio", "8 pares"],
-              ["Difícil", "12 pares"],
-            ].map(([name, pairs]) => (
-              <div
-                key={name}
-                className="rounded-xl border border-pink-200 bg-white/70 px-2 py-2 text-center text-[9px] font-bold text-[#a52b59] dark:bg-[#240b1f]"
-              >
-                <span>{name}</span>
-                <small className="block text-[7px]">{pairs}</small>
-              </div>
-            ))}
+      <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
+        <MemoryCardArt className="grid h-[160px] w-[190px] self-center justify-self-center max-lg:hidden" />
+        <MemoryCardArt className="absolute right-0 top-0 grid h-[82px] w-[96px] lg:hidden" />
+        <div className="flex min-w-0 flex-col">
+          <div className="min-w-0 pr-[clamp(100px,34vw,126px)] lg:pr-0">
+            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
+              <Grid3X3 className="h-3 w-3" /> Missão diária
+            </span>
+            <h3 className="mt-3 text-[clamp(1.05rem,5vw,1.25rem)] font-black leading-[1.08] text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
+              Jogo da Memória
+            </h3>
+            <p className="mt-1.5 max-w-xl text-[clamp(0.68rem,3vw,0.8rem)] font-semibold leading-snug text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
+              Encontre todos os pares de figurinhas para liberar a recompensa.
+            </p>
           </div>
-          <button
-            disabled={!available || Boolean(state?.reward)}
-            onClick={onPlay}
-            className="mx-auto min-w-[150px] rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none sm:mx-0"
-          >
-            {session
-              ? "Continuar"
-              : state?.reward
-                ? "Concluído hoje"
-                : available
-                  ? "Jogar agora"
-                  : "Em breve"}
-          </button>
+          <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-[10px] font-bold leading-snug text-[#9e1b4a] dark:text-[#f7a8cb] sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-4 sm:text-xs">
+            <span>
+              {session
+                ? `${session.matchedPairs} de ${session.totalPairs} pares`
+                : "1 resgate por dia"}
+            </span>
+            <span className="min-w-0 sm:text-right">{status}</span>
+          </div>
+          <div className="mt-auto flex flex-col items-center gap-4 pt-5 lg:flex-row lg:justify-between">
+            <div className="grid w-full max-w-[340px] grid-cols-3 gap-2">
+              {[
+                ["easy", "Fácil", "6 pares"],
+                ["medium", "Médio", "8 pares"],
+                ["hard", "Difícil", "12 pares"],
+              ].map(([id, name, pairs]) => (
+                <div
+                  key={name}
+                  className={`flex min-h-[54px] min-w-0 flex-col items-center justify-center rounded-xl border px-1.5 py-2 text-center text-[9px] font-bold leading-tight ${session?.difficulty === id ? "border-pink-400 bg-pink-100 text-[#8e1745]" : "border-pink-200 bg-white/70 text-[#a52b59] dark:bg-[#240b1f]"}`}
+                >
+                  <span>{name}</span>
+                  <small className="mt-1 block text-[7px] leading-none">
+                    {session?.difficulty === id ? "Em andamento" : pairs}
+                  </small>
+                </div>
+              ))}
+            </div>
+            <button
+              disabled={!available}
+              onClick={onPlay}
+              className="mx-auto min-w-[150px] shrink-0 rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none lg:mx-0 lg:ml-auto"
+            >
+              {!state
+                ? "Carregando"
+                : rewardClaimed
+                  ? "Concluído hoje"
+                  : session
+                    ? "Continuar"
+                    : available
+                      ? "Jogar agora"
+                      : "Em breve"}
+            </button>
+          </div>
         </div>
       </div>
     </CardShell>
+  );
+}
+
+function MemoryCardArt({ className }: { className: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none grid-cols-3 gap-1.5 opacity-80 ${className}`}
+    >
+      {Array.from({ length: 6 }, (_, index) => (
+        <div
+          key={index}
+          className="border border-pink-300 bg-[url('/verso-card.webp')] bg-cover bg-center shadow-sm"
+        />
+      ))}
+    </div>
   );
 }
 

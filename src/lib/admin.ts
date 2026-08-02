@@ -2,6 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const MEMORY_TEST_USER_IDS = new Set([
+  "a2c66f5b-6cba-4984-a256-c189051e6630",
+  "483f4e4b-20b0-4340-a1bb-4666acd54b32",
+  "f8721040-035f-414a-8153-b5e12fec64d7",
+]);
+
 async function requireAdmin(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
@@ -102,7 +108,6 @@ export const getAdminDashboard = createServerFn({ method: "POST" })
       memoryGameEnabled: gameSettingResult.data?.find((item: any) => item.key === "memory_game_enabled")?.value === true,
     };
   });
-
 const couponSchema = z.object({
   id: z.string().uuid().optional(), code: z.string().trim().min(3).max(80).regex(/^[A-Za-z0-9_-]+$/, "Use somente letras, números, hífen e sublinhado."),
   discountPercent: z.number().int().min(0).max(100), expiresAt: z.string().nullable().optional(),
@@ -231,6 +236,8 @@ export const setMemoryGameAccess = createServerFn({ method: "POST" })
   .validator((value) => z.object({ userId: z.string().uuid(), active: z.boolean() }).parse(value))
   .handler(async ({ context, data }) => {
     const admin = await requireAdmin(context.userId);
+    if (data.active && !MEMORY_TEST_USER_IDS.has(data.userId))
+      throw new Error("Durante o beta, somente as três contas de teste podem receber acesso.");
     const { data: target, error: targetError } = await admin.auth.admin.getUserById(data.userId);
     if (targetError || !target.user) throw new Error("Usuária não encontrada.");
     const before = (await admin.from("game_access_grants").select("*").eq("user_id", data.userId).eq("game_key", "memory_game").maybeSingle()).data;

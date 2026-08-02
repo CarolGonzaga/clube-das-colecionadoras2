@@ -1,4 +1,4 @@
--- Execute depois de 20260731000300_memory_game.sql em um banco de teste.
+-- Execute depois de 20260731000500_harden_memory_daily_cycle.sql em um banco de teste.
 begin;
 
 do $$
@@ -28,6 +28,18 @@ begin
     select 1 from pg_indexes where schemaname='public' and tablename='daily_game_rewards'
       and indexdef ilike '%unique%' and indexdef ilike '%user_id%reward_date%'
   ) then raise exception 'A unicidade da recompensa global diaria esta ausente.'; end if;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='memory_game_sessions'
+      and column_name='completed_local_date' and data_type='date'
+  ) then raise exception 'A data local de conclusao da partida esta ausente.'; end if;
+  if not exists (
+    select 1 from pg_proc
+    where proname='start_memory_game'
+      and prosrc ilike '%is_memory_game_tester%'
+      and prosrc ilike '%daily_game_rewards%'
+      and prosrc ilike '%completed_local_date%'
+  ) then raise exception 'A trava rigida de acesso ou de uma partida diaria esta ausente.'; end if;
   if exists (
     select 1 from information_schema.table_constraints
     where table_schema='public' and table_name='daily_game_rewards'

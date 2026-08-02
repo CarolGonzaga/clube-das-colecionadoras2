@@ -138,7 +138,15 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { admin, enabled, authorized, available } = await gameAdmin(context.userId);
-    if (!available) return { enabled, authorized, available: false, session: null, reward: null };
+    if (!available)
+      return {
+        enabled,
+        authorized,
+        available: false,
+        canPlay: false,
+        session: null,
+        reward: null,
+      };
     const [session, rewardResult, difficultyCycle] = await Promise.all([
       loadSession(admin, context.userId),
       admin
@@ -156,6 +164,7 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
       enabled,
       authorized,
       available: true,
+      canPlay: !rewardResult.data,
       session: session?.public || null,
       reward: rewardResult.data || null,
       availableDifficulties: difficultyCycle.available,

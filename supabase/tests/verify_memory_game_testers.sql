@@ -1,4 +1,4 @@
--- Execute depois de 20260731000400_activate_memory_game_testers.sql.
+-- Execute depois de 20260731000500_harden_memory_daily_cycle.sql.
 begin;
 
 do $$
@@ -21,6 +21,20 @@ begin
       and is_active
       and revoked_at is null
   ) <> 3 then raise exception 'Nem todas as contas de teste foram autorizadas.'; end if;
+
+  if exists (
+    select 1 from public.game_access_grants
+    where game_key = 'memory_game'
+      and user_id <> all(expected_users)
+      and is_active
+      and revoked_at is null
+  ) then raise exception 'Uma conta fora do beta ainda possui acesso ao Jogo da Memoria.'; end if;
+
+  if not public.is_memory_game_tester(expected_users[1])
+     or not public.is_memory_game_tester(expected_users[2])
+     or not public.is_memory_game_tester(expected_users[3])
+     or public.is_memory_game_tester('00000000-0000-0000-0000-000000000001'::uuid)
+  then raise exception 'A lista rigida de testadoras esta incorreta.'; end if;
 end $$;
 
 rollback;
