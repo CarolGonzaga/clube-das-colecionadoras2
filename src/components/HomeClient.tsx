@@ -707,7 +707,8 @@ export default function HomeClient({
   // Check active styles for UI theme and visual overrides
   const isNeonEnabled = userStyles?.find((s) => s.style_id === "avatar-neon-frame" && s.enabled);
   const isDarkEnabled = userStyles?.find((s) => s.style_id === "theme-dark" && s.enabled);
-  const isStoryPremiumEnabled = ownedCount >= TOTAL_ALBUM_STICKERS;
+  const isAlbumComplete = ownedCount >= TOTAL_ALBUM_STICKERS;
+  const isStoryPremiumEnabled = !!userStyles?.find((s) => s.style_id === "story-layout" && s.enabled);
   const isLilacEnabled = userStyles?.find((s) => s.style_id === "lilac" && s.enabled);
 
   // Discover next available reward based on what is unlocked
@@ -1491,11 +1492,11 @@ export default function HomeClient({
               <p className="text-[11px] font-semibold text-[#9e1b4a] flex items-center gap-1 mb-1">
                 <Crown className="w-3.5 h-3.5 text-[#9e1b4a] inline" />{" "}
                 <span className="font-extrabold">
-                  {isStoryPremiumEnabled ? "Pôster Álbum Premium Completo" : "Pôster Álbum Básico Completo"}
+                  {isAlbumComplete ? "Pôster Álbum Premium Completo" : "Pôster Álbum Básico Completo"}
                 </span>
               </p>
               <p className="text-[11px] text-[#bf2a5e] font-medium mb-3 leading-relaxed">
-                {isStoryPremiumEnabled
+                {isAlbumComplete
                   ? "Você completou todas as figurinhas e desbloqueou o pôster final!"
                   : "Você completou as figurinhas 1 a 193 e desbloqueou o pôster do Álbum Básico!"}
               </p>
@@ -1503,7 +1504,7 @@ export default function HomeClient({
                 className="px-5 py-2 rounded-full text-[11px] font-bold text-white shadow-sm cursor-pointer transition-transform active:scale-95"
                 style={{ background: "linear-gradient(135deg, #d63384, #bf2a5e)" }}
                 onClick={() => {
-                  setPosterMode(isStoryPremiumEnabled ? "final" : "basic-complete");
+                  setPosterMode(isAlbumComplete ? "final" : "basic-complete");
                   setShowPoster(true);
                 }}
               >

@@ -150,12 +150,21 @@ export default function PosterModal({
           const cardRadius = 38;
 
           ctx.save();
-          ctx.shadowColor = "rgba(186, 31, 132, 0.18)";
-          ctx.shadowBlur = 28;
+          ctx.shadowColor = premiumLayout ? "rgba(238, 196, 74, 0.62)" : "rgba(186, 31, 132, 0.18)";
+          ctx.shadowBlur = premiumLayout ? 46 : 28;
           ctx.fillStyle = "#fff3f3";
           ctx.beginPath();
           ctx.roundRect(cardX, cardY, cardW, cardH, cardRadius);
           ctx.fill();
+          if (premiumLayout) {
+            const goldBorder = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+            goldBorder.addColorStop(0, "#fff2a8");
+            goldBorder.addColorStop(0.45, "#e0b83f");
+            goldBorder.addColorStop(1, "#a87512");
+            ctx.strokeStyle = goldBorder;
+            ctx.lineWidth = 10;
+            ctx.stroke();
+          }
           ctx.restore();
 
           if (logoImg) {
@@ -171,7 +180,7 @@ export default function PosterModal({
           ctx.fillStyle = "#d8a7ba";
           ctx.textAlign = "center";
           ctx.font = "800 44px 'Quicksand', 'Nunito', sans-serif";
-          ctx.fillText("Álbum Plus completo", cx, cardY + 178);
+          ctx.fillText("Álbum Premium Completo", cx, cardY + 205);
           ctx.restore();
 
           const avCY = cardY + 435;
@@ -210,6 +219,25 @@ export default function PosterModal({
           ctx.textAlign = "center";
           ctx.font = "900 58px 'Quicksand', 'Nunito', sans-serif";
           ctx.fillText(nick, cx, cardY + 680);
+
+          if (premiumLayout) {
+            const nickWidth = ctx.measureText(nick).width;
+            const vipW = 88;
+            const vipH = 44;
+            const vipX = Math.min(cardX + cardW - vipW - 76, cx + nickWidth / 2 + 18);
+            const vipY = cardY + 640;
+            const vipGrad = ctx.createLinearGradient(vipX, vipY, vipX + vipW, vipY + vipH);
+            vipGrad.addColorStop(0, "#fff1a8");
+            vipGrad.addColorStop(1, "#d6a528");
+            ctx.fillStyle = vipGrad;
+            ctx.beginPath();
+            ctx.roundRect(vipX, vipY, vipW, vipH, 13);
+            ctx.fill();
+            ctx.fillStyle = "#6d214f";
+            ctx.font = "900 24px 'Quicksand', 'Nunito', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("VIP", vipX + vipW / 2, vipY + 30);
+          }
           ctx.restore();
 
           const pillW = 620;
