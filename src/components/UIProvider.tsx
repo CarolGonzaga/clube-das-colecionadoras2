@@ -8,6 +8,7 @@ import PackOpener from "./PackOpener";
 import { SEED_STICKERS } from "@/lib/seeds";
 import { dbService } from "@/lib/db";
 import { normalizeRevealItems } from "@/lib/reveals";
+import { getStickerCoverUrl } from "@/lib/urls";
 
 interface UIContextType {
   toast: (msg: string) => void;
@@ -243,7 +244,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
               return (
                 <div key={number} style={{ width: "70px", height: "100px" }}>
                   <img
-                    src={sticker.cover_url ? `/covers/${sticker.cover_url}` : undefined}
+                    src={sticker.cover_url ? getStickerCoverUrl(sticker.cover_url) : undefined}
                     alt={sticker.name}
                     style={{
                       width: "100%",

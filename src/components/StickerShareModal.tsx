@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Download, Share2, X } from "lucide-react";
 import { Sticker } from "@/lib/types";
-import { getClubAssetUrl } from "@/lib/urls";
+import { getClubAssetUrl, getStickerCoverUrl } from "@/lib/urls";
 
 interface StickerShareModalProps {
   sticker: Sticker;
@@ -100,7 +100,7 @@ export default function StickerShareModal({
     shareFileRef.current = null;
     setIsReady(false);
 
-    const coverUrl = sticker.cover_url ? getClubAssetUrl(`/covers/${sticker.cover_url}`) : null;
+    const coverUrl = sticker.cover_url ? getStickerCoverUrl(sticker.cover_url) : null;
 
     Promise.all([
       loadCanvasImage(getClubAssetUrl("/card story/fundo_ls.jpeg")),

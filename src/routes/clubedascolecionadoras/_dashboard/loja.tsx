@@ -5,6 +5,7 @@ import { useUI } from "@/components/UIProvider";
 import { dbService, supabase } from "@/lib/db";
 import { readCheckoutCart, writeCheckoutCart } from "@/lib/cartStorage";
 import { POINTS_BALANCE_CHANGED, readPointsBalanceFromEvent } from "@/lib/walletEvents";
+import { getClubAssetUrl, getStickerCoverUrl } from "@/lib/urls";
 
 export const Route = createFileRoute("/clubedascolecionadoras/_dashboard/loja")({
   loader: async () => {
@@ -362,7 +363,7 @@ function LojaPage() {
                   description: sticker.author || "Autoria a definir",
                   price: 2.5,
                   pointsPrice: 250,
-                  image: sticker.cover_url ? `/covers/${sticker.cover_url}` : "/verso-card.png",
+                  image: sticker.cover_url ? getStickerCoverUrl(sticker.cover_url) : getClubAssetUrl("/verso-card.png"),
                   tag: "exclusiva",
                   section: "exclusivas",
                   stickerNumber: sticker.number,
