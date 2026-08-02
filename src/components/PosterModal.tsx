@@ -63,6 +63,7 @@ export default function PosterModal({
     return sticker ? getStickerCategory(sticker) === "bonus" : false;
   }).length;
   const commonCount = explicitCommonCount ?? Math.max(0, ownedCount - rareCount - exclusiveCount - bonusCount);
+  const finalPosterCommonCount = Math.max(0, ownedCount - rareCount - exclusiveCount);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -280,7 +281,7 @@ export default function PosterModal({
           ctx.fillStyle = "#c392a5";
           ctx.textAlign = "center";
           ctx.font = "900 44px 'Quicksand', 'Nunito', sans-serif";
-          ctx.fillText(`${commonCount} Comuns`, cx, pill1Y + 56);
+          ctx.fillText(`${finalPosterCommonCount} Comuns`, cx, pill1Y + 56);
           ctx.restore();
 
           ctx.fillStyle = "#e8d238";
@@ -613,7 +614,7 @@ export default function PosterModal({
         }
       },
     );
-  }, [nick, ownedSlugs, avatarUrl, avatarEmoji, rareCount, exclusiveCount, pct, commonCount, mode, premiumLayout]);
+  }, [nick, ownedSlugs, avatarUrl, avatarEmoji, rareCount, exclusiveCount, pct, commonCount, finalPosterCommonCount, mode, premiumLayout]);
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
