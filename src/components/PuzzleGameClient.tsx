@@ -302,7 +302,7 @@ export default function PuzzleGameClient() {
             <Puzzle className="h-7 w-7 text-[#c2185b]" /> Quebra-Cabeça Sáfico
           </h1>
           <p className="mt-1 text-xs font-semibold text-[#8c3558] dark:text-[#f7a8cb]">
-            Monte a capa do livro encaixando todas as peças para ganhar a recompensa diária.
+            Encaixe todas as peças para liberar a recompensa.
           </p>
         </div>
 

@@ -495,7 +495,7 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
               Quebra-Cabeça Sáfico
             </h3>
             <p className="mt-1.5 max-w-xl text-[clamp(0.68rem,3vw,0.8rem)] font-semibold leading-snug text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
-              Monte a capa do livro encaixando todas as peças para liberar a recompensa.
+              Encaixe todas as peças para liberar a recompensa.
             </p>
           </div>
           <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-center text-[10px] font-bold leading-snug text-[#9e1b4a] min-[330px]:grid-cols-[auto_minmax(0,1fr)] min-[330px]:items-center min-[330px]:gap-4 min-[330px]:text-left dark:text-[#f7a8cb] sm:text-xs">
