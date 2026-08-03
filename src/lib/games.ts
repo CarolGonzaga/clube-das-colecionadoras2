@@ -131,7 +131,7 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
       loadSession(admin, context.userId),
       admin
         .from("daily_game_rewards")
-        .select("sticker_number,result_type,is_rare,created_at")
+        .select("game_key,sticker_number,result_type,is_rare,created_at")
         .eq("user_id", context.userId)
         .eq("reward_date", today)
         .maybeSingle(),
@@ -373,7 +373,7 @@ export const getPuzzleGameState = createServerFn({ method: "GET" })
       loadPuzzleSession(admin, context.userId),
       admin
         .from("daily_game_rewards")
-        .select("sticker_number,result_type,is_rare,created_at")
+        .select("game_key,sticker_number,result_type,is_rare,created_at")
         .eq("user_id", context.userId)
         .eq("reward_date", today)
         .maybeSingle(),

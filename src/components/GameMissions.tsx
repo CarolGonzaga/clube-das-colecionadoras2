@@ -39,9 +39,9 @@ const LEVELS: { id: WordSearchDifficulty; label: string }[] = [
 type WordState = {
   available: boolean;
   canPlay?: boolean;
-  reward?: { sticker_number: number } | null;
+  reward?: { game_key?: string; sticker_number: number } | null;
   usedDifficulties?: WordSearchDifficulty[];
-  blockedByGame?: "word_search" | "memory_game" | null;
+  blockedByGame?: "word_search" | "memory_game" | "puzzle_game" | null;
   session?: {
     status: "in_progress" | "won" | "claimed";
     difficulty: WordSearchDifficulty;
@@ -53,9 +53,9 @@ type WordState = {
 type MemoryState = {
   available: boolean;
   canPlay?: boolean;
-  reward?: { sticker_number: number } | null;
+  reward?: { game_key?: string; sticker_number: number } | null;
   usedDifficulties?: ("easy" | "medium" | "hard")[];
-  blockedByGame?: "word_search" | "memory_game" | null;
+  blockedByGame?: "word_search" | "memory_game" | "puzzle_game" | null;
   session?: {
     status: "in_progress" | "won" | "claimed";
     difficulty: "easy" | "medium" | "hard";
@@ -67,7 +67,7 @@ type MemoryState = {
 type PuzzleState = {
   available: boolean;
   canPlay?: boolean;
-  reward?: { sticker_number: number } | null;
+  reward?: { game_key?: string; sticker_number: number } | null;
   usedDifficulties?: ("easy" | "medium" | "hard")[];
   blockedByGame?: "word_search" | "memory_game" | "puzzle_game" | null;
   session?: {
@@ -288,21 +288,25 @@ function CardShell({ children }: { children: React.ReactNode }) {
 function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: () => void }) {
   const session = state?.session;
   const used = state?.usedDifficulties || [];
-  const rewardClaimed = Boolean(state?.reward);
+  const thisGameClaimed = state?.reward?.game_key === "word_search" || (Boolean(state?.reward) && !state?.reward?.game_key);
+  const otherGameClaimed = Boolean(state?.reward) && !thisGameClaimed;
+  const rewardClaimed = thisGameClaimed || otherGameClaimed;
   const available = Boolean(state?.available && state?.canPlay !== false) && !rewardClaimed;
   const status = !state
     ? "Carregando..."
-    : rewardClaimed
+    : thisGameClaimed
       ? "Recompensa já resgatada hoje"
-      : state.blockedByGame
-        ? "Finalize a partida atual"
-        : session?.status === "won"
-          ? "Você venceu! Resgate sua figurinha"
-          : session
-            ? "Partida em andamento"
-            : available
-              ? "Pronto para jogar"
-              : "Disponível em breve";
+      : otherGameClaimed
+        ? "Recompensa do dia resgatada em outro jogo"
+        : state.blockedByGame
+          ? "Finalize a partida atual"
+          : session?.status === "won"
+            ? "Você venceu! Resgate sua figurinha"
+            : session
+              ? "Partida em andamento"
+              : available
+                ? "Pronto para jogar"
+                : "Disponível em breve";
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
@@ -361,13 +365,15 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
             >
               {!state
                 ? "Carregando"
-                : rewardClaimed
+                : thisGameClaimed
                   ? "Concluído hoje"
-                  : session
-                    ? "Continuar"
-                    : available
-                      ? "Jogar agora"
-                      : "Em breve"}
+                  : otherGameClaimed
+                    ? "Resgatado hoje"
+                    : session
+                      ? "Continuar"
+                      : available
+                        ? "Jogar agora"
+                        : "Em breve"}
             </button>
           </div>
         </div>
@@ -379,19 +385,23 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
 function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay: () => void }) {
   const session = state?.session;
   const used = state?.usedDifficulties || [];
-  const rewardClaimed = Boolean(state?.reward);
+  const thisGameClaimed = state?.reward?.game_key === "memory_game";
+  const otherGameClaimed = Boolean(state?.reward) && !thisGameClaimed;
+  const rewardClaimed = thisGameClaimed || otherGameClaimed;
   const available = Boolean(state?.available && state?.canPlay !== false) && !rewardClaimed;
   const status = !state
     ? "Carregando..."
-    : rewardClaimed
+    : thisGameClaimed
       ? "Recompensa já resgatada hoje"
-      : state.blockedByGame
-        ? "Finalize a partida atual"
-        : session
-          ? "Partida em andamento"
-          : available
-            ? "Pronto para jogar"
-            : "Disponível em breve";
+      : otherGameClaimed
+        ? "Recompensa do dia resgatada em outro jogo"
+        : state.blockedByGame
+          ? "Finalize a partida atual"
+          : session
+            ? "Partida em andamento"
+            : available
+              ? "Pronto para jogar"
+              : "Disponível em breve";
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
@@ -446,13 +456,15 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
             >
               {!state
                 ? "Carregando"
-                : rewardClaimed
+                : thisGameClaimed
                   ? "Concluído hoje"
-                  : session
-                    ? "Continuar"
-                    : available
-                      ? "Jogar agora"
-                      : "Em breve"}
+                  : otherGameClaimed
+                    ? "Resgatado hoje"
+                    : session
+                      ? "Continuar"
+                      : available
+                        ? "Jogar agora"
+                        : "Em breve"}
             </button>
           </div>
         </div>
@@ -464,19 +476,23 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
 function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay: () => void }) {
   const session = state?.session;
   const used = state?.usedDifficulties || [];
-  const rewardClaimed = Boolean(state?.reward);
+  const thisGameClaimed = state?.reward?.game_key === "puzzle_game";
+  const otherGameClaimed = Boolean(state?.reward) && !thisGameClaimed;
+  const rewardClaimed = thisGameClaimed || otherGameClaimed;
   const available = Boolean(state?.available && state?.canPlay !== false) && !rewardClaimed;
   const status = !state
     ? "Carregando..."
-    : rewardClaimed
+    : thisGameClaimed
       ? "Recompensa já resgatada hoje"
-      : state.blockedByGame
-        ? "Finalize a partida atual"
-        : session
-          ? "Partida em andamento"
-          : available
-            ? "Pronto para jogar"
-            : "Disponível em breve";
+      : otherGameClaimed
+        ? "Recompensa do dia resgatada em outro jogo"
+        : state.blockedByGame
+          ? "Finalize a partida atual"
+          : session
+            ? "Partida em andamento"
+            : available
+              ? "Pronto para jogar"
+              : "Disponível em breve";
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
@@ -535,13 +551,15 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
             >
               {!state
                 ? "Carregando"
-                : rewardClaimed
+                : thisGameClaimed
                   ? "Concluído hoje"
-                  : session
-                    ? "Continuar"
-                    : available
-                      ? "Jogar agora"
-                      : "Em breve"}
+                  : otherGameClaimed
+                    ? "Resgatado hoje"
+                    : session
+                      ? "Continuar"
+                      : available
+                        ? "Jogar agora"
+                        : "Em breve"}
             </button>
           </div>
         </div>
