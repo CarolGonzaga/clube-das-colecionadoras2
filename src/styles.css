@@ -2280,11 +2280,11 @@ canvas {
 .memory-card__inner {
   transform: rotateY(0deg) translateZ(0);
   transform-style: preserve-3d;
-  transition: transform 480ms cubic-bezier(0.22, 0.82, 0.24, 1.08);
+  transition: transform 340ms cubic-bezier(0.22, 0.82, 0.24, 1.08);
   will-change: transform;
 }
 
-.memory-card__inner--flipped {
+.memory-card__inner[data-face-visible="true"] {
   transform: rotateY(180deg) translateZ(0);
 }
 

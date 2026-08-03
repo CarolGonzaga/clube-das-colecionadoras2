@@ -79,9 +79,10 @@ async function load(admin: any, userId: string, sessionId?: string) {
         id: card.card_instance_id,
         position: card.board_position,
         matched: Boolean(card.matched_at),
-        frontImage: card.matched_at
-          ? getMemoryCoverPath(card.source_sticker_id) || undefined
-          : undefined,
+        // A frente viaja com a sessão para que o cliente possa pré-carregar apenas
+        // as cartas desta partida e responder ao toque sem uma ida extra ao servidor.
+        // A comparação e a vitória continuam sendo validadas pela RPC autoritativa.
+        frontImage: getMemoryCoverPath(card.source_sticker_id) || undefined,
         backImage: "/verso-card.webp",
       };
     }),

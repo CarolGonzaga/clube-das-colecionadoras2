@@ -8,7 +8,6 @@ import {
   claimMemoryGameReward,
   compareMemoryCards,
   getMemoryGameState,
-  revealMemoryCard,
   startMemoryGame,
   type MemoryDifficulty,
 } from "@/lib/memoryGame";
@@ -110,37 +109,59 @@ export default function MemoryGameClient({ initialState }: { initialState: State
   const flip = async (card: Card) => {
     if (!session || busy || card.matched || selected.includes(card.id) || selected.length >= 2)
       return;
+    if (!card.frontImage) {
+      setMessage("A imagem desta carta não está disponível.");
+      return;
+    }
+    const next = [...selected, card.id];
+    setOpen((old) => ({ ...old, [card.id]: card.frontImage as string }));
+    setSelected(next);
+    setMessage("");
+    if (next.length < 2) return;
+
+    const firstCard = session.cards.find((candidate) => candidate.id === next[0]);
+    const appearsMatched = firstCard?.frontImage === card.frontImage;
+    if (appearsMatched) {
+      setMatchedCards(new Set(next));
+      clearFeedbackAfter("match", 680);
+    } else {
+      setErrorCards(new Set(next));
+    }
+
     setBusy(true);
     try {
-      const reveal = await revealMemoryCard({ data: { sessionId: session.id, cardId: card.id } });
-      const next = [...selected, card.id];
-      setOpen((old) => ({ ...old, [card.id]: reveal.frontImage }));
-      setSelected(next);
-      if (next.length === 2) {
-        const result = await compareMemoryCards({
+      const [result] = await Promise.all([
+        compareMemoryCards({
           data: { sessionId: session.id, firstCardId: next[0], secondCardId: next[1] },
+        }),
+        appearsMatched
+          ? Promise.resolve()
+          : new Promise((resolve) => window.setTimeout(resolve, 560)),
+      ]);
+      if (!result.matched) {
+        setMessage("Ainda não! Tente outro par.");
+        setOpen((old) => {
+          const copy = { ...old };
+          delete copy[next[0]];
+          delete copy[next[1]];
+          return copy;
         });
-        if (!result.matched) {
-          setMessage("Ainda não! Tente outro par.");
-          setErrorCards(new Set(next));
-          await new Promise((resolve) => window.setTimeout(resolve, 720));
-          setOpen((old) => {
-            const copy = { ...old };
-            delete copy[next[0]];
-            delete copy[next[1]];
-            return copy;
-          });
-          clearFeedbackAfter("error", 180);
-        } else {
-          setMessage(result.won ? "Você encontrou todos os pares!" : "Par encontrado!");
-          setSession(result.session as Session);
-          setMatchedCards(new Set(next));
-          clearFeedbackAfter("match", 760);
-          if (result.won) ui.triggerHearts();
-        }
-        setSelected([]);
+        clearFeedbackAfter("error", 120);
+      } else {
+        setMessage(result.won ? "Você encontrou todos os pares!" : "Par encontrado!");
+        setSession(result.session as Session);
+        if (result.won) ui.triggerHearts();
       }
+      setSelected([]);
     } catch (error) {
+      setOpen((old) => {
+        const copy = { ...old };
+        next.forEach((cardId) => delete copy[cardId]);
+        return copy;
+      });
+      setSelected([]);
+      setErrorCards(new Set());
+      setMatchedCards(new Set());
       setMessage(
         error instanceof Error
           ? error.message
@@ -291,8 +312,8 @@ export default function MemoryGameClient({ initialState }: { initialState: State
               aria-busy={busy}
             >
               {session.cards.map((card) => {
-                const face = card.matched ? card.frontImage : open[card.id];
-                const faceUrl = getBundledMemoryCoverUrl(face);
+                const faceUrl = getBundledMemoryCoverUrl(card.frontImage);
+                const faceIsVisible = card.matched || Boolean(open[card.id]);
                 return (
                   <button
                     key={card.id}
@@ -308,12 +329,14 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                     className={`memory-card group aspect-[2/3] w-full min-w-0 focus:outline-none focus:ring-4 focus:ring-pink-300 ${errorCards.has(card.id) ? "memory-card--error" : ""} ${matchedCards.has(card.id) ? "memory-card--match" : ""}`}
                   >
                     <span
-                      className={`memory-card__inner relative block h-full w-full ${faceUrl ? "memory-card__inner--flipped" : ""}`}
+                      className="memory-card__inner relative block h-full w-full"
+                      data-face-visible={faceIsVisible ? "true" : "false"}
                     >
                       <span className="memory-card__face memory-card__back absolute inset-0">
                         <img
                           src={getClubAssetUrl(card.backImage)}
                           alt=""
+                          draggable={false}
                           className="h-full w-full object-cover"
                         />
                       </span>
@@ -321,6 +344,9 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                         <img
                           src={faceUrl || getClubAssetUrl(card.backImage)}
                           alt=""
+                          loading="eager"
+                          decoding="async"
+                          draggable={false}
                           className="h-full w-full object-cover"
                         />
                       </span>
