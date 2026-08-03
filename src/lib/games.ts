@@ -3,10 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   generateWordSearch,
-  isStraightContinuousPath,
   maskHardModeWord,
   normalizeGameWord,
-  pathsMatch,
   type CellCoordinate,
   type WordSearchDifficulty,
   type WordSource,
@@ -68,6 +66,7 @@ function publicSession(session: any, words: any[]) {
           : word.display_word,
       category: word.category,
       found: isFound,
+      solutionPath: word.path as CellCoordinate[],
     };
   });
   return {
@@ -85,7 +84,7 @@ function publicSession(session: any, words: any[]) {
 async function loadSession(admin: any, userId: string, sessionId?: string) {
   let query = admin
     .from("word_search_sessions")
-    .select("*")
+    .select("id,user_id,local_date,difficulty,board,status,total_words,found_words,created_at")
     .eq("user_id", userId)
     .in("status", ["in_progress", "won"])
     .order("created_at", { ascending: false })
@@ -93,7 +92,7 @@ async function loadSession(admin: any, userId: string, sessionId?: string) {
   if (sessionId)
     query = admin
       .from("word_search_sessions")
-      .select("*")
+      .select("id,user_id,local_date,difficulty,board,status,total_words,found_words,created_at")
       .eq("id", sessionId)
       .eq("user_id", userId)
       .limit(1);
@@ -102,7 +101,7 @@ async function loadSession(admin: any, userId: string, sessionId?: string) {
   if (!data) return null;
   const { data: words, error: wordsError } = await admin
     .from("word_search_session_words")
-    .select("*")
+    .select("id,display_word,category,path,found_at,created_at")
     .eq("session_id", data.id)
     .order("created_at");
   if (wordsError) throw new Error("Não foi possível carregar o progresso.");
@@ -258,46 +257,21 @@ export const submitWordPath = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((value) => submitSchema.parse(value))
   .handler(async ({ context, data }) => {
-    const { admin, available } = await gameAdmin(context.userId);
-    if (!available) throw new Error(unavailable);
-    const today = getDailyGameDate();
-    await expireStaleDailyGameSessions(admin, context.userId, today);
-    const session = await loadSession(admin, context.userId, data.sessionId);
-    if (!session || session.raw.status !== "in_progress")
-      throw new Error("Esta partida não aceita novas palavras.");
-    const size = Array.isArray(session.raw.board) ? session.raw.board.length : 0;
-    if (!isStraightContinuousPath(data.path, size)) throw new Error("Seleção inválida.");
-    const match = session.words.find(
-      (word: any) => !word.found_at && pathsMatch(data.path, word.path as CellCoordinate[]),
-    );
-    if (!match) return { matched: false, session: session.public };
-    const foundAt = new Date().toISOString();
-    const { error } = await admin
-      .from("word_search_session_words")
-      .update({ found_at: foundAt })
-      .eq("id", match.id)
-      .is("found_at", null);
-    if (error) throw new Error("Não foi possível registrar a palavra.");
-    const { count } = await admin
-      .from("word_search_session_words")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", data.sessionId)
-      .not("found_at", "is", null);
-    const foundWords = count || 0;
-    const won = foundWords === session.raw.total_words;
-    await admin
-      .from("word_search_sessions")
-      .update({
-        found_words: foundWords,
-        status: won ? "won" : "in_progress",
-        won_at: won ? foundAt : null,
-        updated_at: foundAt,
-      })
-      .eq("id", data.sessionId)
-      .eq("user_id", context.userId);
-    const refreshed = await loadSession(admin, context.userId, data.sessionId);
-    if (!refreshed) throw new Error("Não foi possível atualizar a partida.");
-    return { matched: true, foundWord: match.display_word, session: refreshed.public };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = supabaseAdmin as any;
+    const { data: result, error } = await admin.rpc("submit_word_search_match", {
+      p_user_id: context.userId,
+      p_session_id: data.sessionId,
+      p_path: data.path,
+    });
+    if (error) throw new Error(error.message || "Não foi possível validar a palavra.");
+    return result as {
+      matched: boolean;
+      foundWord?: string;
+      foundWordId?: string;
+      foundWords?: number;
+      won?: boolean;
+    };
   });
 
 export const claimDailyGameReward = createServerFn({ method: "POST" })

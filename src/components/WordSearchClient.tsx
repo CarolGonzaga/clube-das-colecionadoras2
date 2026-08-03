@@ -5,7 +5,11 @@ import { useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Check, Gift, Sparkles, Trophy, X } from "lucide-react";
 import { useUI } from "@/components/UIProvider";
 import { claimDailyGameReward, startWordSearch, submitWordPath } from "@/lib/games";
-import type { CellCoordinate, WordSearchDifficulty } from "@/lib/wordSearchGenerator";
+import {
+  pathsMatch,
+  type CellCoordinate,
+  type WordSearchDifficulty,
+} from "@/lib/wordSearchGenerator";
 
 type Session = {
   id: string;
@@ -14,7 +18,13 @@ type Session = {
   status: "in_progress" | "won" | "claimed";
   totalWords: number;
   foundWords: number;
-  words: { id: string; displayWord: string; category: string; found: boolean }[];
+  words: {
+    id: string;
+    displayWord: string;
+    category: string;
+    found: boolean;
+    solutionPath: CellCoordinate[];
+  }[];
   foundPaths: CellCoordinate[][];
 };
 
@@ -137,16 +147,39 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
 
   const submit = async () => {
     if (!session || selection.length < 4) return;
+    const localMatch = session.words.find(
+      (word) => !word.found && pathsMatch(selection, word.solutionPath),
+    );
+    if (!localMatch) {
+      setMessage("Essa sequência não está na lista. Tente outra.");
+      setSelection([]);
+      return;
+    }
     setLoading(true);
     try {
       const result = await submitWordPath({ data: { sessionId: session.id, path: selection } });
-      setSession(result.session as Session);
-      setMessage(
-        result.matched
-          ? `Você encontrou “${result.foundWord}”!`
-          : "Essa sequência não está na lista. Tente outra.",
+      if (!result.matched || !result.foundWordId || result.foundWords == null) {
+        setMessage("Essa palavra não está mais disponível. Atualize a partida.");
+        setSelection([]);
+        return;
+      }
+      setSession((current) =>
+        current
+          ? {
+              ...current,
+              status: result.won ? "won" : "in_progress",
+              foundWords: result.foundWords as number,
+              words: current.words.map((word) =>
+                word.id === result.foundWordId
+                  ? { ...word, found: true, displayWord: result.foundWord || word.displayWord }
+                  : word,
+              ),
+              foundPaths: [...current.foundPaths, selection],
+            }
+          : current,
       );
-      if (result.matched && result.session.status === "won" && session.status !== "won") {
+      setMessage(`Você encontrou “${result.foundWord}”!`);
+      if (result.won && session.status !== "won") {
         ui.triggerHearts();
       }
       setSelection([]);

@@ -18,6 +18,14 @@ begin
     raise exception 'Authenticated clients can execute the private reward RPC.';
   end if;
 
+  if has_function_privilege(
+    'authenticated',
+    'public.submit_word_search_match(uuid,uuid,jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception 'Authenticated clients can execute the private progress RPC.';
+  end if;
+
   if not exists (
     select 1 from pg_indexes
     where schemaname = 'public' and tablename = 'daily_game_rewards'
