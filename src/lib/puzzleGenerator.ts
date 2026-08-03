@@ -21,7 +21,7 @@ export const PUZZLE_GRID_CONFIG: Record<
   PuzzleDifficulty,
   { rows: number; cols: number; totalPieces: number; label: string }
 > = {
-  easy: { rows: 3, cols: 3, totalPieces: 9, label: "Fácil" },
+  easy: { rows: 3, cols: 4, totalPieces: 12, label: "Fácil" },
   medium: { rows: 4, cols: 4, totalPieces: 16, label: "Médio" },
   hard: { rows: 5, cols: 5, totalPieces: 25, label: "Difícil" },
 };
@@ -93,24 +93,26 @@ export function generatePieceSvgPath(
   pieceHeight: number,
   edges: PieceTabEdges,
 ): string {
-  const w = pieceWidth;
-  const h = pieceHeight;
+  return generatePieceSvgPathOffset(0, 0, pieceWidth, pieceHeight, edges);
+}
 
-  // Start top-left
-  let path = `M 0 0 `;
+export function generatePieceSvgPathOffset(
+  offsetX: number,
+  offsetY: number,
+  pieceWidth: number,
+  pieceHeight: number,
+  edges: PieceTabEdges,
+): string {
+  const x1 = offsetX;
+  const y1 = offsetY;
+  const x2 = offsetX + pieceWidth;
+  const y2 = offsetY + pieceHeight;
 
-  // Top edge (left to right)
-  path += generateJigsawEdgePath(0, 0, w, 0, edges.top) + " ";
-
-  // Right edge (top to bottom)
-  path += generateJigsawEdgePath(w, 0, w, h, edges.right) + " ";
-
-  // Bottom edge (right to left)
-  path += generateJigsawEdgePath(w, h, 0, h, edges.bottom) + " ";
-
-  // Left edge (bottom to top)
-  path += generateJigsawEdgePath(0, h, 0, 0, edges.left) + " Z";
-
+  let path = `M ${x1} ${y1} `;
+  path += generateJigsawEdgePath(x1, y1, x2, y1, edges.top) + " ";
+  path += generateJigsawEdgePath(x2, y1, x2, y2, edges.right) + " ";
+  path += generateJigsawEdgePath(x2, y2, x1, y2, edges.bottom) + " ";
+  path += generateJigsawEdgePath(x1, y2, x1, y1, edges.left) + " Z";
   return path;
 }
 
@@ -160,7 +162,9 @@ export function generateGridPieceDefinitions(
       const left = c === 0 ? 0 : -vEdges[r][c - 1]; // complementary to piece on left
 
       const edges: PieceTabEdges = { top, right, bottom, left };
-      const svgPath = generatePieceSvgPath(pieceWidth, pieceHeight, edges);
+      const correctX = c * pieceWidth;
+      const correctY = r * pieceHeight;
+      const svgPath = generatePieceSvgPathOffset(correctX, correctY, pieceWidth, pieceHeight, edges);
 
       pieces.push({
         id,
