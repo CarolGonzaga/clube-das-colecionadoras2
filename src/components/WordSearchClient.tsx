@@ -224,6 +224,27 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           </div>
         ) : !session ? (
           <div className="mx-auto mt-6 max-w-sm">
+            <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
+              <summary className="cursor-pointer font-black">Como jogar</summary>
+              <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed">
+                <li>Escolha um nível disponível: Fácil, Médio ou Difícil.</li>
+                <li>
+                  Clique nas letras em sequência, sempre escolhendo células vizinhas na horizontal,
+                  vertical ou diagonal.
+                </li>
+                <li>
+                  Siga uma única direção, sem pular letras ou mudar de sentido durante a palavra.
+                </li>
+                <li>Nos níveis Médio e Difícil, algumas palavras aparecem de trás para frente.</li>
+                <li>Encontre todas as palavras para concluir a partida e liberar a recompensa.</li>
+                <li>Você pode vencer somente uma partida por dia, considerando todos os jogos.</li>
+                <li>
+                  Se sair, seu progresso fica salvo até o fim do dia. Na virada do dia, partidas não
+                  concluídas são reiniciadas e o nível volta a ficar disponível.
+                </li>
+                <li>Conclua e resgate a recompensa antes da virada do dia.</li>
+              </ul>
+            </details>
             <fieldset>
               <legend className="mb-2 text-xs font-bold text-[#6e1638]">
                 Escolha a dificuldade

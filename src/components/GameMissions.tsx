@@ -11,7 +11,6 @@ import {
   Grid3X3,
   LockKeyhole,
   Puzzle,
-  X,
 } from "lucide-react";
 import { getDailyGamesState } from "@/lib/games";
 import { getMemoryGameState } from "@/lib/memoryGame";
@@ -69,7 +68,6 @@ export default function GameMissions() {
   const router = useRouter();
   const [wordState, setWordState] = useState<WordState | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState | null>(null);
-  const [showRules, setShowRules] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
@@ -85,7 +83,6 @@ export default function GameMissions() {
     const nextWordState = word.status === "fulfilled" ? word.value : { available: false };
     setWordState(nextWordState);
     setMemoryState(memory.status === "fulfilled" ? memory.value : { available: false });
-    if ("reward" in nextWordState && nextWordState.reward) setShowRules(false);
   }, []);
 
   useEffect(() => {
@@ -204,7 +201,10 @@ export default function GameMissions() {
 
         <div className="overflow-hidden rounded-[28px]">
           {slide.key === "word_search" && (
-            <WordSearchSlide state={wordState} onPlay={() => setShowRules(true)} />
+            <WordSearchSlide
+              state={wordState}
+              onPlay={() => router.navigate({ to: "/clubedascolecionadoras/jogos/caca-palavras" })}
+            />
           )}
           {slide.key === "memory_game" && (
             <MemoryGameSlide
@@ -253,14 +253,6 @@ export default function GameMissions() {
           />
         ))}
       </div>
-
-      {showRules && wordState?.available && !wordState.reward && (
-        <WordSearchRules
-          continuing={Boolean(wordState.session)}
-          onClose={() => setShowRules(false)}
-          onContinue={() => router.navigate({ to: "/clubedascolecionadoras/jogos/caca-palavras" })}
-        />
-      )}
     </section>
   );
 }
@@ -408,10 +400,10 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
           <div className="mt-auto flex flex-col items-center gap-4 pt-5 lg:flex-row lg:justify-between">
             <div className="grid w-full max-w-[340px] grid-cols-3 gap-2">
               {[
-                ["easy", "Fácil", "6 pares"],
-                ["medium", "Médio", "8 pares"],
-                ["hard", "Difícil", "12 pares"],
-              ].map(([id, name, pairs]) => {
+                ["easy", "Fácil"],
+                ["medium", "Médio"],
+                ["hard", "Difícil"],
+              ].map(([id, name]) => {
                 const completed = used.includes(id as "easy" | "medium" | "hard");
                 const current = session?.difficulty === id;
                 return (
@@ -421,7 +413,7 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
                   >
                     <span>{name}</span>
                     <small className="mt-1 block text-[7px] leading-none">
-                      {completed ? "Já usado" : current ? "Em andamento" : pairs}
+                      {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
                     </small>
                   </div>
                 );
@@ -487,65 +479,5 @@ function ComingSoonSlide({
         </span>
       </div>
     </CardShell>
-  );
-}
-
-function WordSearchRules({
-  continuing,
-  onClose,
-  onContinue,
-}: {
-  continuing: boolean;
-  onClose: () => void;
-  onContinue: () => void;
-}) {
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="word-search-rules-title"
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#3f0b27]/65 p-4 backdrop-blur-sm"
-    >
-      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl dark:bg-[#1c0819] sm:p-8">
-        <button
-          type="button"
-          aria-label="Fechar regras"
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-2 text-[#9e1b4a]"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        <h3
-          id="word-search-rules-title"
-          className="text-xl font-black text-[#6e1638] dark:text-[#ffd1e5]"
-        >
-          Como jogar
-        </h3>
-        <div className="mt-4 space-y-3 text-xs font-semibold leading-relaxed text-[#7f3152] dark:text-[#f7a8cb]">
-          <p>Escolha um nível disponível: Fácil, Médio ou Difícil.</p>
-          <p>
-            Selecione letras vizinhas na horizontal, vertical ou diagonal, seguindo uma única
-            direção.
-          </p>
-          <p>Nos níveis Médio e Difícil, algumas palavras aparecem de trás para frente.</p>
-          <p>
-            Encontre todas as palavras para liberar a recompensa diária. Se sair, seu progresso fica
-            salvo somente até o fim do dia.
-          </p>
-          <p>
-            Na virada do dia, uma partida não concluída é reiniciada e o nível volta a ficar
-            disponível.
-          </p>
-          <p>Você pode vencer e resgatar apenas uma partida por dia entre todos os jogos.</p>
-        </div>
-        <button
-          type="button"
-          onClick={onContinue}
-          className="mt-6 w-full rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] py-3 text-xs font-black text-white"
-        >
-          {continuing ? "Continuar partida" : "Escolher dificuldade"}
-        </button>
-      </div>
-    </div>
   );
 }
