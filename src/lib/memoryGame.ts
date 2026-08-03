@@ -19,7 +19,6 @@ const MEMORY_TEST_USER_IDS = new Set([
 ]);
 const difficultySchema = z.enum(["easy", "medium", "hard"]);
 const sessionSchema = z.object({ sessionId: z.string().uuid() });
-const cardSchema = sessionSchema.extend({ cardId: z.string().uuid() });
 const compareSchema = sessionSchema.extend({
   firstCardId: z.string().uuid(),
   secondCardId: z.string().uuid(),
@@ -47,7 +46,7 @@ async function access(userId: string) {
 async function load(admin: any, userId: string, sessionId?: string) {
   let query = admin
     .from("memory_game_sessions")
-    .select("*")
+    .select("id,difficulty,status,total_pairs,matched_pairs,created_at")
     .eq("user_id", userId)
     .in("status", ["in_progress", "won"])
     .order("created_at", { ascending: false })
@@ -55,7 +54,7 @@ async function load(admin: any, userId: string, sessionId?: string) {
   if (sessionId)
     query = admin
       .from("memory_game_sessions")
-      .select("*")
+      .select("id,difficulty,status,total_pairs,matched_pairs,created_at")
       .eq("id", sessionId)
       .eq("user_id", userId)
       .limit(1);
@@ -153,42 +152,6 @@ export const startMemoryGame = createServerFn({ method: "POST" })
     const session = await load(admin, context.userId, sessionId);
     if (!session) throw new Error("Não foi possível carregar a partida.");
     return session;
-  });
-
-export const revealMemoryCard = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((value) => cardSchema.parse(value))
-  .handler(async ({ context, data }) => {
-    const { admin, available } = await access(context.userId);
-    if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
-    const today = getDailyGameDate();
-    await expireStaleDailyGameSessions(admin, context.userId, today);
-    const { data: cardRow, error } = await admin
-      .from("memory_game_cards")
-      .select(
-        "card_instance_id,source_sticker_id,memory_game_sessions!inner(user_id,status,local_date)",
-      )
-      .eq("session_id", data.sessionId)
-      .eq("card_instance_id", data.cardId)
-      .eq("memory_game_sessions.user_id", context.userId)
-      .maybeSingle();
-    if (
-      error ||
-      !cardRow ||
-      cardRow.memory_game_sessions.local_date !== today ||
-      !["in_progress", "won"].includes(cardRow.memory_game_sessions.status)
-    )
-      throw new Error("Carta inválida ou partida encerrada.");
-    const { data: image, error: imageError } = await admin
-      .from("memory_game_stickers")
-      .select("id")
-      .eq("id", cardRow.source_sticker_id)
-      .eq("is_active", true)
-      .contains("allowed_game_keys", [GAME_KEY])
-      .maybeSingle();
-    const frontImage = getMemoryCoverPath(image?.id);
-    if (imageError || !frontImage) throw new Error("A imagem desta carta não está disponível.");
-    return { cardId: cardRow.card_instance_id, frontImage };
   });
 
 export const compareMemoryCards = createServerFn({ method: "POST" })

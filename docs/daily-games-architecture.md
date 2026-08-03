@@ -13,6 +13,8 @@ contrário.
 8. Não usar polling ou Realtime quando a partida for individual e puder ser local.
 9. Manter no servidor as travas de acesso, data, sessão, vitória e recompensa.
 10. Aplicar a política compartilhada de uma sessão e uma vitória por dia.
+11. Ao adicionar um jogo, incluir sua tabela nas funções e triggers autoritativas de início,
+    expiração, vitória e ciclo de dificuldades antes de liberar o acesso.
 
 ## Implementações atuais
 

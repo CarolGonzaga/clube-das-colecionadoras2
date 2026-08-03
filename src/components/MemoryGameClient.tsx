@@ -289,11 +289,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
               ))}
             </div>
             <button
-              disabled={
-                busy ||
-                initialState.canPlay === false ||
-                !availableDifficulties.includes(difficulty)
-              }
+              disabled={busy || !availableDifficulties.includes(difficulty)}
               onClick={() => start()}
               className="mx-auto mt-5 block rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-8 py-3 text-xs font-black text-white disabled:opacity-60"
             >
@@ -341,7 +337,7 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                     aria-label={
                       card.matched
                         ? `Carta ${card.position + 1}, par encontrado`
-                        : face
+                        : faceIsVisible
                           ? `Carta ${card.position + 1}, revelada`
                           : `Virar carta ${card.position + 1}`
                     }
