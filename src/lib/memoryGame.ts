@@ -197,7 +197,6 @@ export const compareMemoryCards = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { admin, available } = await access(context.userId);
     if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
-    await expireStaleDailyGameSessions(admin, context.userId, getDailyGameDate());
     const { data: result, error } = await admin.rpc("compare_memory_cards", {
       p_user_id: context.userId,
       p_session_id: data.sessionId,
@@ -205,9 +204,9 @@ export const compareMemoryCards = createServerFn({ method: "POST" })
       p_second_card: data.secondCardId,
     });
     if (error) throw new Error(error.message || "Não foi possível comparar as cartas.");
-    const session = await load(admin, context.userId, data.sessionId);
-    if (!session) throw new Error("Não foi possível restaurar a partida.");
-    return { ...result, session };
+    // A RPC já é autoritativa. Evite reler a sessão e todas as cartas depois de
+    // cada tentativa: o cliente só precisa deste delta mínimo para atualizar a UI.
+    return result as { matched: boolean; matchedPairs: number; won: boolean };
   });
 
 export const claimMemoryGameReward = createServerFn({ method: "POST" })

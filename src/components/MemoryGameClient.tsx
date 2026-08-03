@@ -129,28 +129,48 @@ export default function MemoryGameClient({ initialState }: { initialState: State
     }
 
     setBusy(true);
+    if (!appearsMatched) {
+      await new Promise((resolve) => window.setTimeout(resolve, 560));
+      setMessage("Ainda não! Tente outro par.");
+      setOpen((old) => {
+        const copy = { ...old };
+        delete copy[next[0]];
+        delete copy[next[1]];
+        return copy;
+      });
+      clearFeedbackAfter("error", 120);
+      setSelected([]);
+      setBusy(false);
+      return;
+    }
+
     try {
-      const [result] = await Promise.all([
-        compareMemoryCards({
-          data: { sessionId: session.id, firstCardId: next[0], secondCardId: next[1] },
-        }),
-        appearsMatched
-          ? Promise.resolve()
-          : new Promise((resolve) => window.setTimeout(resolve, 560)),
-      ]);
-      if (!result.matched) {
-        setMessage("Ainda não! Tente outro par.");
+      const result = await compareMemoryCards({
+        data: { sessionId: session.id, firstCardId: next[0], secondCardId: next[1] },
+      });
+      if (result.matched) {
+        setMessage(result.won ? "Você encontrou todos os pares!" : "Par encontrado!");
+        setSession((current) =>
+          current
+            ? {
+                ...current,
+                status: result.won ? "won" : "in_progress",
+                matchedPairs: result.matchedPairs,
+                cards: current.cards.map((candidate) =>
+                  next.includes(candidate.id) ? { ...candidate, matched: true } : candidate,
+                ),
+              }
+            : current,
+        );
+        if (result.won) ui.triggerHearts();
+      } else {
+        // Proteção defensiva caso o estado local esteja desatualizado.
         setOpen((old) => {
           const copy = { ...old };
           delete copy[next[0]];
           delete copy[next[1]];
           return copy;
         });
-        clearFeedbackAfter("error", 120);
-      } else {
-        setMessage(result.won ? "Você encontrou todos os pares!" : "Par encontrado!");
-        setSession(result.session as Session);
-        if (result.won) ui.triggerHearts();
       }
       setSelected([]);
     } catch (error) {
