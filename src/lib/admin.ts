@@ -49,8 +49,8 @@ export const getAdminDashboard = createServerFn({ method: "POST" })
       admin.from("coupons").select("id,code,discount_percent,discount_cents,max_uses,max_uses_per_user,uses_count,expires_at,is_active,created_at").order("created_at", { ascending: false }),
       admin.from("shop_products").select("id,name,description,product_type,sticker_number,pack_count,stickers_per_pack,price_cents,point_price,currency,active,metadata,image_url,display_section,sort_order,created_at,updated_at").order("sort_order").order("name"),
       admin.from("admin_redeem_code_metrics").select("*").order("active", { ascending: false }).order("code"),
-      admin.from("game_access_grants").select("id,user_id,game_key,is_active,granted_at,revoked_at").in("game_key", ["word_search", "memory_game"]).order("granted_at", { ascending: false }),
-      admin.from("game_settings").select("key,value,updated_at").in("key", ["word_search_enabled", "memory_game_enabled"]),
+      admin.from("game_access_grants").select("id,user_id,game_key,is_active,granted_at,revoked_at").in("game_key", ["word_search", "memory_game", "puzzle_game"]).order("granted_at", { ascending: false }),
+      admin.from("game_settings").select("key,value,updated_at").in("key", ["word_search_enabled", "memory_game_enabled", "puzzle_game_enabled"]),
     ]);
     for (const result of [metricsResult, ordersResult, couponsResult, productsResult]) {
       if (result.error) throw new Error(result.error.message);
@@ -245,6 +245,41 @@ export const setMemoryGameAccess = createServerFn({ method: "POST" })
     const payload = data.active
       ? { user_id: data.userId, game_key: "memory_game", is_active: true, granted_by: context.userId, granted_at: now, revoked_by: null, revoked_at: null, updated_at: now }
       : { user_id: data.userId, game_key: "memory_game", is_active: false, revoked_by: context.userId, revoked_at: now, updated_at: now };
+    const { data: saved, error } = await admin.from("game_access_grants").upsert(payload, { onConflict: "user_id,game_key" }).select().single();
+    if (error) throw new Error(error.message);
+    await audit(admin, context.userId, data.active ? "game.access.grant" : "game.access.revoke", "game_access_grant", data.userId, before, saved);
+    return saved;
+  });
+
+export const setPuzzleGameEnabled = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => z.object({ enabled: z.boolean() }).parse(value))
+  .handler(async ({ context, data }) => {
+    const admin = await requireAdmin(context.userId);
+    const before = (await admin.from("game_settings").select("*").eq("key", "puzzle_game_enabled").maybeSingle()).data;
+    const { data: saved, error } = await admin.from("game_settings").upsert({
+      key: "puzzle_game_enabled", value: data.enabled, description: "Desliga ou liga globalmente o Quebra-Cabeça.",
+      updated_at: new Date().toISOString(), updated_by: context.userId,
+    }).select().single();
+    if (error) throw new Error(error.message);
+    await audit(admin, context.userId, "game.feature_flag", "game_setting", "puzzle_game_enabled", before, saved);
+    return saved;
+  });
+
+export const setPuzzleGameAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => z.object({ userId: z.string().uuid(), active: z.boolean() }).parse(value))
+  .handler(async ({ context, data }) => {
+    const admin = await requireAdmin(context.userId);
+    if (data.active && !MEMORY_TEST_USER_IDS.has(data.userId))
+      throw new Error("Durante o beta, somente as três contas de teste podem receber acesso.");
+    const { data: target, error: targetError } = await admin.auth.admin.getUserById(data.userId);
+    if (targetError || !target.user) throw new Error("Usuária não encontrada.");
+    const before = (await admin.from("game_access_grants").select("*").eq("user_id", data.userId).eq("game_key", "puzzle_game").maybeSingle()).data;
+    const now = new Date().toISOString();
+    const payload = data.active
+      ? { user_id: data.userId, game_key: "puzzle_game", is_active: true, granted_by: context.userId, granted_at: now, revoked_by: null, revoked_at: null, updated_at: now }
+      : { user_id: data.userId, game_key: "puzzle_game", is_active: false, revoked_by: context.userId, revoked_at: now, updated_at: now };
     const { data: saved, error } = await admin.from("game_access_grants").upsert(payload, { onConflict: "user_id,game_key" }).select().single();
     if (error) throw new Error(error.message);
     await audit(admin, context.userId, data.active ? "game.access.grant" : "game.access.revoke", "game_access_grant", data.userId, before, saved);
