@@ -70,7 +70,7 @@ export async function getActiveDailyGame(
       .select("id,status,local_date")
       .eq("user_id", userId)
       .eq("local_date", today)
-      .in("status", ["in_progress", "won"])
+      .eq("status", "in_progress")
       .limit(1)
       .maybeSingle(),
     admin
@@ -78,7 +78,7 @@ export async function getActiveDailyGame(
       .select("id,status,local_date")
       .eq("user_id", userId)
       .eq("local_date", today)
-      .in("status", ["in_progress", "won"])
+      .eq("status", "in_progress")
       .limit(1)
       .maybeSingle(),
     admin
@@ -86,7 +86,7 @@ export async function getActiveDailyGame(
       .select("id,status,local_date")
       .eq("user_id", userId)
       .eq("local_date", today)
-      .in("status", ["in_progress", "won"])
+      .eq("status", "in_progress")
       .limit(1)
       .maybeSingle(),
   ]);

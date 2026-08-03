@@ -20,9 +20,9 @@ export const PUZZLE_GRID_CONFIG: Record<
   PuzzleDifficulty,
   { rows: number; cols: number; totalPieces: number; label: string }
 > = {
-  easy:   { rows: 3, cols: 4, totalPieces: 12, label: "Fácil" },
+  easy:   { rows: 4, cols: 3, totalPieces: 12, label: "Fácil" },
   medium: { rows: 5, cols: 4, totalPieces: 20, label: "Médio" },
-  hard:   { rows: 5, cols: 5, totalPieces: 25, label: "Difícil" },
+  hard:   { rows: 6, cols: 5, totalPieces: 30, label: "Difícil" },
 };
 
 function r(n: number) {

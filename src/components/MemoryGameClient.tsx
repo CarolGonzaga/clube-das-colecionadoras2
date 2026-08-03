@@ -255,17 +255,12 @@ export default function MemoryGameClient({ initialState }: { initialState: State
           <div className="mt-6">
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
               <summary className="cursor-pointer font-black">Como jogar</summary>
-              <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed">
-                <li>Escolha Fácil (6 pares), Médio (8 pares) ou Difícil (12 pares).</li>
+              <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
+                <li>Escolha a dificuldade: <strong>Fácil (6 pares)</strong>, <strong>Médio (8 pares)</strong> ou <strong>Difícil (12 pares)</strong>.</li>
                 <li>Vire duas cartas por vez. Se forem iguais, elas permanecem abertas.</li>
-                <li>Encontre todos os pares para liberar a recompensa diária.</li>
-                <li>Ao iniciar, o nível escolhido fica bloqueado até o fim da partida.</li>
-                <li>Você pode vencer somente uma partida por dia, considerando todos os jogos.</li>
-                <li>
-                  Se sair, seu progresso fica salvo até o fim do dia. Na virada do dia, partidas não
-                  concluídas são reiniciadas e o nível volta a ficar disponível.
-                </li>
-                <li>Conclua e resgate a recompensa antes da virada do dia.</li>
+                <li>Encontre todos os pares de figurinhas para liberar a recompensa do Jogo da Memória.</li>
+                <li><strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis, todos os níveis voltam a ficar disponíveis!</li>
+                <li>Cada jogo permite 1 resgate de recompensa por dia.</li>
               </ul>
             </details>
             <h2 className="text-center text-sm font-bold text-[#6e1638] dark:text-[#ffd1e5]">

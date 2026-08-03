@@ -297,7 +297,7 @@ export default function PuzzleGameClient() {
       await abandonPuzzleGame({ data: { sessionId: session.id } });
       await loadState();
     } catch (err: any) {
-      setErrorMsg(err.message || "Erro ao reiniciar.");
+      setErrorMsg(err.message || "Erro ao recomeçar.");
     } finally {
       setLoading(false);
     }
@@ -493,13 +493,12 @@ export default function PuzzleGameClient() {
           <div className="mx-auto mt-6 max-w-sm">
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:border-pink-900/40 dark:bg-[#260c20] dark:text-[#f7a8cb]">
               <summary className="cursor-pointer font-black">Como jogar</summary>
-              <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed">
-                <li>Escolha um nível: Fácil, Médio ou Difícil.</li>
-                <li>Arraste cada peça para sua posição correta no tabuleiro. Toque sem arrastar <strong>gira a peça 90°</strong>. Algumas peças precisarão ser giradas para encaixar.</li>
-                <li>No nível Fácil, uma imagem guia fica visível para ajudar.</li>
-                <li>Ao encaixar todas as peças, você libera a recompensa diária.</li>
-                <li>Seu progresso fica salvo para continuar depois.</li>
-                <li>Você só pode receber 1 recompensa por dia.</li>
+              <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
+                <li>Escolha o nível de dificuldade: <strong>Fácil (3×4 - 12pçs)</strong>, <strong>Médio (4×5 - 20pçs)</strong> ou <strong>Difícil (5×6 - 30pçs)</strong>.</li>
+                <li>Arraste as peças para o tabuleiro. Toque sem arrastar <strong>gira a peça 90°</strong>. No nível Fácil, uma guia sutil de fundo está disponível.</li>
+                <li><strong>Botão Recomeçar:</strong> Se houver algum problema ao movimentar peças ou se quiser iniciar a montagem do zero, clique em <em>Recomeçar</em> a qualquer momento.</li>
+                <li><strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis, todos os níveis voltam a ficar disponíveis!</li>
+                <li>Cada jogo permite 1 resgate de recompensa por dia.</li>
               </ul>
             </details>
 
@@ -534,7 +533,7 @@ export default function PuzzleGameClient() {
                       </div>
                       <span>{cfg.label}</span>
                       <small className="mt-0.5 block text-[9px] font-semibold opacity-75">
-                        {cfg.cols}×{cfg.rows} · {cfg.totalPieces}p
+                        {cfg.cols}×{cfg.rows} · {cfg.totalPieces}pçs
                       </small>
                       {!isAvailable && isUsed && (
                         <span className="mt-1 block text-[7px] font-bold uppercase text-emerald-600 dark:text-emerald-400">já usado</span>
@@ -576,7 +575,7 @@ export default function PuzzleGameClient() {
                 )}
                 <button type="button" onClick={handleAbandon}
                   className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-bold text-gray-600 hover:bg-gray-50 dark:border-pink-900 dark:bg-[#260c20] dark:text-gray-300">
-                  <RotateCcw className="h-3.5 w-3.5" /> Reiniciar
+                  <RotateCcw className="h-3.5 w-3.5" /> Recomeçar
                 </button>
               </div>
             </div>

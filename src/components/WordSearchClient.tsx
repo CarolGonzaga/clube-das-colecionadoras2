@@ -259,23 +259,13 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
           <div className="mx-auto mt-6 max-w-sm">
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
               <summary className="cursor-pointer font-black">Como jogar</summary>
-              <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed">
-                <li>Escolha um nível disponível: Fácil, Médio ou Difícil.</li>
-                <li>
-                  Clique nas letras em sequência, sempre escolhendo células vizinhas na horizontal,
-                  vertical ou diagonal.
-                </li>
-                <li>
-                  Siga uma única direção, sem pular letras ou mudar de sentido durante a palavra.
-                </li>
+              <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
+                <li>Escolha o nível de dificuldade: <strong>Fácil</strong>, <strong>Médio</strong> ou <strong>Difícil</strong>.</li>
+                <li>Clique nas letras em sequência para formar a palavra, em células vizinhas na horizontal, vertical ou diagonal.</li>
                 <li>Nos níveis Médio e Difícil, algumas palavras aparecem de trás para frente.</li>
-                <li>Encontre todas as palavras para concluir a partida e liberar a recompensa.</li>
-                <li>Você pode vencer somente uma partida por dia, considerando todos os jogos.</li>
-                <li>
-                  Se sair, seu progresso fica salvo até o fim do dia. Na virada do dia, partidas não
-                  concluídas são reiniciadas e o nível volta a ficar disponível.
-                </li>
-                <li>Conclua e resgate a recompensa antes da virada do dia.</li>
+                <li>Encontre todas as palavras da lista para liberar a recompensa do Caça-Palavras.</li>
+                <li><strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis, todos os níveis voltam a ficar disponíveis!</li>
+                <li>Cada jogo permite 1 resgate de recompensa por dia.</li>
               </ul>
             </details>
             <fieldset>

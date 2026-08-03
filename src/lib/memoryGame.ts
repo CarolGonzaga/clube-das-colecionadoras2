@@ -110,6 +110,7 @@ export const getMemoryGameState = createServerFn({ method: "GET" })
         .select("sticker_number,result_type,is_rare,game_key")
         .eq("user_id", context.userId)
         .eq("reward_date", today)
+        .eq("game_key", GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
       getActiveDailyGame(admin, context.userId, today),

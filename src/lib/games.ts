@@ -134,6 +134,7 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
         .select("game_key,sticker_number,result_type,is_rare,created_at")
         .eq("user_id", context.userId)
         .eq("reward_date", today)
+        .eq("game_key", GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
       getActiveDailyGame(admin, context.userId, today),
@@ -165,6 +166,7 @@ export const startWordSearch = createServerFn({ method: "POST" })
         .select("id")
         .eq("user_id", context.userId)
         .eq("reward_date", localDate)
+        .eq("game_key", GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
       getActiveDailyGame(admin, context.userId, localDate),
@@ -376,6 +378,7 @@ export const getPuzzleGameState = createServerFn({ method: "GET" })
         .select("game_key,sticker_number,result_type,is_rare,created_at")
         .eq("user_id", context.userId)
         .eq("reward_date", today)
+        .eq("game_key", PUZZLE_GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, PUZZLE_GAME_KEY),
       getActiveDailyGame(admin, context.userId, today),
@@ -408,6 +411,7 @@ export const startPuzzleGame = createServerFn({ method: "POST" })
         .select("id")
         .eq("user_id", context.userId)
         .eq("reward_date", localDate)
+        .eq("game_key", PUZZLE_GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, PUZZLE_GAME_KEY),
       getActiveDailyGame(admin, context.userId, localDate),
