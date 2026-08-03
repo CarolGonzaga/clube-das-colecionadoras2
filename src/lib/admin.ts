@@ -190,7 +190,7 @@ export const setWordSearchEnabled = createServerFn({ method: "POST" })
     const admin = await requireAdmin(context.userId);
     const before = (await admin.from("game_settings").select("*").eq("key", "word_search_enabled").maybeSingle()).data;
     const { data: saved, error } = await admin.from("game_settings").upsert({
-      key: "word_search_enabled", value: data.enabled, description: "Desliga ou liga globalmente o Caça-Palavras Sáfico.",
+      key: "word_search_enabled", value: data.enabled, description: "Desliga ou liga globalmente o Caça-Palavras.",
       updated_at: new Date().toISOString(), updated_by: context.userId,
     }).select().single();
     if (error) throw new Error(error.message);

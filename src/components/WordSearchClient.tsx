@@ -236,7 +236,7 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
             <Sparkles className="h-3 w-3" /> Missão diária
           </span>
           <h1 className="mt-2 text-2xl font-black text-[#6e1638] dark:text-[#ffd1e5]">
-            Caça-Palavras Sáfico
+            Caça-Palavras
           </h1>
           <p className="mt-1 text-xs text-[#a52b59] dark:text-[#f7a8cb]">
             Encontre todas as palavras e ganhe uma figurinha entre 21 e 193.

@@ -158,9 +158,14 @@ export default function PuzzleGameClient() {
   const currentDiff = (session?.difficulty || difficulty) as PuzzleDifficulty;
   const gridConfig = PUZZLE_GRID_CONFIG[currentDiff];
 
-  // Board dimensions: 3:4 portrait (book cover ratio)
-  const BOARD_W = gridConfig.cols * 80;
-  const BOARD_H = gridConfig.rows * 80;
+  // Always use session's stored dimensions (handles old sessions started with different configs)
+  const GRID_COLS = session?.gridCols ?? gridConfig.cols;
+  const GRID_ROWS = session?.gridRows ?? gridConfig.rows;
+  const TOTAL_PIECES = session?.totalPieces ?? gridConfig.totalPieces;
+
+  const CELL = 80;
+  const BOARD_W = GRID_COLS * CELL;
+  const BOARD_H = GRID_ROWS * CELL;
   const MARGIN_X = 220;
   const MARGIN_Y = 160;
 
@@ -169,8 +174,8 @@ export default function PuzzleGameClient() {
   const BOARD_LEFT = MARGIN_X;
   const BOARD_TOP = MARGIN_Y;
 
-  const PIECE_W = BOARD_W / gridConfig.cols;
-  const PIECE_H = BOARD_H / gridConfig.rows;
+  const PIECE_W = BOARD_W / GRID_COLS;
+  const PIECE_H = BOARD_H / GRID_ROWS;
   const SNAP_THRESHOLD = Math.min(PIECE_W, PIECE_H) * 0.40;
 
   // ── responsive fit scale ────────────────────────────────────────────────
@@ -221,7 +226,8 @@ export default function PuzzleGameClient() {
     if (!session || !coverUrl) { setPieces([]); return; }
 
     const seed = session.id.split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
-    const defs = generateGridPieceDefinitions(gridConfig.rows, gridConfig.cols, PIECE_W, PIECE_H, seed);
+    // Use actual session grid dimensions
+    const defs = generateGridPieceDefinitions(GRID_ROWS, GRID_COLS, PIECE_W, PIECE_H, seed);
     const scatter = generateScatter(defs.length, CONTAINER_W, CONTAINER_H, BOARD_LEFT, BOARD_TOP, BOARD_W, BOARD_H, PIECE_W, PIECE_H);
     const savedBoard: { id: number; isPlaced: boolean; x?: number; y?: number; rotation?: number }[] = session.boardState || [];
 
@@ -235,7 +241,6 @@ export default function PuzzleGameClient() {
       const correctY = BOARD_TOP + def.row * PIECE_H;
       const isPlaced = Boolean(saved?.isPlaced);
 
-      // Assign deterministic random rotation for unplaced pieces
       const rotation = isPlaced ? 0 : saved?.rotation ?? ROTATIONS[Math.floor(rng() * 4)];
 
       return {
@@ -255,19 +260,21 @@ export default function PuzzleGameClient() {
 
     zCounter.current = ps.length + 5;
     setPieces(ps);
-  }, [session?.id, coverUrl]);
+  }, [session?.id, coverUrl, GRID_ROWS, GRID_COLS, PIECE_W, PIECE_H]);
 
   // ── win check ───────────────────────────────────────────────────────────
   const placedCount = pieces.filter(p => p.placed).length;
-  const isWon = session?.status === "won" || (pieces.length > 0 && placedCount === gridConfig.totalPieces);
+  // isWon: only from live pieces state — never trust stale session.status alone
+  // (avoids false-win from old/buggy sessions that set status=won without boardState)
+  const isWon = pieces.length > 0 && pieces.every(p => p.placed);
   const isClaimed = session?.status === "claimed" || Boolean(gameState?.reward);
 
   useEffect(() => {
-    if (pieces.length > 0 && pieces.every(p => p.placed) && session?.status === "in_progress") {
+    if (isWon && session?.status === "in_progress") {
       audio.win();
       ui.triggerHearts();
     }
-  }, [pieces]);
+  }, [isWon]);
 
   // ── start / abandon ─────────────────────────────────────────────────────
   const handleStart = async () => {
@@ -426,7 +433,7 @@ export default function PuzzleGameClient() {
         <div className="mx-auto mt-10 max-w-sm rounded-3xl border border-pink-200 bg-white p-8 text-center shadow dark:border-pink-900/40 dark:bg-[#1b0818]">
           <Lock className="mx-auto h-10 w-10 text-[#c2185b]" />
           <h2 className="mt-3 text-lg font-black text-[#6e1638] dark:text-[#ffd1e5]">Conteúdo bloqueado</h2>
-          <p className="mt-2 text-xs text-[#a52b59] dark:text-[#f7a8cb]">O Quebra-Cabeça Sáfico ainda não está disponível para sua conta.</p>
+          <p className="mt-2 text-xs text-[#a52b59] dark:text-[#f7a8cb]">O Quebra-Cabeça ainda não está disponível para sua conta.</p>
         </div>
       </main>
     );
@@ -451,7 +458,7 @@ export default function PuzzleGameClient() {
             <Sparkles className="h-3 w-3" /> Missão diária
           </span>
           <h1 className="mt-2 text-2xl font-black text-[#6e1638] dark:text-[#ffd1e5]">
-            Quebra-Cabeça Sáfico
+            Quebra-Cabeça
           </h1>
           <p className="mt-1 text-xs text-[#a52b59] dark:text-[#f7a8cb]">
             Encaixe todas as peças para liberar a recompensa.
@@ -557,7 +564,7 @@ export default function PuzzleGameClient() {
             {/* Toolbar */}
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-pink-100 pb-3 dark:border-pink-900/40">
               <span className="text-xs font-black text-[#6e1638] dark:text-[#ffd1e5]">
-                {gridConfig.label} · {placedCount}/{gridConfig.totalPieces} peças encaixadas
+                {gridConfig.label} · {placedCount}/{TOTAL_PIECES} peças encaixadas
               </span>
               <div className="flex items-center gap-2">
                 {session.difficulty === "easy" && (
@@ -627,12 +634,12 @@ export default function PuzzleGameClient() {
                 )}
 
                 {/* Slot grid (subtle dashes, no highlight on click) */}
-                {Array.from({ length: gridConfig.totalPieces }).map((_, idx) => {
-                  const r = Math.floor(idx / gridConfig.cols);
-                  const c = idx % gridConfig.cols;
+                {Array.from({ length: TOTAL_PIECES }).map((_, idx) => {
+                  const rr = Math.floor(idx / GRID_COLS);
+                  const cc = idx % GRID_COLS;
                   return (
                     <div key={idx} className="absolute border border-dashed border-white/10 pointer-events-none"
-                      style={{ left: BOARD_LEFT + c * PIECE_W, top: BOARD_TOP + r * PIECE_H, width: PIECE_W, height: PIECE_H }} />
+                      style={{ left: BOARD_LEFT + cc * PIECE_W, top: BOARD_TOP + rr * PIECE_H, width: PIECE_W, height: PIECE_H }} />
                   );
                 })}
 
@@ -702,7 +709,7 @@ export default function PuzzleGameClient() {
                   Montagem Completa!
                 </h3>
                 <p className="mt-1 text-xs text-[#a52b59] dark:text-[#f7a8cb]">
-                  Você encaixou todas as {gridConfig.totalPieces} peças. Resgate sua figurinha!
+                  Você encaixou todas as {TOTAL_PIECES} peças. Resgate sua figurinha!
                 </p>
                 <button type="button" disabled={claiming} onClick={handleClaimReward}
                   className="mt-4 flex items-center gap-2 rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-8 py-3 text-xs font-black text-white shadow-lg transition-transform hover:scale-105 active:scale-95 disabled:opacity-50">

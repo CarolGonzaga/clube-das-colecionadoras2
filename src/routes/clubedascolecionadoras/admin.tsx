@@ -118,7 +118,7 @@ function AdminPage() {
     </section>}
 
     {tab === "games" && <section className="admin-panel">
-      <div className="admin-panel-title"><div><h2>Caça-Palavras Sáfico</h2><p>A flag global prevalece sobre todas as permissões individuais.</p></div><button className={data.wordSearchEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setWordSearchEnabled({data:{enabled:!data.wordSearchEnabled}}))}>{data.wordSearchEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
+      <div className="admin-panel-title"><div><h2>Caça-Palavras</h2><p>A flag global prevalece sobre todas as permissões individuais.</p></div><button className={data.wordSearchEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setWordSearchEnabled({data:{enabled:!data.wordSearchEnabled}}))}>{data.wordSearchEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
       <p><b>Status:</b> {data.wordSearchEnabled ? "Ativo para testadoras autorizadas" : "Desativado para todas as contas"}</p>
       {!data.wordSearchEnabled && <p className="admin-message">Enquanto estiver desativado globalmente, nenhuma conta verá o jogo, mesmo que apareça como autorizada abaixo.</p>}
       <div className="admin-toolbar"><input value={gameSearch} onChange={(event)=>setGameSearch(event.target.value)} placeholder="Buscar por e-mail, nick ou UUID"/></div>

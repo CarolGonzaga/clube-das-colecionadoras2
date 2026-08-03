@@ -20,15 +20,26 @@ export const PUZZLE_GRID_CONFIG: Record<
   PuzzleDifficulty,
   { rows: number; cols: number; totalPieces: number; label: string }
 > = {
-  easy: { rows: 4, cols: 4, totalPieces: 16, label: "Fácil" },
+  easy:   { rows: 3, cols: 4, totalPieces: 12, label: "Fácil" },
   medium: { rows: 5, cols: 4, totalPieces: 20, label: "Médio" },
-  hard: { rows: 5, cols: 5, totalPieces: 25, label: "Difícil" },
+  hard:   { rows: 5, cols: 5, totalPieces: 25, label: "Difícil" },
 };
 
+function r(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
 /**
- * Generates a jigsaw edge path segment from (x1,y1) to (x2,y2).
- * tabType: 0 = straight, 1 = tab protrudes, -1 = blank indents.
- * The "knob" protrudes to the RIGHT of the direction of travel.
+ * Draws a jigsaw edge from (x1,y1) to (x2,y2).
+ * tabType  1 → knob protrudes OUTWARD from piece (left of travel direction)
+ * tabType -1 → blank indents inward
+ * tabType  0 → straight line
+ *
+ * Uses the LEFT-of-travel perpendicular as the outward direction so that:
+ *   top edge    → knob goes UP
+ *   right edge  → knob goes RIGHT
+ *   bottom edge → knob goes DOWN
+ *   left edge   → knob goes LEFT
  */
 function jigsawEdge(
   x1: number, y1: number,
@@ -40,44 +51,32 @@ function jigsawEdge(
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.hypot(dx, dy);
-  // Perpendicular unit vector (right of travel direction × tabType sign)
-  const nx = (-dy / len) * tabType;
-  const ny = (dx / len) * tabType;
 
-  // Knob shape: neck narrows, circular head protrudes
-  const t1 = 0.30, t2 = 0.70;   // where the neck starts/ends along the edge
-  const neckProtrude = 0.08;     // how far neck narrows/widens outward
-  const headProtrude = 0.28;     // how far the circular dome protrudes
-  const headCenter = 0.50;       // midpoint of the knob along the edge
+  // LEFT-of-travel unit perpendicular × tabType = outward for tabType=1
+  const nx = (dy / len) * tabType;
+  const ny = (-dx / len) * tabType;
 
-  const n1x = x1 + dx * t1;
-  const n1y = y1 + dy * t1;
-  const n2x = x1 + dx * t2;
-  const n2y = y1 + dy * t2;
-  const hx = x1 + dx * headCenter + nx * len * headProtrude;
-  const hy = y1 + dy * headCenter + ny * len * headProtrude;
+  // Helper: point at fraction f along edge, d pixels outward
+  const p = (f: number, d = 0) =>
+    `${r(x1 + dx * f + nx * d)} ${r(y1 + dy * f + ny * d)}`;
 
-  const cp1x = n1x + nx * len * neckProtrude;
-  const cp1y = n1y + ny * len * neckProtrude;
-  const cp2x = n2x + nx * len * neckProtrude;
-  const cp2y = n2y + ny * len * neckProtrude;
+  const D = len * 0.28; // dome protrusion (28% of edge length)
 
-  // Approach to knob, dome arc, exit from knob
+  // Classic jigsaw knob via two cubic beziers:
+  //   flat → knob entry (t=0.30) → dome apex (t=0.50, D out) → knob exit (t=0.70) → flat
+  // cp1/cp2 at full dome height just inside the apex give a nice round dome
+  // and the very slight (D*0.05) at entry/exit creates the characteristic neck
   return (
-    `L ${r(n1x)} ${r(n1y)} ` +
-    `Q ${r(cp1x)} ${r(cp1y)} ${r(hx - dx * 0.14)} ${r(hy - dy * 0.14)} ` +
-    `Q ${r(hx)} ${r(hy)} ${r(hx + dx * 0.14)} ${r(hy + dy * 0.14)} ` +
-    `Q ${r(cp2x)} ${r(cp2y)} ${r(n2x)} ${r(n2y)} ` +
+    `L ${p(0.30)} ` +
+    `C ${p(0.30, D * 0.05)} ${p(0.44, D)} ${p(0.50, D)} ` +
+    `C ${p(0.56, D)} ${p(0.70, D * 0.05)} ${p(0.70)} ` +
     `L ${r(x2)} ${r(y2)}`
   );
 }
 
-function r(n: number) { return Math.round(n * 100) / 100; }
-
 /**
  * Builds the SVG path for a piece in LOCAL space (top-left = 0,0).
- * Tab knobs protrude *outside* the bounding box, so the visible element
- * should have overflow: visible.
+ * Knob tabs protrude outside the bounding box — use overflow:visible on the element.
  */
 export function buildPiecePath(
   w: number,
@@ -85,10 +84,10 @@ export function buildPiecePath(
   edges: PieceTabEdges,
 ): string {
   let d = `M 0 0 `;
-  d += jigsawEdge(0, 0, w, 0, edges.top) + " ";   // top: L→R, tab protrudes upward (left of travel = up)
-  d += jigsawEdge(w, 0, w, h, edges.right) + " "; // right: T→B, tab protrudes right
-  d += jigsawEdge(w, h, 0, h, edges.bottom) + " "; // bottom: R→L, tab protrudes downward
-  d += jigsawEdge(0, h, 0, 0, edges.left) + " Z"; // left: B→T, tab protrudes left
+  d += jigsawEdge(0, 0, w, 0, edges.top) + " ";    // top:    L→R
+  d += jigsawEdge(w, 0, w, h, edges.right) + " ";  // right:  T→B
+  d += jigsawEdge(w, h, 0, h, edges.bottom) + " "; // bottom: R→L
+  d += jigsawEdge(0, h, 0, 0, edges.left) + " Z";  // left:   B→T
   return d;
 }
 
@@ -109,12 +108,12 @@ export function generateGridPieceDefinitions(
     return rngState / 233280;
   };
 
-  // hEdges[r][c]: tab direction for BOTTOM edge of piece (r,c) = TOP edge of piece (r+1,c)
+  // hEdges[r][c]: tab direction for BOTTOM of piece(r,c) = TOP complement of piece(r+1,c)
   const hEdges: number[][] = Array.from({ length: rows - 1 }, () =>
     Array.from({ length: cols }, () => (rng() < 0.5 ? 1 : -1)),
   );
 
-  // vEdges[r][c]: tab direction for RIGHT edge of piece (r,c) = LEFT edge of piece (r,c+1)
+  // vEdges[r][c]: tab direction for RIGHT of piece(r,c) = LEFT complement of piece(r,c+1)
   const vEdges: number[][] = Array.from({ length: rows }, () =>
     Array.from({ length: cols - 1 }, () => (rng() < 0.5 ? 1 : -1)),
   );
@@ -125,10 +124,10 @@ export function generateGridPieceDefinitions(
     for (let col = 0; col < cols; col++) {
       const id = row * cols + col;
 
-      const top = row === 0 ? 0 : -hEdges[row - 1][col];        // complement of piece above's bottom
-      const right = col === cols - 1 ? 0 : vEdges[row][col];
-      const bottom = row === rows - 1 ? 0 : hEdges[row][col];
-      const left = col === 0 ? 0 : -vEdges[row][col - 1];       // complement of piece left's right
+      const top    = row === 0        ? 0 : -hEdges[row - 1][col];
+      const right  = col === cols - 1 ? 0 :  vEdges[row][col];
+      const bottom = row === rows - 1 ? 0 :  hEdges[row][col];
+      const left   = col === 0        ? 0 : -vEdges[row][col - 1];
 
       const edges: PieceTabEdges = { top, right, bottom, left };
       const svgPath = buildPiecePath(pieceWidth, pieceHeight, edges);

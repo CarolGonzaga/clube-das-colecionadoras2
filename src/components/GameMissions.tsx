@@ -24,7 +24,7 @@ const bundledWordSearchArt = import.meta.glob("../../public/cacapalavras.png", {
 const WORD_SEARCH_ART_URL = Object.values(bundledWordSearchArt)[0] || "/cacapalavras.png";
 
 const SLIDES = [
-  { key: "word_search", name: "Caça-Palavras Sáfico", Icon: BookOpenText },
+  { key: "word_search", name: "Caça-Palavras", Icon: BookOpenText },
   { key: "memory_game", name: "Jogo da Memória", Icon: Grid3X3 },
   { key: "quick_quiz", name: "Quiz Relâmpago", Icon: Brain },
   { key: "puzzle", name: "Quebra-Cabeça", Icon: Puzzle },
@@ -326,7 +326,7 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
               <BookOpenText className="h-3 w-3" /> Missão diária
             </span>
             <h3 className="mt-3 text-[clamp(1.05rem,5vw,1.25rem)] font-black leading-[1.08] text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
-              Caça-Palavras Sáfico
+              Caça-Palavras
             </h3>
             <p className="mt-1.5 max-w-xl text-[clamp(0.68rem,3vw,0.8rem)] font-semibold leading-snug text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
               Encontre todas as palavras para resgatar a recompensa.
@@ -508,7 +508,7 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
               <Puzzle className="h-3 w-3" /> Missão diária
             </span>
             <h3 className="mt-3 text-[clamp(1.05rem,5vw,1.25rem)] font-black leading-[1.08] text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
-              Quebra-Cabeça Sáfico
+              Quebra-Cabeça
             </h3>
             <p className="mt-1.5 max-w-xl text-[clamp(0.68rem,3vw,0.8rem)] font-semibold leading-snug text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
               Encaixe todas as peças para liberar a recompensa.
