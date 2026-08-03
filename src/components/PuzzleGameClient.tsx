@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useUI } from "@/components/UIProvider";
 import { normalizePath } from "@/lib/urls";
+import { getBundledMemoryCoverUrl } from "@/lib/memoryCoverAssets";
 import {
   generateGridPieceDefinitions,
   PUZZLE_GRID_CONFIG,
@@ -25,13 +26,14 @@ import {
   CheckCircle2,
   Lock,
   Puzzle,
+  MousePointerClick,
 } from "lucide-react";
 
 interface PieceState extends PuzzlePieceDefinition {
   isPlaced: boolean;
-  currentX: number; // Position in board/container relative to top-left of board
-  currentY: number;
   isDragging: boolean;
+  currentX: number; // relative to board top-left
+  currentY: number;
 }
 
 export default function PuzzleGameClient() {
@@ -41,10 +43,10 @@ export default function PuzzleGameClient() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [gameState, setGameState] = useState<any>(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<PuzzleDifficulty>("easy");
   const [starting, setStarting] = useState(false);
 
   const [pieces, setPieces] = useState<PieceState[]>([]);
+  const [selectedPieceId, setSelectedPieceId] = useState<number | null>(null);
   const [showGhost, setShowGhost] = useState(true);
   const [claiming, setClaiming] = useState(false);
   const [reward, setReward] = useState<any>(null);
@@ -53,15 +55,21 @@ export default function PuzzleGameClient() {
   const activeDragId = useRef<number | null>(null);
   const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Board dimensions
-  const BOARD_WIDTH = 320;
-  const BOARD_HEIGHT = 480;
+  // Board dimensions (Standard 2:3 book cover ratio)
+  const BOARD_WIDTH = 300;
+  const BOARD_HEIGHT = 450;
 
   const session = gameState?.session;
   const gridConfig = session ? PUZZLE_GRID_CONFIG[session.difficulty as PuzzleDifficulty] : null;
 
   const pieceWidth = gridConfig ? BOARD_WIDTH / gridConfig.cols : 0;
   const pieceHeight = gridConfig ? BOARD_HEIGHT / gridConfig.rows : 0;
+
+  // Resolve cover image URL (using bundled asset if available, fallback to normalized path)
+  const coverUrl = React.useMemo(() => {
+    if (!session?.frontImagePath) return "";
+    return getBundledMemoryCoverUrl(session.frontImagePath) || normalizePath(session.frontImagePath);
+  }, [session?.frontImagePath]);
 
   // Load game state on mount
   const loadState = async () => {
@@ -88,13 +96,16 @@ export default function PuzzleGameClient() {
       return;
     }
 
+    const seed = session.id
+      .split("")
+      .reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+
     const baseDefs = generateGridPieceDefinitions(
       gridConfig.rows,
       gridConfig.cols,
       pieceWidth,
       pieceHeight,
-      // Use session ID char codes as random seed
-      session.id.split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0),
+      seed,
     );
 
     const savedBoardState: { id: number; isPlaced: boolean; x?: number; y?: number }[] =
@@ -105,30 +116,19 @@ export default function PuzzleGameClient() {
       const correctX = def.col * pieceWidth;
       const correctY = def.row * pieceHeight;
 
-      if (saved?.isPlaced) {
-        return {
-          ...def,
-          isPlaced: true,
-          currentX: correctX,
-          currentY: correctY,
-          isDragging: false,
-        };
-      }
-
-      // Initial random position in tray if not placed
-      const randomX = Math.floor(Math.random() * (BOARD_WIDTH - pieceWidth));
-      const randomY = Math.floor(Math.random() * 120);
+      const isPlaced = Boolean(saved?.isPlaced);
 
       return {
         ...def,
-        isPlaced: false,
-        currentX: saved?.x ?? randomX,
-        currentY: saved?.y ?? randomY,
+        isPlaced,
         isDragging: false,
+        currentX: isPlaced ? correctX : saved?.x ?? 0,
+        currentY: isPlaced ? correctY : saved?.y ?? 0,
       };
     });
 
     setPieces(restored);
+    setSelectedPieceId(null);
   }, [session?.id]);
 
   // Start new game
@@ -159,7 +159,61 @@ export default function PuzzleGameClient() {
     }
   };
 
-  // Dragging logic (Pointer events)
+  // Place a piece correctly (Snap to grid)
+  const placePiece = async (pieceId: number) => {
+    if (!gridConfig || !session) return;
+
+    const targetPiece = pieces.find((p) => p.id === pieceId);
+    if (!targetPiece || targetPiece.isPlaced) return;
+
+    const correctX = targetPiece.col * pieceWidth;
+    const correctY = targetPiece.row * pieceHeight;
+
+    const updatedPieces = pieces.map((p) => {
+      if (p.id === pieceId) {
+        return {
+          ...p,
+          isPlaced: true,
+          isDragging: false,
+          currentX: correctX,
+          currentY: correctY,
+        };
+      }
+      return p;
+    });
+
+    setPieces(updatedPieces);
+    setSelectedPieceId(null);
+
+    const newPlacedCount = updatedPieces.filter((p) => p.isPlaced).length;
+
+    // Save progress to server
+    try {
+      const boardStateSave = updatedPieces.map((p) => ({
+        id: p.id,
+        isPlaced: p.isPlaced,
+        x: p.currentX,
+        y: p.currentY,
+      }));
+
+      const res = await savePuzzleProgress({
+        data: {
+          sessionId: session.id,
+          placedPieces: newPlacedCount,
+          boardState: boardStateSave,
+        },
+      });
+
+      if (res.won) {
+        ui.triggerHearts();
+        loadState();
+      }
+    } catch (err) {
+      console.error("Erro ao salvar progresso:", err);
+    }
+  };
+
+  // Pointer event drag logic
   const handlePointerDown = (pieceId: number, e: React.PointerEvent) => {
     const piece = pieces.find((p) => p.id === pieceId);
     if (!piece || piece.isPlaced || session?.status === "won" || session?.status === "claimed")
@@ -167,6 +221,7 @@ export default function PuzzleGameClient() {
 
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     activeDragId.current = pieceId;
+    setSelectedPieceId(pieceId);
 
     const boardRect = boardRef.current?.getBoundingClientRect();
     if (!boardRect) return;
@@ -204,50 +259,15 @@ export default function PuzzleGameClient() {
     const correctX = piece.col * pieceWidth;
     const correctY = piece.row * pieceHeight;
 
-    // Check snap distance threshold (32px)
+    // Check snap distance threshold (36px)
     const distance = Math.hypot(piece.currentX - correctX, piece.currentY - correctY);
-    const isSnapped = distance <= 32;
 
-    const updatedPieces = pieces.map((p) => {
-      if (p.id === pieceId) {
-        return {
-          ...p,
-          isDragging: false,
-          isPlaced: isSnapped,
-          currentX: isSnapped ? correctX : p.currentX,
-          currentY: isSnapped ? correctY : p.currentY,
-        };
-      }
-      return p;
-    });
-
-    setPieces(updatedPieces);
-
-    const newPlacedCount = updatedPieces.filter((p) => p.isPlaced).length;
-
-    // Save progress to server
-    if (session) {
-      try {
-        const boardStateSave = updatedPieces.map((p) => ({
-          id: p.id,
-          isPlaced: p.isPlaced,
-          x: p.currentX,
-          y: p.currentY,
-        }));
-        const res = await savePuzzleProgress({
-          data: {
-            sessionId: session.id,
-            placedPieces: newPlacedCount,
-            boardState: boardStateSave,
-          },
-        });
-        if (res.won) {
-          ui.triggerHearts();
-          loadState();
-        }
-      } catch (err) {
-        console.error("Erro ao salvar progresso:", err);
-      }
+    if (distance <= 36) {
+      await placePiece(pieceId);
+    } else {
+      setPieces((prev) =>
+        prev.map((p) => (p.id === pieceId ? { ...p, isDragging: false } : p)),
+      );
     }
   };
 
@@ -276,14 +296,14 @@ export default function PuzzleGameClient() {
     );
   }
 
-  const coverUrl = session ? normalizePath(session.frontImagePath) : "";
+  const unplacedPieces = pieces.filter((p) => !p.isPlaced);
   const placedCount = pieces.filter((p) => p.isPlaced).length;
   const isWon = session?.status === "won" || (gridConfig && placedCount === gridConfig.totalPieces);
   const isClaimed = session?.status === "claimed" || gameState?.reward;
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-      {/* Header */}
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* Navigation Header */}
       <div className="flex items-center justify-between">
         <Link
           to="/clubedascolecionadoras"
@@ -296,6 +316,7 @@ export default function PuzzleGameClient() {
         </span>
       </div>
 
+      {/* Main Title Card */}
       <div className="mt-4 flex flex-col items-center justify-between gap-4 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-pink-900/30 dark:bg-[#1b0818] sm:flex-row">
         <div>
           <h1 className="flex items-center gap-2.5 text-2xl font-black text-[#6e1638] dark:text-[#ffd1e5]">
@@ -340,7 +361,7 @@ export default function PuzzleGameClient() {
             Escolha o nível de dificuldade
           </h2>
           <p className="mt-1 text-xs text-[#a52b59] dark:text-[#f7a8cb]">
-            1 recompensa por dia. Conclua os 3 níveis para liberar a rotação novamente.
+            1 resgate por dia. Conclua os 3 níveis para liberar a rotação novamente.
           </p>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -405,15 +426,15 @@ export default function PuzzleGameClient() {
         </div>
       )}
 
-      {/* Active Puzzle Board Area */}
+      {/* Active Game Area */}
       {session && !isClaimed && gridConfig && (
         <div className="mt-6 flex flex-col items-center">
-          {/* Progress Indicator */}
+          {/* Global Progress Bar */}
           <div className="mb-4 flex items-center gap-3">
             <span className="text-xs font-black text-[#6e1638] dark:text-[#ffd1e5]">
               Progresso: {placedCount} de {gridConfig.totalPieces} peças encaixadas
             </span>
-            <div className="h-2 w-36 overflow-hidden rounded-full bg-pink-100 dark:bg-[#381028]">
+            <div className="h-2.5 w-40 overflow-hidden rounded-full bg-pink-100 dark:bg-[#381028]">
               <div
                 className="h-full bg-gradient-to-r from-[#c2185b] to-[#df347c] transition-all duration-300"
                 style={{ width: `${(placedCount / gridConfig.totalPieces) * 100}%` }}
@@ -432,73 +453,166 @@ export default function PuzzleGameClient() {
             </defs>
           </svg>
 
-          {/* Jigsaw Board */}
-          <div
-            ref={boardRef}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            className="relative select-none rounded-2xl border-4 border-[#9e1b4a]/20 bg-[#3f0b27]/90 shadow-2xl touch-none"
-            style={{ width: BOARD_WIDTH, height: BOARD_HEIGHT }}
-          >
-            {/* Ghost background image */}
-            {showGhost && (
-              <img
-                src={coverUrl}
-                alt="Guia"
-                className="absolute inset-0 h-full w-full object-fill opacity-25 pointer-events-none"
-              />
-            )}
+          {/* Layout: Piece Box on Side (Desktop) or Top (Mobile) + Assembly Board */}
+          <div className="flex w-full flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
+            {/* Piece Box (Caixa de Peças Soltas) */}
+            <div className="w-full max-w-[320px] rounded-3xl border-2 border-dashed border-pink-300 bg-pink-50/70 p-4 shadow-sm dark:border-pink-900/50 dark:bg-[#240b1e] lg:w-[260px]">
+              <div className="mb-3 flex items-center justify-between border-b border-pink-200/80 pb-2 dark:border-pink-900/60">
+                <span className="flex items-center gap-1.5 text-xs font-black text-[#6e1638] dark:text-[#ffd1e5]">
+                  <Puzzle className="h-4 w-4 text-[#c2185b]" /> Caixa de Peças ({unplacedPieces.length})
+                </span>
+                <span className="flex items-center gap-1 text-[10px] font-bold text-[#a52b59] dark:text-[#f7a8cb]">
+                  <MousePointerClick className="h-3 w-3" /> Clique ou Arraste
+                </span>
+              </div>
 
-            {/* Grid overlay lines */}
-            <div className="absolute inset-0 grid h-full w-full pointer-events-none"
-                 style={{
-                   gridTemplateRows: `repeat(${gridConfig.rows}, 1fr)`,
-                   gridTemplateColumns: `repeat(${gridConfig.cols}, 1fr)`
-                 }}>
-              {Array.from({ length: gridConfig.totalPieces }).map((_, i) => (
-                <div key={i} className="border border-white/10" />
-              ))}
+              {unplacedPieces.length === 0 ? (
+                <div className="flex h-32 flex-col items-center justify-center text-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                  <p className="mt-2">Todas as peças foram encaixadas!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 min-h-[160px] max-h-[380px] overflow-y-auto p-1">
+                  {unplacedPieces.map((p) => {
+                    const isSelected = selectedPieceId === p.id;
+                    const correctX = p.col * pieceWidth;
+                    const correctY = p.row * pieceHeight;
+
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setSelectedPieceId(isSelected ? null : p.id)}
+                        className={`group relative flex items-center justify-center rounded-xl p-1 transition-all ${
+                          isSelected
+                            ? "bg-pink-200 ring-2 ring-[#c2185b] scale-105 dark:bg-pink-950"
+                            : "hover:bg-pink-100 hover:scale-102 dark:hover:bg-[#341029]"
+                        }`}
+                        style={{ width: pieceWidth + 10, height: pieceHeight + 10 }}
+                      >
+                        <div
+                          className="relative overflow-hidden"
+                          style={{
+                            width: `${pieceWidth}px`,
+                            height: `${pieceHeight}px`,
+                            clipPath: `url(#puzzle-clip-${p.id})`,
+                          }}
+                        >
+                          <img
+                            src={coverUrl}
+                            alt={`Peça ${p.id}`}
+                            draggable={false}
+                            className="absolute h-full w-full max-w-none object-fill select-none pointer-events-none"
+                            style={{
+                              width: `${BOARD_WIDTH}px`,
+                              height: `${BOARD_HEIGHT}px`,
+                              left: `-${correctX}px`,
+                              top: `-${correctY}px`,
+                            }}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Render Pieces */}
-            {pieces.map((p) => {
-              const correctX = p.col * pieceWidth;
-              const correctY = p.row * pieceHeight;
-
-              return (
-                <div
-                  key={p.id}
-                  onPointerDown={(e) => handlePointerDown(p.id, e)}
-                  className={`absolute transition-shadow ${
-                    p.isPlaced
-                      ? "z-10 cursor-default"
-                      : p.isDragging
-                        ? "z-50 cursor-grabbing scale-105 shadow-2xl"
-                        : "z-30 cursor-grab hover:scale-102"
-                  }`}
-                  style={{
-                    left: `${p.currentX}px`,
-                    top: `${p.currentY}px`,
-                    width: `${pieceWidth}px`,
-                    height: `${pieceHeight}px`,
-                    clipPath: `url(#puzzle-clip-${p.id})`,
-                  }}
-                >
+            {/* Main Assembly Board */}
+            <div className="flex flex-col items-center">
+              <div
+                ref={boardRef}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                className="relative select-none overflow-hidden rounded-2xl border-4 border-[#9e1b4a]/20 bg-[#3f0b27] shadow-2xl touch-none"
+                style={{ width: BOARD_WIDTH, height: BOARD_HEIGHT }}
+              >
+                {/* Ghost background image */}
+                {showGhost && (
                   <img
                     src={coverUrl}
-                    alt={`Peça ${p.id}`}
-                    draggable={false}
-                    className="absolute h-full w-full max-w-none object-fill select-none pointer-events-none"
-                    style={{
-                      width: `${BOARD_WIDTH}px`,
-                      height: `${BOARD_HEIGHT}px`,
-                      left: `-${correctX}px`,
-                      top: `-${correctY}px`,
-                    }}
+                    alt="Guia"
+                    className="absolute inset-0 h-full w-full object-fill opacity-25 pointer-events-none"
                   />
+                )}
+
+                {/* Grid slot targets */}
+                <div
+                  className="absolute inset-0 grid h-full w-full"
+                  style={{
+                    gridTemplateRows: `repeat(${gridConfig.rows}, 1fr)`,
+                    gridTemplateColumns: `repeat(${gridConfig.cols}, 1fr)`,
+                  }}
+                >
+                  {Array.from({ length: gridConfig.totalPieces }).map((_, idx) => {
+                    const row = Math.floor(idx / gridConfig.cols);
+                    const col = idx % gridConfig.cols;
+                    const matchingPiece = pieces.find((p) => p.row === row && p.col === col);
+                    const isCellFilled = matchingPiece?.isPlaced;
+
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={isCellFilled || selectedPieceId === null}
+                        onClick={() => {
+                          if (selectedPieceId !== null && matchingPiece?.id === selectedPieceId) {
+                            placePiece(selectedPieceId);
+                          }
+                        }}
+                        className={`border border-white/10 transition-colors ${
+                          !isCellFilled && selectedPieceId !== null && matchingPiece?.id === selectedPieceId
+                            ? "bg-pink-500/20 border-pink-400 cursor-pointer animate-pulse"
+                            : "cursor-default"
+                        }`}
+                      />
+                    );
+                  })}
                 </div>
-              );
-            })}
+
+                {/* Render Placed and Dragging Pieces */}
+                {pieces.map((p) => {
+                  if (!p.isPlaced && !p.isDragging) return null;
+
+                  const correctX = p.col * pieceWidth;
+                  const correctY = p.row * pieceHeight;
+
+                  return (
+                    <div
+                      key={p.id}
+                      onPointerDown={(e) => handlePointerDown(p.id, e)}
+                      className={`absolute transition-shadow ${
+                        p.isPlaced
+                          ? "z-10 cursor-default"
+                          : p.isDragging
+                            ? "z-50 cursor-grabbing scale-105 shadow-2xl"
+                            : "z-30 cursor-grab hover:scale-102"
+                      }`}
+                      style={{
+                        left: `${p.currentX}px`,
+                        top: `${p.currentY}px`,
+                        width: `${pieceWidth}px`,
+                        height: `${pieceHeight}px`,
+                        clipPath: `url(#puzzle-clip-${p.id})`,
+                      }}
+                    >
+                      <img
+                        src={coverUrl}
+                        alt={`Peça ${p.id}`}
+                        draggable={false}
+                        className="absolute h-full w-full max-w-none object-fill select-none pointer-events-none"
+                        style={{
+                          width: `${BOARD_WIDTH}px`,
+                          height: `${BOARD_HEIGHT}px`,
+                          left: `-${correctX}px`,
+                          top: `-${correctY}px`,
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Victory & Claim Modal Button */}
