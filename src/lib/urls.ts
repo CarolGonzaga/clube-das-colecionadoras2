@@ -6,7 +6,7 @@ function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, "");
 }
 
-function normalizePath(path = "") {
+export function normalizePath(path = "") {
   if (!path) return "";
   const cleaned = path.replace(/^\/?public\//, "");
   return cleaned.startsWith("/") ? cleaned : `/${cleaned}`;

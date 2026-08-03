@@ -15,6 +15,7 @@ import {
   getDailyGameDate,
   getDailyGameDifficultyCycle,
 } from "@/lib/dailyGamesPolicy";
+import { PUZZLE_GRID_CONFIG, type PuzzleDifficulty } from "@/lib/puzzleGenerator";
 
 // The generated Supabase types predate the incremental game migration. Keep the
 // escape hatch isolated here until types are regenerated after the migration.
@@ -36,16 +37,19 @@ const submitSchema = sessionSchema.extend({
     .max(40),
 });
 
-async function gameAdmin(userId: string) {
+const PUZZLE_GAME_KEY = "puzzle_game";
+
+async function gameAdmin(userId: string, gameKey = GAME_KEY) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin as any;
+  const settingKey = `${gameKey}_enabled`;
   const [{ data: setting }, { data: grant }] = await Promise.all([
-    admin.from("game_settings").select("value").eq("key", "word_search_enabled").maybeSingle(),
+    admin.from("game_settings").select("value").eq("key", settingKey).maybeSingle(),
     admin
       .from("game_access_grants")
       .select("id")
       .eq("user_id", userId)
-      .eq("game_key", GAME_KEY)
+      .eq("game_key", gameKey)
       .eq("is_active", true)
       .is("revoked_at", null)
       .maybeSingle(),
@@ -303,6 +307,221 @@ export const abandonWordSearch = createServerFn({ method: "POST" })
     if (!available) throw new Error(unavailable);
     const { error } = await admin
       .from("word_search_sessions")
+      .update({
+        status: "abandoned",
+        abandoned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.sessionId)
+      .eq("user_id", context.userId)
+      .eq("status", "in_progress");
+    if (error) throw new Error("Não foi possível reiniciar a partida.");
+    return { success: true };
+  });
+
+async function loadPuzzleSession(admin: any, userId: string, sessionId?: string) {
+  let query = admin
+    .from("puzzle_game_sessions")
+    .select("*, memory_game_stickers(id, front_image_path)")
+    .eq("user_id", userId)
+    .in("status", ["in_progress", "won"])
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (sessionId)
+    query = admin
+      .from("puzzle_game_sessions")
+      .select("*, memory_game_stickers(id, front_image_path)")
+      .eq("id", sessionId)
+      .eq("user_id", userId)
+      .limit(1);
+  const { data, error } = await query.maybeSingle();
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    difficulty: data.difficulty as PuzzleDifficulty,
+    stickerId: data.sticker_id,
+    frontImagePath:
+      data.memory_game_stickers?.front_image_path || "/covers-jogos/o-despertar-do-desejo.jpg",
+    gridRows: data.grid_rows,
+    gridCols: data.grid_cols,
+    totalPieces: data.total_pieces,
+    placedPieces: data.placed_pieces,
+    boardState: data.board_state || [],
+    status: data.status as "in_progress" | "won" | "claimed",
+  };
+}
+
+export const getPuzzleGameState = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { admin, enabled, authorized, available } = await gameAdmin(
+      context.userId,
+      PUZZLE_GAME_KEY,
+    );
+    if (!available)
+      return {
+        enabled,
+        authorized,
+        available: false,
+        canPlay: false,
+        session: null,
+        reward: null,
+      };
+    const today = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, today);
+    const [session, rewardResult, difficultyCycle, activeGame] = await Promise.all([
+      loadPuzzleSession(admin, context.userId),
+      admin
+        .from("daily_game_rewards")
+        .select("sticker_number,result_type,is_rare,created_at")
+        .eq("user_id", context.userId)
+        .eq("reward_date", today)
+        .maybeSingle(),
+      getDailyGameDifficultyCycle(admin, context.userId, PUZZLE_GAME_KEY),
+      getActiveDailyGame(admin, context.userId, today),
+    ]);
+    return {
+      enabled,
+      authorized,
+      available: true,
+      canPlay: !rewardResult.data && (!activeGame || activeGame.gameKey === PUZZLE_GAME_KEY),
+      blockedByGame:
+        activeGame && activeGame.gameKey !== PUZZLE_GAME_KEY ? activeGame.gameKey : null,
+      session,
+      reward: rewardResult.data || null,
+      availableDifficulties: difficultyCycle.available as PuzzleDifficulty[],
+      usedDifficulties: difficultyCycle.used as PuzzleDifficulty[],
+    };
+  });
+
+export const startPuzzleGame = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => z.object({ difficulty: difficultySchema }).parse(value))
+  .handler(async ({ context, data }) => {
+    const { admin, available } = await gameAdmin(context.userId, PUZZLE_GAME_KEY);
+    if (!available) throw new Error(unavailable);
+    const localDate = getDailyGameDate();
+    await expireStaleDailyGameSessions(admin, context.userId, localDate);
+    const [{ data: claimedToday }, difficultyCycle, activeGame] = await Promise.all([
+      admin
+        .from("daily_game_rewards")
+        .select("id")
+        .eq("user_id", context.userId)
+        .eq("reward_date", localDate)
+        .maybeSingle(),
+      getDailyGameDifficultyCycle(admin, context.userId, PUZZLE_GAME_KEY),
+      getActiveDailyGame(admin, context.userId, localDate),
+    ]);
+    if (claimedToday) throw new Error("A recompensa de hoje já foi resgatada.");
+    if (!difficultyCycle.available.includes(data.difficulty)) {
+      throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
+    }
+    if (activeGame?.gameKey === PUZZLE_GAME_KEY) {
+      const active = await loadPuzzleSession(admin, context.userId, activeGame.session.id);
+      if (active) return active;
+    }
+    if (activeGame) throw new Error("Conclua a partida atual antes de iniciar outro jogo.");
+
+    const { data: stickers, error: stickerError } = await admin
+      .from("memory_game_stickers")
+      .select("id, front_image_path")
+      .eq("is_active", true);
+    if (stickerError || !stickers || stickers.length === 0)
+      throw new Error("Não foi possível carregar as figuras do jogo.");
+
+    const chosenSticker = stickers[Math.floor(Math.random() * stickers.length)];
+    const config = PUZZLE_GRID_CONFIG[data.difficulty as PuzzleDifficulty];
+    const sessionId = crypto.randomUUID();
+
+    const { error: sessionError } = await admin.from("puzzle_game_sessions").insert({
+      id: sessionId,
+      user_id: context.userId,
+      local_date: localDate,
+      difficulty: data.difficulty,
+      sticker_id: chosenSticker.id,
+      grid_rows: config.rows,
+      grid_cols: config.cols,
+      total_pieces: config.totalPieces,
+      placed_pieces: 0,
+      board_state: [],
+      status: "in_progress",
+    });
+    if (sessionError) throw new Error("Não foi possível iniciar o quebra-cabeça.");
+    const created = await loadPuzzleSession(admin, context.userId, sessionId);
+    if (!created) throw new Error("Não foi possível carregar a partida.");
+    return created;
+  });
+
+export const savePuzzleProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    (value) =>
+      z
+        .object({
+          sessionId: z.string().uuid(),
+          placedPieces: z.number().int().min(0),
+          boardState: z.array(z.any()),
+        })
+        .parse(value),
+  )
+  .handler(async ({ context, data }) => {
+    const { admin, available } = await gameAdmin(context.userId, PUZZLE_GAME_KEY);
+    if (!available) throw new Error(unavailable);
+    const { data: session, error: loadErr } = await admin
+      .from("puzzle_game_sessions")
+      .select("total_pieces, status")
+      .eq("id", data.sessionId)
+      .eq("user_id", context.userId)
+      .single();
+    if (loadErr || !session || session.status !== "in_progress") {
+      throw new Error("Sessão inválida ou finalizada.");
+    }
+    const won = data.placedPieces >= session.total_pieces;
+    const now = new Date().toISOString();
+    const { error } = await admin
+      .from("puzzle_game_sessions")
+      .update({
+        placed_pieces: data.placedPieces,
+        board_state: data.boardState,
+        status: won ? "won" : "in_progress",
+        won_at: won ? now : null,
+        updated_at: now,
+      })
+      .eq("id", data.sessionId)
+      .eq("user_id", context.userId);
+    if (error) throw new Error("Não foi possível salvar o progresso.");
+    return { success: true, won };
+  });
+
+export const claimPuzzleGameReward = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => sessionSchema.parse(value))
+  .handler(async ({ context, data }) => {
+    const { admin, available } = await gameAdmin(context.userId, PUZZLE_GAME_KEY);
+    if (!available) throw new Error(unavailable);
+    const { data: reward, error } = await admin.rpc("claim_puzzle_game_reward", {
+      p_user_id: context.userId,
+      p_session_id: data.sessionId,
+    });
+    if (error) throw new Error(error.message || "Não foi possível resgatar a figurinha.");
+    return reward as {
+      success: boolean;
+      number: number;
+      wasNew: boolean;
+      isRare: boolean;
+      resultType: string;
+      idempotent: boolean;
+    };
+  });
+
+export const abandonPuzzleGame = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((value) => sessionSchema.parse(value))
+  .handler(async ({ context, data }) => {
+    const { admin, available } = await gameAdmin(context.userId, PUZZLE_GAME_KEY);
+    if (!available) throw new Error(unavailable);
+    const { error } = await admin
+      .from("puzzle_game_sessions")
       .update({
         status: "abandoned",
         abandoned_at: new Date().toISOString(),

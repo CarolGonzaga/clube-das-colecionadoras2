@@ -12,7 +12,7 @@ import {
   LockKeyhole,
   Puzzle,
 } from "lucide-react";
-import { getDailyGamesState } from "@/lib/games";
+import { getDailyGamesState, getPuzzleGameState } from "@/lib/games";
 import { getMemoryGameState } from "@/lib/memoryGame";
 import type { WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 
@@ -64,10 +64,25 @@ type MemoryState = {
   } | null;
 };
 
+type PuzzleState = {
+  available: boolean;
+  canPlay?: boolean;
+  reward?: { sticker_number: number } | null;
+  usedDifficulties?: ("easy" | "medium" | "hard")[];
+  blockedByGame?: "word_search" | "memory_game" | "puzzle_game" | null;
+  session?: {
+    status: "in_progress" | "won" | "claimed";
+    difficulty: "easy" | "medium" | "hard";
+    placedPieces: number;
+    totalPieces: number;
+  } | null;
+};
+
 export default function GameMissions() {
   const router = useRouter();
   const [wordState, setWordState] = useState<WordState | null>(null);
   const [memoryState, setMemoryState] = useState<MemoryState | null>(null);
+  const [puzzleState, setPuzzleState] = useState<PuzzleState | null>(null);
   const [slideIndex, setSlideIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
@@ -79,10 +94,15 @@ export default function GameMissions() {
   );
 
   const refreshStates = useCallback(async () => {
-    const [word, memory] = await Promise.allSettled([getDailyGamesState(), getMemoryGameState()]);
+    const [word, memory, puzzle] = await Promise.allSettled([
+      getDailyGamesState(),
+      getMemoryGameState(),
+      getPuzzleGameState(),
+    ]);
     const nextWordState = word.status === "fulfilled" ? word.value : { available: false };
     setWordState(nextWordState);
     setMemoryState(memory.status === "fulfilled" ? memory.value : { available: false });
+    setPuzzleState(puzzle.status === "fulfilled" ? puzzle.value : { available: false });
   }, []);
 
   useEffect(() => {
@@ -91,6 +111,7 @@ export default function GameMissions() {
       if (!active) return;
       setWordState({ available: false });
       setMemoryState({ available: false });
+      setPuzzleState({ available: false });
     });
     return () => {
       active = false;
@@ -220,10 +241,9 @@ export default function GameMissions() {
             />
           )}
           {slide.key === "puzzle" && (
-            <ComingSoonSlide
-              name="Quebra-Cabeça"
-              description="Monte a imagem de uma figurinha."
-              Icon={Puzzle}
+            <PuzzleGameSlide
+              state={puzzleState}
+              onPlay={() => router.navigate({ to: "/clubedascolecionadoras/jogos/quebra-cabeca" })}
             />
           )}
         </div>
@@ -393,6 +413,95 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
             <span>
               {session
                 ? `${session.matchedPairs} de ${session.totalPairs} pares`
+                : "1 resgate por dia"}
+            </span>
+            <span className="min-w-0 min-[330px]:text-right">{status}</span>
+          </div>
+          <div className="mt-auto flex flex-col items-center gap-4 pt-5 lg:flex-row lg:justify-between">
+            <div className="grid w-full max-w-[340px] grid-cols-3 gap-2">
+              {[
+                ["easy", "Fácil"],
+                ["medium", "Médio"],
+                ["hard", "Difícil"],
+              ].map(([id, name]) => {
+                const completed = used.includes(id as "easy" | "medium" | "hard");
+                const current = session?.difficulty === id;
+                return (
+                  <div
+                    key={name}
+                    className={`flex min-h-[54px] min-w-0 flex-col items-center justify-center rounded-xl border px-1.5 py-2 text-center text-[9px] font-bold leading-tight ${completed ? "border-emerald-300 bg-emerald-50 text-emerald-700" : current ? "border-pink-400 bg-pink-100 text-[#8e1745]" : "border-pink-200 bg-white/70 text-[#a52b59] dark:bg-[#240b1f]"}`}
+                  >
+                    <span>{name}</span>
+                    <small className="mt-1 block text-[7px] leading-none">
+                      {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
+                    </small>
+                  </div>
+                );
+              })}
+            </div>
+            <button
+              disabled={!available}
+              onClick={onPlay}
+              className="mx-auto min-w-[150px] shrink-0 rounded-full bg-gradient-to-r from-[#c2185b] to-[#df347c] px-6 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400 dark:shadow-none lg:mx-0 lg:ml-auto"
+            >
+              {!state
+                ? "Carregando"
+                : rewardClaimed
+                  ? "Concluído hoje"
+                  : session
+                    ? "Continuar"
+                    : available
+                      ? "Jogar agora"
+                      : "Em breve"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </CardShell>
+  );
+}
+
+function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay: () => void }) {
+  const session = state?.session;
+  const used = state?.usedDifficulties || [];
+  const rewardClaimed = Boolean(state?.reward);
+  const available = Boolean(state?.available && state?.canPlay !== false) && !rewardClaimed;
+  const status = !state
+    ? "Carregando..."
+    : rewardClaimed
+      ? "Recompensa já resgatada hoje"
+      : state.blockedByGame
+        ? "Finalize a partida atual"
+        : session
+          ? "Partida em andamento"
+          : available
+            ? "Pronto para jogar"
+            : "Disponível em breve";
+  return (
+    <CardShell>
+      <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
+        <div className="flex h-[160px] w-[190px] items-center justify-center self-center justify-self-center rounded-2xl bg-pink-100/70 text-[#a52b59] max-lg:hidden dark:bg-[#2c0d22]">
+          <Puzzle className="h-20 w-20 opacity-80" />
+        </div>
+        <div className="absolute right-0 top-0 flex h-[82px] w-[96px] items-center justify-center rounded-2xl bg-pink-100/70 text-[#a52b59] lg:hidden dark:bg-[#2c0d22]">
+          <Puzzle className="h-10 w-10 opacity-80" />
+        </div>
+        <div className="flex min-w-0 flex-col">
+          <div className="min-w-0 pr-[clamp(100px,34vw,126px)] lg:pr-0">
+            <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
+              <Puzzle className="h-3 w-3" /> Missão diária
+            </span>
+            <h3 className="mt-3 text-[clamp(1.05rem,5vw,1.25rem)] font-black leading-[1.08] text-[#6e1638] dark:text-[#ffd1e5] sm:text-2xl">
+              Quebra-Cabeça Sáfico
+            </h3>
+            <p className="mt-1.5 max-w-xl text-[clamp(0.68rem,3vw,0.8rem)] font-semibold leading-snug text-[#a52b59] dark:text-[#f7a8cb] sm:text-sm">
+              Monte a capa do livro encaixando todas as peças para liberar a recompensa.
+            </p>
+          </div>
+          <div className="mt-4 grid min-w-0 gap-1 border-y border-pink-100 py-3 text-center text-[10px] font-bold leading-snug text-[#9e1b4a] min-[330px]:grid-cols-[auto_minmax(0,1fr)] min-[330px]:items-center min-[330px]:gap-4 min-[330px]:text-left dark:text-[#f7a8cb] sm:text-xs">
+            <span>
+              {session
+                ? `${session.placedPieces} de ${session.totalPieces} peças`
                 : "1 resgate por dia"}
             </span>
             <span className="min-w-0 min-[330px]:text-right">{status}</span>

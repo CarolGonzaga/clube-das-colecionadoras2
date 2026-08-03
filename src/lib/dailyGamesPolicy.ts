@@ -2,7 +2,7 @@
 export const DAILY_GAME_TIME_ZONE = "America/Sao_Paulo";
 export const DAILY_GAME_DIFFICULTIES = ["easy", "medium", "hard"] as const;
 export type DailyGameDifficulty = (typeof DAILY_GAME_DIFFICULTIES)[number];
-export type DailyGameKey = "word_search" | "memory_game";
+export type DailyGameKey = "word_search" | "memory_game" | "puzzle_game";
 
 type AdminClient = any;
 
@@ -47,6 +47,12 @@ export async function expireStaleDailyGameSessions(
       .eq("user_id", userId)
       .in("status", ["in_progress", "won"])
       .lt("local_date", today),
+    admin
+      .from("puzzle_game_sessions")
+      .update(payload)
+      .eq("user_id", userId)
+      .in("status", ["in_progress", "won"])
+      .lt("local_date", today),
   ]);
   if (results.some((result) => result.error)) {
     throw new Error("Não foi possível atualizar o ciclo diário dos jogos.");
@@ -58,7 +64,7 @@ export async function getActiveDailyGame(
   userId: string,
   today = getDailyGameDate(),
 ) {
-  const [word, memory] = await Promise.all([
+  const [word, memory, puzzle] = await Promise.all([
     admin
       .from("word_search_sessions")
       .select("id,status,local_date")
@@ -75,10 +81,20 @@ export async function getActiveDailyGame(
       .in("status", ["in_progress", "won"])
       .limit(1)
       .maybeSingle(),
+    admin
+      .from("puzzle_game_sessions")
+      .select("id,status,local_date")
+      .eq("user_id", userId)
+      .eq("local_date", today)
+      .in("status", ["in_progress", "won"])
+      .limit(1)
+      .maybeSingle(),
   ]);
-  if (word.error || memory.error) throw new Error("Não foi possível verificar a partida do dia.");
+  if (word.error || memory.error || puzzle.error)
+    throw new Error("Não foi possível verificar a partida do dia.");
   if (word.data) return { gameKey: "word_search" as const, session: word.data };
   if (memory.data) return { gameKey: "memory_game" as const, session: memory.data };
+  if (puzzle.data) return { gameKey: "puzzle_game" as const, session: puzzle.data };
   return null;
 }
 
@@ -87,7 +103,12 @@ export async function getDailyGameDifficultyCycle(
   userId: string,
   gameKey: DailyGameKey,
 ) {
-  const sessionTable = gameKey === "word_search" ? "word_search_sessions" : "memory_game_sessions";
+  const sessionTable =
+    gameKey === "word_search"
+      ? "word_search_sessions"
+      : gameKey === "puzzle_game"
+        ? "puzzle_game_sessions"
+        : "memory_game_sessions";
   const { data: rewards, error: rewardError } = await admin
     .from("daily_game_rewards")
     .select("session_id,reward_date,created_at")
