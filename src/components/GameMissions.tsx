@@ -25,6 +25,20 @@ const bundledWordSearchArt = import.meta.glob("../../public/cacapalavras.png", {
 }) as Record<string, string>;
 const WORD_SEARCH_ART_URL = Object.values(bundledWordSearchArt)[0] || "/cacapalavras.png";
 
+const bundledPuzzleArt = import.meta.glob("../../public/puzzle.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+const PUZZLE_ART_URL = Object.values(bundledPuzzleArt)[0] || "/puzzle.png";
+
+const bundledAdivinhaArt = import.meta.glob("../../public/adivinha.png", {
+  eager: true,
+  query: "?url",
+  import: "default",
+}) as Record<string, string>;
+const ADIVINHA_ART_URL = Object.values(bundledAdivinhaArt)[0] || "/adivinha.png";
+
 const SLIDES = [
   { key: "word_search", name: "Caça-Palavras", Icon: BookOpenText },
   { key: "memory_game", name: "Jogo da Memória", Icon: Grid3X3 },
@@ -507,14 +521,18 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
-        <div className="flex h-[160px] w-[190px] items-center justify-center self-center justify-self-center rounded-2xl bg-pink-100/70 text-[#a52b59] max-lg:hidden dark:bg-[#2c0d22]">
-          <Puzzle className="h-20 w-20 opacity-80" />
-        </div>
-        <div className="absolute right-0 top-0 flex h-[82px] w-[96px] items-center justify-center rounded-2xl bg-pink-100/70 text-[#a52b59] lg:hidden dark:bg-[#2c0d22]">
-          <Puzzle className="h-10 w-10 opacity-80" />
-        </div>
+        <img
+          src={PUZZLE_ART_URL}
+          alt=""
+          className="pointer-events-none h-full max-h-[230px] w-full self-stretch object-contain max-lg:hidden"
+        />
+        <img
+          src={PUZZLE_ART_URL}
+          alt=""
+          className="pointer-events-none absolute right-0 top-0 h-[104px] w-[clamp(84px,29vw,116px)] object-contain object-right-top lg:hidden"
+        />
         <div className="flex min-w-0 flex-col">
-          <div className="min-w-0 pr-[clamp(100px,34vw,126px)] lg:pr-0">
+          <div className="min-w-0 pr-[clamp(92px,32vw,124px)] lg:pr-0">
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
               <Puzzle className="h-3 w-3" /> Missão diária
             </span>
@@ -596,14 +614,18 @@ function CoverGuesserSlide({ state, onPlay }: { state: CoverGuesserState | null;
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
-        <div className="flex h-[160px] w-[190px] items-center justify-center self-center justify-self-center rounded-2xl bg-pink-100/70 text-[#a52b59] max-lg:hidden dark:bg-[#2c0d22]">
-          <BookOpen className="h-20 w-20 opacity-80" />
-        </div>
-        <div className="absolute right-0 top-0 flex h-[82px] w-[96px] items-center justify-center rounded-2xl bg-pink-100/70 text-[#a52b59] lg:hidden dark:bg-[#2c0d22]">
-          <BookOpen className="h-10 w-10 opacity-80" />
-        </div>
+        <img
+          src={ADIVINHA_ART_URL}
+          alt=""
+          className="pointer-events-none h-full max-h-[230px] w-full self-stretch object-contain max-lg:hidden"
+        />
+        <img
+          src={ADIVINHA_ART_URL}
+          alt=""
+          className="pointer-events-none absolute right-0 top-0 h-[104px] w-[clamp(84px,29vw,116px)] object-contain object-right-top lg:hidden"
+        />
         <div className="flex min-w-0 flex-col">
-          <div className="min-w-0 pr-[clamp(100px,34vw,126px)] lg:pr-0">
+          <div className="min-w-0 pr-[clamp(92px,32vw,124px)] lg:pr-0">
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
               <BookOpen className="h-3 w-3" /> Missão diária
             </span>
