@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   expireStaleDailyGameSessions,
-  getActiveDailyGame,
   getDailyGameDate,
   getDailyGameDifficultyCycle,
 } from "@/lib/dailyGamesPolicy";
@@ -93,7 +92,7 @@ export const getMemoryGameState = createServerFn({ method: "GET" })
       };
     const today = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, today);
-    const [session, reward, difficultyCycle, activeGame] = await Promise.all([
+    const [session, reward, difficultyCycle] = await Promise.all([
       load(admin, context.userId),
       admin
         .from("daily_game_rewards")
@@ -103,14 +102,13 @@ export const getMemoryGameState = createServerFn({ method: "GET" })
         .eq("game_key", GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
-      getActiveDailyGame(admin, context.userId, today),
     ]);
     return {
       enabled,
       authorized,
       available,
-      canPlay: !reward.data && (!activeGame || activeGame.gameKey === GAME_KEY),
-      blockedByGame: activeGame && activeGame.gameKey !== GAME_KEY ? activeGame.gameKey : null,
+      canPlay: !reward.data,
+      blockedByGame: null,
       session,
       reward: reward.data || null,
       availableDifficulties: difficultyCycle.available,
@@ -126,12 +124,7 @@ export const startMemoryGame = createServerFn({ method: "POST" })
     if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
     const today = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, today);
-    const [activeGame, difficultyCycle] = await Promise.all([
-      getActiveDailyGame(admin, context.userId, today),
-      getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
-    ]);
-    if (activeGame && activeGame.gameKey !== GAME_KEY)
-      throw new Error("Conclua a partida atual antes de iniciar outro jogo.");
+    const difficultyCycle = await getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY);
     if (!difficultyCycle.available.includes(data.difficulty))
       throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
     const { data: sessionId, error } = await admin.rpc("start_memory_game", {

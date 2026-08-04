@@ -33,7 +33,7 @@ export function calculateDisplayedDifficulties(
 
 /**
  * Daily-game contract shared by every game:
- * - only one active session at a time and one victory/reward per game and local day;
+ * - only one active session per game and one victory/reward per game and local day;
  * - unfinished or unclaimed sessions expire when the local day changes;
  * - only claimed sessions consume a difficulty in the three-level cycle.
  * Database triggers enforce the same contract transactionally. Future games must
@@ -75,54 +75,6 @@ export async function expireStaleDailyGameSessions(
   if (results.some((result) => result.error)) {
     throw new Error("Não foi possível atualizar o ciclo diário dos jogos.");
   }
-}
-
-export async function getActiveDailyGame(
-  admin: AdminClient,
-  userId: string,
-  today = getDailyGameDate(),
-) {
-  const [word, memory, puzzle, cover] = await Promise.all([
-    admin
-      .from("word_search_sessions")
-      .select("id,status,local_date")
-      .eq("user_id", userId)
-      .eq("local_date", today)
-      .in("status", ["in_progress", "won"])
-      .limit(1)
-      .maybeSingle(),
-    admin
-      .from("memory_game_sessions")
-      .select("id,status,local_date")
-      .eq("user_id", userId)
-      .eq("local_date", today)
-      .in("status", ["in_progress", "won"])
-      .limit(1)
-      .maybeSingle(),
-    admin
-      .from("puzzle_game_sessions")
-      .select("id,status,local_date")
-      .eq("user_id", userId)
-      .eq("local_date", today)
-      .in("status", ["in_progress", "won"])
-      .limit(1)
-      .maybeSingle(),
-    admin
-      .from("cover_guesser_sessions")
-      .select("id,status,local_date")
-      .eq("user_id", userId)
-      .eq("local_date", today)
-      .in("status", ["in_progress", "won"])
-      .limit(1)
-      .maybeSingle(),
-  ]);
-  if (word.error || memory.error || puzzle.error || cover.error)
-    throw new Error("Não foi possível verificar a partida do dia.");
-  if (word.data) return { gameKey: "word_search" as const, session: word.data };
-  if (memory.data) return { gameKey: "memory_game" as const, session: memory.data };
-  if (puzzle.data) return { gameKey: "puzzle_game" as const, session: puzzle.data };
-  if (cover.data) return { gameKey: "cover_guesser" as const, session: cover.data };
-  return null;
 }
 
 export async function getDailyGameDifficultyCycle(

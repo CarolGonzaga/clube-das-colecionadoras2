@@ -11,7 +11,6 @@ import {
 } from "@/lib/wordSearchGenerator";
 import {
   expireStaleDailyGameSessions,
-  getActiveDailyGame,
   getDailyGameDate,
   getDailyGameDifficultyCycle,
 } from "@/lib/dailyGamesPolicy";
@@ -124,7 +123,7 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
       };
     const today = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, today);
-    const [session, rewardResult, difficultyCycle, activeGame] = await Promise.all([
+    const [session, rewardResult, difficultyCycle] = await Promise.all([
       loadSession(admin, context.userId),
       admin
         .from("daily_game_rewards")
@@ -134,14 +133,13 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
         .eq("game_key", GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
-      getActiveDailyGame(admin, context.userId, today),
     ]);
     return {
       enabled,
       authorized,
       available: true,
-      canPlay: !rewardResult.data && (!activeGame || activeGame.gameKey === GAME_KEY),
-      blockedByGame: activeGame && activeGame.gameKey !== GAME_KEY ? activeGame.gameKey : null,
+      canPlay: !rewardResult.data,
+      blockedByGame: null,
       session: session?.public || null,
       reward: rewardResult.data || null,
       availableDifficulties: difficultyCycle.available,
@@ -157,7 +155,7 @@ export const startWordSearch = createServerFn({ method: "POST" })
     if (!available) throw new Error(unavailable);
     const localDate = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, localDate);
-    const [{ data: claimedToday }, difficultyCycle, activeGame] = await Promise.all([
+    const [{ data: claimedToday }, difficultyCycle, active] = await Promise.all([
       admin
         .from("daily_game_rewards")
         .select("id")
@@ -166,17 +164,13 @@ export const startWordSearch = createServerFn({ method: "POST" })
         .eq("game_key", GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, GAME_KEY),
-      getActiveDailyGame(admin, context.userId, localDate),
+      loadSession(admin, context.userId),
     ]);
     if (claimedToday) throw new Error("A recompensa de hoje já foi resgatada.");
     if (!difficultyCycle.available.includes(data.difficulty)) {
       throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
     }
-    if (activeGame?.gameKey === GAME_KEY) {
-      const active = await loadSession(admin, context.userId, activeGame.session.id);
-      if (active) return active.public;
-    }
-    if (activeGame) throw new Error("Conclua a partida atual antes de iniciar outro jogo.");
+    if (active) return active.public;
 
     const [{ data: bank, error: bankError }, { data: stickers, error: stickerError }] =
       await Promise.all([
@@ -348,7 +342,7 @@ export const getPuzzleGameState = createServerFn({ method: "GET" })
       };
     const today = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, today);
-    const [session, rewardResult, difficultyCycle, activeGame] = await Promise.all([
+    const [session, rewardResult, difficultyCycle] = await Promise.all([
       loadPuzzleSession(admin, context.userId),
       admin
         .from("daily_game_rewards")
@@ -358,15 +352,13 @@ export const getPuzzleGameState = createServerFn({ method: "GET" })
         .eq("game_key", PUZZLE_GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, PUZZLE_GAME_KEY),
-      getActiveDailyGame(admin, context.userId, today),
     ]);
     return {
       enabled,
       authorized,
       available: true,
-      canPlay: !rewardResult.data && (!activeGame || activeGame.gameKey === PUZZLE_GAME_KEY),
-      blockedByGame:
-        activeGame && activeGame.gameKey !== PUZZLE_GAME_KEY ? activeGame.gameKey : null,
+      canPlay: !rewardResult.data,
+      blockedByGame: null,
       session,
       reward: rewardResult.data || null,
       availableDifficulties: difficultyCycle.available as PuzzleDifficulty[],
@@ -382,7 +374,7 @@ export const startPuzzleGame = createServerFn({ method: "POST" })
     if (!available) throw new Error(unavailable);
     const localDate = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, localDate);
-    const [{ data: claimedToday }, difficultyCycle, activeGame] = await Promise.all([
+    const [{ data: claimedToday }, difficultyCycle, active] = await Promise.all([
       admin
         .from("daily_game_rewards")
         .select("id")
@@ -391,17 +383,13 @@ export const startPuzzleGame = createServerFn({ method: "POST" })
         .eq("game_key", PUZZLE_GAME_KEY)
         .maybeSingle(),
       getDailyGameDifficultyCycle(admin, context.userId, PUZZLE_GAME_KEY),
-      getActiveDailyGame(admin, context.userId, localDate),
+      loadPuzzleSession(admin, context.userId),
     ]);
     if (claimedToday) throw new Error("A recompensa de hoje já foi resgatada.");
     if (!difficultyCycle.available.includes(data.difficulty)) {
       throw new Error("Complete os outros níveis antes de repetir esta dificuldade.");
     }
-    if (activeGame?.gameKey === PUZZLE_GAME_KEY) {
-      const active = await loadPuzzleSession(admin, context.userId, activeGame.session.id);
-      if (active) return active;
-    }
-    if (activeGame) throw new Error("Conclua a partida atual antes de iniciar outro jogo.");
+    if (active) return active;
 
     const { data: stickers, error: stickerError } = await admin
       .from("memory_game_stickers")
