@@ -8,7 +8,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { supabase } from "../integrations/supabase/client";
@@ -141,8 +141,33 @@ function RootShell({ children }: { children: ReactNode }) {
             `,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              !function(f,b,e,v,n,t,s)
+              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)}(window, document,'script',
+              'https://connect.facebook.net/en_US/fbevents.js');
+              fbq('init', '2032431447664718');
+              fbq('track', 'PageView');
+            `,
+          }}
+        />
       </head>
       <body>
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src="https://www.facebook.com/tr?id=2032431447664718&ev=PageView&noscript=1"
+            alt=""
+          />
+        </noscript>
         {children}
         <Scripts />
       </body>
@@ -155,6 +180,7 @@ function RootComponent() {
 
   const application = (
     <QueryClientProvider client={queryClient}>
+      <MetaPixelPageViews />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
@@ -165,6 +191,31 @@ function RootComponent() {
   }
 
   return application;
+}
+
+function MetaPixelPageViews() {
+  const location = useRouterState({ select: (state) => state.location });
+  const previousLocation = useRef<string | null>(null);
+  const currentLocation = `${location.pathname}${location.searchStr || ""}`;
+
+  useEffect(() => {
+    // The inline bootstrap records the initial PageView. TanStack Router then
+    // records only client-side navigations so the first visit is not duplicated.
+    if (previousLocation.current === null) {
+      previousLocation.current = currentLocation;
+      return;
+    }
+
+    if (previousLocation.current !== currentLocation) {
+      previousLocation.current = currentLocation;
+      (window as typeof window & { fbq?: (...args: unknown[]) => void }).fbq?.(
+        "track",
+        "PageView",
+      );
+    }
+  }, [currentLocation]);
+
+  return null;
 }
 
 function MaintenanceAccessGate({ children }: { children: ReactNode }) {
