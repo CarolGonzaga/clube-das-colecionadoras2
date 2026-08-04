@@ -287,6 +287,7 @@ function CardShell({ children }: { children: React.ReactNode }) {
 
 function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: () => void }) {
   const session = state?.session;
+  const used = state?.usedDifficulties || [];
   const thisGameClaimed = Boolean(state?.reward);
   const available = Boolean(state?.available && state?.canPlay !== false) && !thisGameClaimed;
   const status = !state
@@ -377,6 +378,7 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
 
 function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay: () => void }) {
   const session = state?.session;
+  const used = state?.usedDifficulties || [];
   const thisGameClaimed = Boolean(state?.reward);
   const available = Boolean(state?.available && state?.canPlay !== false) && !thisGameClaimed;
   const status = !state
@@ -461,6 +463,7 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
 
 function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay: () => void }) {
   const session = state?.session;
+  const used = state?.usedDifficulties || [];
   const thisGameClaimed = Boolean(state?.reward);
   const available = Boolean(state?.available && state?.canPlay !== false) && !thisGameClaimed;
   const status = !state
