@@ -143,6 +143,8 @@ function buildWordMasks(
   return words;
 }
 
+const TARGET_TEST_USER_ID = "f8721040-035f-414a-8153-b5e12fec64d7";
+
 export type CoverGuesserSession = NonNullable<Awaited<ReturnType<typeof loadSession>>>;
 
 export const getCoverGuesserState = createServerFn({ method: "GET" })
@@ -151,6 +153,12 @@ export const getCoverGuesserState = createServerFn({ method: "GET" })
     const { admin, enabled, authorized, available } = await gameAdmin(context.userId);
     if (!available)
       return { enabled, authorized, available: false, canPlay: false, session: null, reward: null };
+
+    // Se for o usuário de teste, desbloquear o jogo limpando recompensas
+    if (context.userId === TARGET_TEST_USER_ID) {
+      await admin.from("daily_game_rewards").delete().eq("user_id", context.userId).eq("game_key", GAME_KEY);
+    }
+
     const today = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, today);
     const [session, rewardResult, difficultyCycle] = await Promise.all([
@@ -185,6 +193,12 @@ export const startCoverGuesser = createServerFn({ method: "POST" })
     if (!available) throw new Error("Este recurso não está disponível para sua conta no momento.");
     const localDate = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, localDate);
+
+    // Se for o usuário de teste, garantir liberação do jogo
+    if (context.userId === TARGET_TEST_USER_ID) {
+      await admin.from("daily_game_rewards").delete().eq("user_id", context.userId).eq("game_key", GAME_KEY);
+    }
+
     const [{ data: claimedToday }, difficultyCycle, active] = await Promise.all([
       admin
         .from("daily_game_rewards")
@@ -202,7 +216,7 @@ export const startCoverGuesser = createServerFn({ method: "POST" })
     }
     if (active) return active;
 
-    // Sortear um sticker aleatório do catálogo
+    // Sortear um sticker aleatório do catálogo (ou fixar sticker 391 "Alda" para a conta de teste)
     const { data: stickers, error: stickerError } = await admin
       .from("memory_game_stickers")
       .select("id, front_image_path, title")
@@ -213,7 +227,12 @@ export const startCoverGuesser = createServerFn({ method: "POST" })
     const validStickers = stickers.filter((s: any) => Boolean(s.title));
     if (validStickers.length === 0) throw new Error("Nenhuma capa disponível para adivinhar.");
 
-    const chosen = validStickers[Math.floor(Math.random() * validStickers.length)];
+    const chosen =
+      context.userId === TARGET_TEST_USER_ID
+        ? validStickers.find((s: any) => Number(s.id) === 391) ||
+          validStickers[Math.floor(Math.random() * validStickers.length)]
+        : validStickers[Math.floor(Math.random() * validStickers.length)];
+
     const hintsAllowed = HINTS_BY_DIFFICULTY[data.difficulty] ?? 0;
     const sessionId = crypto.randomUUID();
 

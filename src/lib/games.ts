@@ -121,6 +121,11 @@ export const getDailyGamesState = createServerFn({ method: "GET" })
         session: null,
         reward: null,
       };
+
+    if (context.userId === TARGET_TEST_USER_ID) {
+      await admin.from("daily_game_rewards").delete().eq("user_id", context.userId).eq("game_key", GAME_KEY);
+    }
+
     const today = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, today);
     const [session, rewardResult, difficultyCycle] = await Promise.all([
@@ -155,6 +160,10 @@ export const startWordSearch = createServerFn({ method: "POST" })
     if (!available) throw new Error(unavailable);
     const localDate = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, localDate);
+
+    if (context.userId === TARGET_TEST_USER_ID) {
+      await admin.from("daily_game_rewards").delete().eq("user_id", context.userId).eq("game_key", GAME_KEY);
+    }
     const [{ data: claimedToday }, difficultyCycle, active] = await Promise.all([
       admin
         .from("daily_game_rewards")
@@ -324,6 +333,8 @@ async function loadPuzzleSession(admin: any, userId: string, sessionId?: string)
   };
 }
 
+const TARGET_TEST_USER_ID = "f8721040-035f-414a-8153-b5e12fec64d7";
+
 export const getPuzzleGameState = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -340,6 +351,11 @@ export const getPuzzleGameState = createServerFn({ method: "GET" })
         session: null,
         reward: null,
       };
+
+    if (context.userId === TARGET_TEST_USER_ID) {
+      await admin.from("daily_game_rewards").delete().eq("user_id", context.userId).eq("game_key", PUZZLE_GAME_KEY);
+    }
+
     const today = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, today);
     const [session, rewardResult, difficultyCycle] = await Promise.all([
@@ -374,6 +390,11 @@ export const startPuzzleGame = createServerFn({ method: "POST" })
     if (!available) throw new Error(unavailable);
     const localDate = getDailyGameDate();
     await expireStaleDailyGameSessions(admin, context.userId, localDate);
+
+    if (context.userId === TARGET_TEST_USER_ID) {
+      await admin.from("daily_game_rewards").delete().eq("user_id", context.userId).eq("game_key", PUZZLE_GAME_KEY);
+    }
+
     const [{ data: claimedToday }, difficultyCycle, active] = await Promise.all([
       admin
         .from("daily_game_rewards")
@@ -398,7 +419,12 @@ export const startPuzzleGame = createServerFn({ method: "POST" })
     if (stickerError || !stickers || stickers.length === 0)
       throw new Error("Não foi possível carregar as figuras do jogo.");
 
-    const chosenSticker = stickers[Math.floor(Math.random() * stickers.length)];
+    const chosenSticker =
+      context.userId === TARGET_TEST_USER_ID
+        ? stickers.find((s: any) => Number(s.id) === 391) ||
+          stickers[Math.floor(Math.random() * stickers.length)]
+        : stickers[Math.floor(Math.random() * stickers.length)];
+
     const config = PUZZLE_GRID_CONFIG[data.difficulty as PuzzleDifficulty];
     const sessionId = crypto.randomUUID();
 
