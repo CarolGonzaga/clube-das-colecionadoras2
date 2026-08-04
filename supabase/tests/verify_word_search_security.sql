@@ -3,6 +3,20 @@ begin;
 
 do $$
 begin
+  if position(
+    'v_word.display_word' in
+    pg_get_functiondef('public.submit_word_search_match(uuid,uuid,jsonb)'::regprocedure)
+  ) = 0 then
+    raise exception 'submit_word_search_match deve retornar display_word';
+  end if;
+
+  if position(
+    'v_word.word' in
+    pg_get_functiondef('public.submit_word_search_match(uuid,uuid,jsonb)'::regprocedure)
+  ) > 0 then
+    raise exception 'submit_word_search_match referencia o campo inexistente word';
+  end if;
+
   if has_table_privilege('authenticated', 'public.game_access_grants', 'INSERT')
      or has_table_privilege('authenticated', 'public.game_access_grants', 'UPDATE')
      or has_table_privilege('authenticated', 'public.daily_game_rewards', 'INSERT')

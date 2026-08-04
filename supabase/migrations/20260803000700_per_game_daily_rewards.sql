@@ -118,7 +118,9 @@ begin
   from public.word_search_session_words
   where session_id = p_session_id
     and found_at is null
-    and (path = p_path or path = v_reversed_path);
+    and (path = p_path or path = v_reversed_path)
+  limit 1
+  for update;
 
   if not found then
     return jsonb_build_object('matched', false, 'won', false, 'foundWords', v_session.found_words);
@@ -143,8 +145,8 @@ begin
 
   return jsonb_build_object(
     'matched', true,
-    'wordId', v_word.id,
-    'word', v_word.word,
+    'foundWordId', v_word.id,
+    'foundWord', v_word.display_word,
     'foundWords', v_found_words,
     'won', v_won
   );
