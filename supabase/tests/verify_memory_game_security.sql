@@ -3,13 +3,15 @@ begin;
 
 do $$
 begin
-  if (select count(*) from public.memory_game_stickers) <> 67 then
-    raise exception 'O catalogo do jogo deve conter exatamente 67 cartas.';
+  if (select count(*) from public.memory_game_stickers) <> 70 then
+    raise exception 'O catalogo do jogo deve conter exatamente 70 cartas.';
   end if;
   if exists (
-    select 1 from generate_series(361,427) expected
+    select 1 from generate_series(361,430) expected
     where not exists (select 1 from public.memory_game_stickers card where card.id=expected)
-  ) then raise exception 'O catalogo deve cobrir os IDs 361 a 427.'; end if;
+  ) then raise exception 'O catalogo deve cobrir os IDs 361 a 430.'; end if;
+  if exists(select 1 from public.memory_game_stickers where title is null or author is null or slug is null)
+  then raise exception 'Existem metadados bibliograficos ausentes no catalogo.'; end if;
   if exists(select 1 from public.memory_game_stickers where front_image_path is null or back_image_path is null)
   then raise exception 'Existem imagens ausentes no catalogo.'; end if;
   if has_table_privilege('authenticated','public.memory_game_cards','SELECT')

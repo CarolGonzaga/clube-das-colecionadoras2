@@ -72,12 +72,15 @@ const MEMORY_COVER_FILENAMES = [
   "o-caso-daphne-fontaine.jpg",
   "como-se-fosse-fanfic.jpg",
   "boa-sorte-querida.jpg",
-  "a-vinganca-do-cupido.jpg",
   "inefavel-uma-paixao-inesquecivel.jpg",
+  "sua-proxima-novela-das-sete.jpg",
+  "entre-nos.jpg",
+  "amor-fora-do-palco.jpg",
+  "oi-novo-amor.jpg",
 ] as const;
 
 export function getMemoryCoverPath(stickerId: unknown) {
   const id = Number(stickerId);
-  if (!Number.isInteger(id) || id < 361 || id > 427) return null;
+  if (!Number.isInteger(id) || id < 361 || id > 430) return null;
   return `/covers-jogos/${MEMORY_COVER_FILENAMES[id - 361]}`;
 }

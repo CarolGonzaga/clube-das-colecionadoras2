@@ -36,6 +36,7 @@ import { Route as ClubedascolecionadorasDashboardPagamentoFalhaRouteImport } fro
 import { Route as ClubedascolecionadorasDashboardJogosQuebraCabecaRouteImport } from './routes/clubedascolecionadoras/_dashboard/jogos.quebra-cabeca'
 import { Route as ClubedascolecionadorasDashboardJogosMemoriaRouteImport } from './routes/clubedascolecionadoras/_dashboard/jogos.memoria'
 import { Route as ClubedascolecionadorasDashboardJogosCacaPalavrasRouteImport } from './routes/clubedascolecionadoras/_dashboard/jogos.caca-palavras'
+import { Route as ClubedascolecionadorasDashboardJogosAdivinheACapaRouteImport } from './routes/clubedascolecionadoras/_dashboard/jogos.adivinhe-a-capa'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -197,6 +198,12 @@ const ClubedascolecionadorasDashboardJogosCacaPalavrasRoute =
     path: '/jogos/caca-palavras',
     getParentRoute: () => ClubedascolecionadorasDashboardRoute,
   } as any)
+const ClubedascolecionadorasDashboardJogosAdivinheACapaRoute =
+  ClubedascolecionadorasDashboardJogosAdivinheACapaRouteImport.update({
+    id: '/jogos/adivinhe-a-capa',
+    path: '/jogos/adivinhe-a-capa',
+    getParentRoute: () => ClubedascolecionadorasDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/clubedascolecionadoras/registros': typeof ClubedascolecionadorasDashboardRegistrosRoute
   '/clubedascolecionadoras/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras/': typeof ClubedascolecionadorasDashboardIndexRoute
+  '/clubedascolecionadoras/jogos/adivinhe-a-capa': typeof ClubedascolecionadorasDashboardJogosAdivinheACapaRoute
   '/clubedascolecionadoras/jogos/caca-palavras': typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
   '/clubedascolecionadoras/jogos/memoria': typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   '/clubedascolecionadoras/jogos/quebra-cabeca': typeof ClubedascolecionadorasDashboardJogosQuebraCabecaRoute
@@ -246,6 +254,7 @@ export interface FileRoutesByTo {
   '/clubedascolecionadoras/registros': typeof ClubedascolecionadorasDashboardRegistrosRoute
   '/clubedascolecionadoras/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras': typeof ClubedascolecionadorasDashboardIndexRoute
+  '/clubedascolecionadoras/jogos/adivinhe-a-capa': typeof ClubedascolecionadorasDashboardJogosAdivinheACapaRoute
   '/clubedascolecionadoras/jogos/caca-palavras': typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
   '/clubedascolecionadoras/jogos/memoria': typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   '/clubedascolecionadoras/jogos/quebra-cabeca': typeof ClubedascolecionadorasDashboardJogosQuebraCabecaRoute
@@ -276,6 +285,7 @@ export interface FileRoutesById {
   '/clubedascolecionadoras/_dashboard/registros': typeof ClubedascolecionadorasDashboardRegistrosRoute
   '/clubedascolecionadoras/_dashboard/trocas': typeof ClubedascolecionadorasDashboardTrocasRoute
   '/clubedascolecionadoras/_dashboard/': typeof ClubedascolecionadorasDashboardIndexRoute
+  '/clubedascolecionadoras/_dashboard/jogos/adivinhe-a-capa': typeof ClubedascolecionadorasDashboardJogosAdivinheACapaRoute
   '/clubedascolecionadoras/_dashboard/jogos/caca-palavras': typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
   '/clubedascolecionadoras/_dashboard/jogos/memoria': typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   '/clubedascolecionadoras/_dashboard/jogos/quebra-cabeca': typeof ClubedascolecionadorasDashboardJogosQuebraCabecaRoute
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/registros'
     | '/clubedascolecionadoras/trocas'
     | '/clubedascolecionadoras/'
+    | '/clubedascolecionadoras/jogos/adivinhe-a-capa'
     | '/clubedascolecionadoras/jogos/caca-palavras'
     | '/clubedascolecionadoras/jogos/memoria'
     | '/clubedascolecionadoras/jogos/quebra-cabeca'
@@ -335,6 +346,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/registros'
     | '/clubedascolecionadoras/trocas'
     | '/clubedascolecionadoras'
+    | '/clubedascolecionadoras/jogos/adivinhe-a-capa'
     | '/clubedascolecionadoras/jogos/caca-palavras'
     | '/clubedascolecionadoras/jogos/memoria'
     | '/clubedascolecionadoras/jogos/quebra-cabeca'
@@ -364,6 +376,7 @@ export interface FileRouteTypes {
     | '/clubedascolecionadoras/_dashboard/registros'
     | '/clubedascolecionadoras/_dashboard/trocas'
     | '/clubedascolecionadoras/_dashboard/'
+    | '/clubedascolecionadoras/_dashboard/jogos/adivinhe-a-capa'
     | '/clubedascolecionadoras/_dashboard/jogos/caca-palavras'
     | '/clubedascolecionadoras/_dashboard/jogos/memoria'
     | '/clubedascolecionadoras/_dashboard/jogos/quebra-cabeca'
@@ -577,6 +590,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRouteImport
       parentRoute: typeof ClubedascolecionadorasDashboardRoute
     }
+    '/clubedascolecionadoras/_dashboard/jogos/adivinhe-a-capa': {
+      id: '/clubedascolecionadoras/_dashboard/jogos/adivinhe-a-capa'
+      path: '/jogos/adivinhe-a-capa'
+      fullPath: '/clubedascolecionadoras/jogos/adivinhe-a-capa'
+      preLoaderRoute: typeof ClubedascolecionadorasDashboardJogosAdivinheACapaRouteImport
+      parentRoute: typeof ClubedascolecionadorasDashboardRoute
+    }
   }
 }
 
@@ -592,6 +612,7 @@ interface ClubedascolecionadorasDashboardRouteChildren {
   ClubedascolecionadorasDashboardRegistrosRoute: typeof ClubedascolecionadorasDashboardRegistrosRoute
   ClubedascolecionadorasDashboardTrocasRoute: typeof ClubedascolecionadorasDashboardTrocasRoute
   ClubedascolecionadorasDashboardIndexRoute: typeof ClubedascolecionadorasDashboardIndexRoute
+  ClubedascolecionadorasDashboardJogosAdivinheACapaRoute: typeof ClubedascolecionadorasDashboardJogosAdivinheACapaRoute
   ClubedascolecionadorasDashboardJogosCacaPalavrasRoute: typeof ClubedascolecionadorasDashboardJogosCacaPalavrasRoute
   ClubedascolecionadorasDashboardJogosMemoriaRoute: typeof ClubedascolecionadorasDashboardJogosMemoriaRoute
   ClubedascolecionadorasDashboardJogosQuebraCabecaRoute: typeof ClubedascolecionadorasDashboardJogosQuebraCabecaRoute
@@ -625,6 +646,8 @@ const ClubedascolecionadorasDashboardRouteChildren: ClubedascolecionadorasDashbo
       ClubedascolecionadorasDashboardTrocasRoute,
     ClubedascolecionadorasDashboardIndexRoute:
       ClubedascolecionadorasDashboardIndexRoute,
+    ClubedascolecionadorasDashboardJogosAdivinheACapaRoute:
+      ClubedascolecionadorasDashboardJogosAdivinheACapaRoute,
     ClubedascolecionadorasDashboardJogosCacaPalavrasRoute:
       ClubedascolecionadorasDashboardJogosCacaPalavrasRoute,
     ClubedascolecionadorasDashboardJogosMemoriaRoute:

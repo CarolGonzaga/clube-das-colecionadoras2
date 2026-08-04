@@ -23,11 +23,12 @@ test("rejeita caminho vazio ou arquivo que não seja imagem", () => {
   assert.equal(normalizeMemoryCoverPath("arquivo.txt"), null);
 });
 
-test("resolve os 67 IDs pelo catálogo canônico da pasta public/covers-jogos", () => {
+test("resolve os 70 IDs pelo catálogo canônico da pasta public/covers-jogos", () => {
   assert.equal(getMemoryCoverPath(361), "/covers-jogos/o-despertar-do-desejo.jpg");
-  assert.equal(getMemoryCoverPath(427), "/covers-jogos/inefavel-uma-paixao-inesquecivel.jpg");
+  assert.equal(getMemoryCoverPath(426), "/covers-jogos/inefavel-uma-paixao-inesquecivel.jpg");
+  assert.equal(getMemoryCoverPath(430), "/covers-jogos/oi-novo-amor.jpg");
   assert.equal(getMemoryCoverPath(360), null);
-  for (let id = 361; id <= 427; id += 1) {
+  for (let id = 361; id <= 430; id += 1) {
     const publicPath = getMemoryCoverPath(id) || "";
     assert.match(publicPath, /^\/covers-jogos\/.+\.jpg$/);
     assert.equal(

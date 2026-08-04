@@ -2,7 +2,7 @@
 
 ## Arquitetura
 
-- `memory_game_stickers`: catálogo privado de 67 cartas (IDs 361–427), com frente, verso, status e jogos permitidos.
+- `memory_game_stickers`: catálogo privado de 70 cartas (IDs 361–430), com título, autora, links, frente, verso, status e jogos permitidos.
 - `memory_game_sessions`: sessão persistente por usuária, dificuldade e estado.
 - `memory_game_cards`: relação privada de pares, instâncias e posições. Sem acesso para `anon` ou `authenticated`.
 - `start_memory_game`: seleciona cartas ativas e embaralha o tabuleiro no banco.
