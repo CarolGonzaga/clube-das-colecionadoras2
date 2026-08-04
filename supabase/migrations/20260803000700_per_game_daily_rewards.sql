@@ -61,6 +61,96 @@ begin
   return new;
 end $$;
 
+-- Atualizar submit_word_search_match para verificar rewards apenas de 'word_search'
+create or replace function public.submit_word_search_match(
+  p_user_id uuid,
+  p_session_id uuid,
+  p_path jsonb
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_today date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_now timestamptz := now();
+  v_session public.word_search_sessions%rowtype;
+  v_word public.word_search_session_words%rowtype;
+  v_reversed_path jsonb;
+  v_found_words integer;
+  v_won boolean;
+begin
+  if p_user_id is null or p_session_id is null or jsonb_typeof(p_path) <> 'array' then
+    raise exception 'Selecao invalida.';
+  end if;
+  if not exists (
+    select 1 from public.game_settings
+    where key = 'word_search_enabled' and value = 'true'::jsonb
+  ) or not exists (
+    select 1 from public.game_access_grants
+    where user_id = p_user_id and game_key = 'word_search'
+      and is_active and revoked_at is null
+  ) then
+    raise exception 'Este recurso nao esta disponivel para sua conta no momento.';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text || ':daily-games', 0));
+  select * into v_session
+  from public.word_search_sessions
+  where id = p_session_id and user_id = p_user_id
+  for update;
+
+  if not found or v_session.status <> 'in_progress' or v_session.local_date <> v_today then
+    raise exception 'Esta partida expirou ou nao aceita novas palavras.';
+  end if;
+  if exists (
+    select 1 from public.daily_game_rewards
+    where user_id = p_user_id and reward_date = v_today and game_key = 'word_search'
+  ) then
+    raise exception 'Voce ja venceu uma partida deste jogo hoje.';
+  end if;
+
+  select coalesce(jsonb_agg(item.value order by item.ordinality desc), '[]'::jsonb)
+  into v_reversed_path
+  from jsonb_array_elements(p_path) with ordinality as item(value, ordinality);
+
+  select * into v_word
+  from public.word_search_session_words
+  where session_id = p_session_id
+    and found_at is null
+    and (path = p_path or path = v_reversed_path);
+
+  if not found then
+    return jsonb_build_object('matched', false, 'won', false, 'foundWords', v_session.found_words);
+  end if;
+
+  update public.word_search_session_words
+  set found_at = v_now
+  where id = v_word.id;
+
+  select count(*) into v_found_words
+  from public.word_search_session_words
+  where session_id = p_session_id and found_at is not null;
+
+  v_won := v_found_words = v_session.total_words;
+
+  update public.word_search_sessions
+  set found_words = v_found_words,
+      status = case when v_won then 'won' else 'in_progress' end,
+      won_at = case when v_won then v_now else won_at end,
+      updated_at = v_now
+  where id = p_session_id;
+
+  return jsonb_build_object(
+    'matched', true,
+    'wordId', v_word.id,
+    'word', v_word.word,
+    'foundWords', v_found_words,
+    'won', v_won
+  );
+end;
+$$;
+
 -- Atualizar start_memory_game para verificar rewards apenas de 'memory_game'
 create or replace function public.start_memory_game(
   p_user_id uuid, p_difficulty text, p_session_id uuid default gen_random_uuid()
@@ -189,6 +279,131 @@ begin
 end;
 $$;
 
+-- Atualizar claim_word_search_reward para filtrar daily_game_rewards por game_key='word_search'
+create or replace function public.claim_word_search_reward(
+  p_user_id uuid,
+  p_session_id uuid,
+  p_random_bucket double precision default null,
+  p_random_pick double precision default null
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_today date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_existing public.daily_game_rewards%rowtype;
+  v_session public.word_search_sessions%rowtype;
+  v_owned integer[];
+  v_missing integer[];
+  v_valid integer[];
+  v_rare_candidates integer[] := array[28,45,47,79,112,164,167];
+  v_candidates integer[];
+  v_number integer;
+  v_result text;
+  v_is_rare boolean := false;
+  v_rare_applied boolean := false;
+  v_previous_was_rare boolean := false;
+  v_bucket double precision := coalesce(p_random_bucket, random());
+  v_pick double precision := coalesce(p_random_pick, random());
+  v_rare_probability double precision := 0.70;
+  v_was_new boolean;
+begin
+  if p_user_id is null then raise exception 'Nao autorizado.'; end if;
+  if not exists (
+    select 1 from public.game_settings
+    where key = 'word_search_enabled' and value = 'true'::jsonb
+  ) then raise exception 'Este recurso nao esta disponivel no momento.'; end if;
+  if not exists (
+    select 1 from public.game_access_grants
+    where user_id = p_user_id and game_key = 'word_search'
+      and is_active and revoked_at is null
+  ) then raise exception 'Este recurso nao esta disponivel para sua conta no momento.'; end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text || ':daily-games', 0));
+
+  select * into v_existing from public.daily_game_rewards
+  where user_id = p_user_id and reward_date = v_today and game_key = 'word_search';
+  if found then
+    return jsonb_build_object(
+      'success', true, 'idempotent', true, 'number', v_existing.sticker_number,
+      'wasNew', v_existing.result_type = 'new', 'isRare', v_existing.is_rare,
+      'resultType', v_existing.result_type
+    );
+  end if;
+
+  select * into v_session from public.word_search_sessions
+  where id = p_session_id and user_id = p_user_id for update;
+  if not found or v_session.status <> 'won' or v_session.found_words <> v_session.total_words then
+    raise exception 'Venca a partida antes de resgatar a recompensa.';
+  end if;
+
+  select coalesce(array_agg(number), array[]::integer[])
+  into v_valid from public.stickers
+  where number between 21 and 193;
+
+  select coalesce(array_agg(distinct sticker_number), array[]::integer[])
+  into v_owned from public.user_stickers where user_id = p_user_id and copies > 0;
+
+  select coalesce(array_agg(number), array[]::integer[])
+  into v_missing from unnest(v_valid) number
+  where not (number = any(v_owned));
+
+  select coalesce((
+    select is_rare from public.daily_game_rewards
+    where user_id = p_user_id order by reward_date desc, created_at desc limit 1
+  ), false) into v_previous_was_rare;
+
+  if cardinality(v_missing) > 0 then
+    if not v_previous_was_rare and v_bucket < v_rare_probability then
+      select coalesce(array_agg(number), array[]::integer[])
+      into v_candidates from unnest(v_missing) number
+      where number = any(v_rare_candidates);
+      if cardinality(v_candidates) > 0 then
+        v_is_rare := true;
+        v_rare_applied := true;
+      end if;
+    end if;
+    if not v_rare_applied then
+      v_candidates := v_missing;
+    end if;
+  else
+    v_candidates := v_valid;
+  end if;
+
+  v_number := v_candidates[1 + floor(v_pick * cardinality(v_candidates))::integer];
+  if v_number is null then
+    v_number := v_valid[1 + floor(v_pick * cardinality(v_valid))::integer];
+  end if;
+
+  select not (v_number = any(v_owned)) into v_was_new;
+  v_result := case when v_was_new then 'new' else 'duplicate' end;
+
+  insert into public.daily_game_rewards (
+    user_id, reward_date, game_key, session_id, sticker_number, result_type, is_rare,
+    rare_bonus_applied, missing_pool_size, owned_pool_size
+  ) values (
+    p_user_id, v_today, 'word_search', v_session.id, v_number, v_result, v_is_rare,
+    v_rare_applied, cardinality(v_missing), cardinality(v_owned)
+  );
+
+  insert into public.user_stickers (user_id, sticker_number, copies, is_rare, first_unlocked_at)
+  values (p_user_id, v_number, 1, v_is_rare, now())
+  on conflict (user_id, sticker_number) do update
+  set copies = public.user_stickers.copies + 1, is_rare = public.user_stickers.is_rare or excluded.is_rare;
+
+  update public.word_search_sessions
+  set status = 'claimed', claimed_at = now(), updated_at = now()
+  where id = v_session.id;
+
+  perform public.check_and_grant_rewards(p_user_id);
+
+  return jsonb_build_object(
+    'success', true, 'idempotent', false, 'number', v_number,
+    'wasNew', v_was_new, 'isRare', v_is_rare, 'resultType', v_result
+  );
+end $$;
+
 -- Atualizar claim_daily_game_reward para filtrar daily_game_rewards por p_game_key
 create or replace function public.claim_daily_game_reward(
   p_user_id uuid, p_game_key text, p_session_id uuid,
@@ -298,7 +513,7 @@ begin
   end if;
 
   select coalesce(array_agg(distinct sticker_number), array[]::integer[])
-  into v_owned from public.user_stickers where user_id = p_user_id;
+  into v_owned from public.user_stickers where user_id = p_user_id and copies > 0;
 
   select coalesce(array_agg(number), array[]::integer[])
   into v_valid from public.stickers
@@ -354,6 +569,8 @@ begin
   update public.puzzle_game_sessions
   set status = 'claimed', updated_at = now()
   where id = v_session.id;
+
+  perform public.check_and_grant_rewards(p_user_id);
 
   return jsonb_build_object(
     'success', true, 'idempotent', false, 'number', v_number,
