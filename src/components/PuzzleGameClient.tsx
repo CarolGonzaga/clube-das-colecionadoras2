@@ -424,7 +424,7 @@ export default function PuzzleGameClient() {
 
       // Async save
       saveProgress(updated).then(res => {
-        if (res?.won) { audio.win(); ui.triggerHearts(); loadState(); }
+        if (res?.won) { audio.win(); ui.triggerHearts(); }
       });
 
       return updated;

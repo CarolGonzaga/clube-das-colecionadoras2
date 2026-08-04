@@ -115,7 +115,7 @@ begin
 
   select coalesce(array_agg(number), array[]::integer[])
   into v_valid from public.stickers
-  where is_active = true and number between 21 and 193;
+  where number between 21 and 193;
 
   select coalesce(array_agg(number), array[]::integer[])
   into v_missing from unnest(v_valid) number
