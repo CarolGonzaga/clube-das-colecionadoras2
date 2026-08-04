@@ -10,6 +10,8 @@ import { claimCollectionRewardAction } from "@/lib/actions";
 import { dbService } from "@/lib/db";
 import Stamp from "./Stamp";
 import StickerShareModal from "./StickerShareModal";
+import GameAlbumTab from "./GameAlbumTab";
+import type { GameAlbumSticker } from "@/lib/gameAlbum";
 import {
   X,
   ShoppingCart,
@@ -192,22 +194,36 @@ interface AlbumClientProps {
   profile: Profile;
   stickers: Sticker[];
   userStickers: UserSticker[];
+  gameAlbum: GameAlbumSticker[];
 }
 
-export default function AlbumClient({ profile, stickers, userStickers }: AlbumClientProps) {
+export default function AlbumClient({
+  profile,
+  stickers,
+  userStickers,
+  gameAlbum,
+}: AlbumClientProps) {
   const ui = useUI();
   const router = useRouter();
-  type AlbumFilter = "todas" | "faltam" | "coladas" | "repetidas" | "raras" | "exclusivas" | "bonus";
+  type AlbumFilter =
+    | "todas"
+    | "faltam"
+    | "coladas"
+    | "repetidas"
+    | "raras"
+    | "exclusivas"
+    | "bonus";
   const [filter, setFilter] = useState<AlbumFilter>("todas");
   type CollectionFilter = "todas" | "resgatar" | "incompletas" | "concluidas";
   const [collectionFilter, setCollectionFilter] = useState<CollectionFilter>("todas");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [itemsChoice, setItemsChoice] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"album" | "colecoes">(() => {
+  const [activeTab, setActiveTab] = useState<"album" | "colecoes" | "jogos">(() => {
     if (typeof window !== "undefined") {
       const search = window.location.search;
       if (search.includes("tab=colecoes")) return "colecoes";
+      if (search.includes("tab=jogos")) return "jogos";
     }
     return "album";
   });
@@ -231,7 +247,9 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       } catch {
         notifications = [];
       }
-      const previousById = new Map(notifications.map((notification) => [notification.id, notification]));
+      const previousById = new Map(
+        notifications.map((notification) => [notification.id, notification]),
+      );
       let dismissedIds = new Set<string>();
       try {
         const parsed = JSON.parse(localStorage.getItem("dismissed_notifications") || "[]");
@@ -248,9 +266,9 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
           const canonicalName = tag.tag_name.startsWith("Coleção ")
             ? tag.tag_name
             : `Coleção ${tag.tag_name}`;
-        const id = `completed-tag-${canonicalName}`;
-        if (dismissedIds.has(id)) return;
-        const previous = previousById.get(id);
+          const id = `completed-tag-${canonicalName}`;
+          if (dismissedIds.has(id)) return;
+          const previous = previousById.get(id);
           nextNotifications.push({
             id,
             type: "collection_completed",
@@ -319,9 +337,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  const numericSearch = /^\d+$/.test(normalizedSearchQuery)
-    ? Number(normalizedSearchQuery)
-    : null;
+  const numericSearch = /^\d+$/.test(normalizedSearchQuery) ? Number(normalizedSearchQuery) : null;
 
   const filteredStickers = stickers.filter((s) => {
     const info = getOwnedInfo(s.number);
@@ -339,7 +355,7 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
 
       if (!matchesSearch) return false;
     }
-    
+
     if (filter === "faltam") {
       return !info;
     }
@@ -371,9 +387,11 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
-  const pageSizeOptions = windowWidth >= 1200 ? [16, 20, 24] : windowWidth >= 540 ? [12, 16, 20] : [9, 12, 15];
+  const pageSizeOptions =
+    windowWidth >= 1200 ? [16, 20, 24] : windowWidth >= 540 ? [12, 16, 20] : [9, 12, 15];
   const defaultItemsPerPage = pageSizeOptions[0];
-  const itemsPerPage = itemsChoice && pageSizeOptions.includes(itemsChoice) ? itemsChoice : defaultItemsPerPage;
+  const itemsPerPage =
+    itemsChoice && pageSizeOptions.includes(itemsChoice) ? itemsChoice : defaultItemsPerPage;
   const gridColumns =
     viewMode === "list"
       ? "1fr"
@@ -487,7 +505,8 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     { tag: "Coleção HQ", stickers: [84, 85, 87] },
   ];
 
-  const getStickerFamily = (number: number) => families.find((family) => family.stickers.includes(number));
+  const getStickerFamily = (number: number) =>
+    families.find((family) => family.stickers.includes(number));
 
   const filteredFamilies = families.filter((family) => {
     const isCompleted = family.stickers.every((number) => !!getOwnedInfo(number));
@@ -820,7 +839,13 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
             position: "relative",
           }}
         >
-          <Stamp number={sticker.number} owned={true} auto={isRare} exclusive={isExclusive} cover={sticker.slug} />
+          <Stamp
+            number={sticker.number}
+            owned={true}
+            auto={isRare}
+            exclusive={isExclusive}
+            cover={sticker.slug}
+          />
           {isRare && (
             <AutographSeal author={sticker.author} onZoom={() => openZoomedAutograph(sticker)} />
           )}
@@ -887,7 +912,6 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
           </p>
         )}
 
-
         <a
           className="btn sm soft"
           style={{
@@ -937,7 +961,15 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
     <div className="screen">
       <div className="album-title-row">
         {/* Tabs to toggle between Album and Collections */}
-        <div className="album-tabs" style={{ display: "flex", gap: windowWidth < 360 ? "6px" : "12px", borderBottom: "2px solid var(--blush)", paddingBottom: "4px" }}>
+        <div
+          className="album-tabs"
+          style={{
+            display: "flex",
+            gap: windowWidth < 360 ? "6px" : "12px",
+            borderBottom: "2px solid var(--blush)",
+            paddingBottom: "4px",
+          }}
+        >
           <button
             className={`tab-btn ${activeTab === "album" ? "active" : ""}`}
             onClick={() => setActiveTab("album")}
@@ -948,7 +980,8 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               fontSize: "clamp(14px, 4.5vw, 18px)",
               fontWeight: 800,
               color: activeTab === "album" ? "var(--magenta)" : "var(--wine)",
-              borderBottom: activeTab === "album" ? "3px solid var(--magenta)" : "3px solid transparent",
+              borderBottom:
+                activeTab === "album" ? "3px solid var(--magenta)" : "3px solid transparent",
               cursor: "pointer",
               fontFamily: "Baloo 2",
             }}
@@ -965,12 +998,31 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               fontSize: "clamp(14px, 4.5vw, 18px)",
               fontWeight: 800,
               color: activeTab === "colecoes" ? "var(--magenta)" : "var(--wine)",
-              borderBottom: activeTab === "colecoes" ? "3px solid var(--magenta)" : "3px solid transparent",
+              borderBottom:
+                activeTab === "colecoes" ? "3px solid var(--magenta)" : "3px solid transparent",
               cursor: "pointer",
               fontFamily: "Baloo 2",
             }}
           >
             Coleções
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "jogos" ? "active" : ""}`}
+            onClick={() => setActiveTab("jogos")}
+            style={{
+              background: "none",
+              border: "none",
+              padding: windowWidth < 360 ? "8px 8px" : "8px 16px",
+              fontSize: "clamp(14px, 4.5vw, 18px)",
+              fontWeight: 800,
+              color: activeTab === "jogos" ? "var(--magenta)" : "var(--wine)",
+              borderBottom:
+                activeTab === "jogos" ? "3px solid var(--magenta)" : "3px solid transparent",
+              cursor: "pointer",
+              fontFamily: "Baloo 2",
+            }}
+          >
+            Jogos
           </button>
         </div>
 
@@ -996,8 +1048,13 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
         )}
       </div>
 
-      {activeTab === "colecoes" ? (
-        <div className="collections-container" style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}>
+      {activeTab === "jogos" ? (
+        <GameAlbumTab stickers={gameAlbum} />
+      ) : activeTab === "colecoes" ? (
+        <div
+          className="collections-container"
+          style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}
+        >
           <div className="album-filter-row collection-filter-row">
             <label htmlFor="collection-filter">Filtrar:</label>
             <select
@@ -1066,19 +1123,22 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                           className="collection-stamp-wrapper"
                           onClick={() => sticker && openSticker(sticker)}
                         >
-                          <Stamp
-                            number={num}
-                            owned={!!info}
-                            auto={isRare}
-                            cover={sticker?.slug}
-                          />
+                          <Stamp number={num} owned={!!info} auto={isRare} cover={sticker?.slug} />
                         </div>
                       );
                     })}
                   </div>
 
                   {/* Manual claim button */}
-                  <div style={{ marginTop: "12px", borderTop: "1px dashed var(--blush)", paddingTop: "12px", display: "flex", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      borderTop: "1px dashed var(--blush)",
+                      paddingTop: "12px",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
                     <button
                       type="button"
                       disabled={!isCompleted || isClaimed || isClaiming}
@@ -1094,7 +1154,13 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                         cursor: isCompleted && !isClaimed ? "pointer" : "not-allowed",
                       }}
                     >
-                      {isClaiming ? "Resgatando..." : isClaimed ? "Resgatado" : isCompleted ? "Resgatar Prêmio" : "Incompleto"}
+                      {isClaiming
+                        ? "Resgatando..."
+                        : isClaimed
+                          ? "Resgatado"
+                          : isCompleted
+                            ? "Resgatar Prêmio"
+                            : "Incompleto"}
                     </button>
                   </div>
                 </div>
@@ -1102,7 +1168,11 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                 {/* Seal Container */}
                 <div className={`collection-seal-container ${hasSuperFanSeal ? "completed" : ""}`}>
                   <img
-                    src={hasSuperFanSeal ? "/icons/selo-super-fa.png" : "/icons/selo-super-fa-cinza.png"}
+                    src={
+                      hasSuperFanSeal
+                        ? "/icons/selo-super-fa.png"
+                        : "/icons/selo-super-fa-cinza.png"
+                    }
                     alt={hasSuperFanSeal ? "Selo Super Fã" : "Espaço vago para o Selo Super Fã"}
                     className="collection-seal-img"
                   />
@@ -1114,7 +1184,16 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
       ) : (
         <>
           {/* Modern Filter Dropdown with counts */}
-          <div className="filter-dropdown-container" style={{ margin: "14px 0", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+          <div
+            className="filter-dropdown-container"
+            style={{
+              margin: "14px 0",
+              display: "flex",
+              gap: "8px",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <label
               style={{
                 position: "relative",
@@ -1153,7 +1232,16 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
                 }}
               />
             </label>
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--wine)", fontFamily: "Baloo 2" }}>Filtrar:</span>
+            <span
+              style={{
+                fontSize: "14px",
+                fontWeight: "bold",
+                color: "var(--wine)",
+                fontFamily: "Baloo 2",
+              }}
+            >
+              Filtrar:
+            </span>
             <select
               value={filter}
               onChange={(e) => {
@@ -1183,15 +1271,17 @@ export default function AlbumClient({ profile, stickers, userStickers }: AlbumCl
               {getFilterCount("bonus") > 0 && <option value="bonus">Bônus</option>}
             </select>
             {/* Count badge shown outside dropdown */}
-            <span style={{
-              background: "var(--blush)",
-              color: "var(--magenta)",
-              fontWeight: 800,
-              fontSize: "12px",
-              padding: "4px 10px",
-              borderRadius: "10px",
-              fontFamily: "Baloo 2",
-            }}>
+            <span
+              style={{
+                background: "var(--blush)",
+                color: "var(--magenta)",
+                fontWeight: 800,
+                fontSize: "12px",
+                padding: "4px 10px",
+                borderRadius: "10px",
+                fontFamily: "Baloo 2",
+              }}
+            >
               {filteredStickers.length} figurinha{filteredStickers.length !== 1 ? "s" : ""}
             </span>
           </div>

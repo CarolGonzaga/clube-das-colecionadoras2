@@ -8889,4 +8889,47 @@ html.dark .game-mission-action-button {
   border-radius: 30px;
   box-shadow: 0 4px 14px rgba(194,24,91,0.3);
 }
-
+.game-album-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.game-album-cell > img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+}
+.game-album-cell.locked > img {
+  filter: grayscale(.45) saturate(.55);
+  opacity: .48;
+}
+.game-album-number {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 6px;
+  border-radius: 999px;
+  background: rgba(110, 22, 56, .88);
+  color: #fff;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 900;
+}
+.game-album-label {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 8px;
+  color: var(--wine);
+  background: var(--surface, #fff);
+  font: 800 11px/1.15 "Baloo 2", sans-serif;
+}
+.game-album-modal { max-width: 390px; text-align: center; gap: 10px; }
+.game-album-modal > img { width: min(230px, 75vw); max-height: 62vh; object-fit: contain; border-radius: 14px; }
+.game-album-modal > strong { color: var(--wine); font-size: 18px; }
+.game-album-modal > span { color: var(--magenta); font-weight: 700; }

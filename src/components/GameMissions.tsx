@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import {
   BookOpenText,
-  Brain,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -42,7 +41,6 @@ const ADIVINHA_ART_URL = Object.values(bundledAdivinhaArt)[0] || "/adivinha.png"
 const SLIDES = [
   { key: "word_search", name: "Caça-Palavras", Icon: BookOpenText },
   { key: "memory_game", name: "Jogo da Memória", Icon: Grid3X3 },
-  { key: "quick_quiz", name: "Quiz Relâmpago", Icon: Brain },
   { key: "puzzle", name: "Quebra-Cabeça", Icon: Puzzle },
   { key: "cover_guesser", name: "Adivinhe a Capa", Icon: BookOpen },
 ] as const;
@@ -268,13 +266,6 @@ export default function GameMissions() {
               onPlay={() => router.navigate({ to: "/clubedascolecionadoras/jogos/memoria" })}
             />
           )}
-          {slide.key === "quick_quiz" && (
-            <ComingSoonSlide
-              name="Quiz Relâmpago"
-              description="Responda antes que o tempo acabe."
-              Icon={Brain}
-            />
-          )}
           {slide.key === "puzzle" && (
             <PuzzleGameSlide
               state={puzzleState}
@@ -284,7 +275,9 @@ export default function GameMissions() {
           {slide.key === "cover_guesser" && (
             <CoverGuesserSlide
               state={coverState}
-              onPlay={() => router.navigate({ to: "/clubedascolecionadoras/jogos/adivinhe-a-capa" })}
+              onPlay={() =>
+                router.navigate({ to: "/clubedascolecionadoras/jogos/adivinhe-a-capa" })
+              }
             />
           )}
         </div>
@@ -595,7 +588,13 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
   );
 }
 
-function CoverGuesserSlide({ state, onPlay }: { state: CoverGuesserState | null; onPlay: () => void }) {
+function CoverGuesserSlide({
+  state,
+  onPlay,
+}: {
+  state: CoverGuesserState | null;
+  onPlay: () => void;
+}) {
   const session = state?.session;
   const used = state?.usedDifficulties || [];
   const thisGameClaimed = Boolean(state?.reward);
@@ -697,30 +696,5 @@ function MemoryCardArt({ className }: { className: string }) {
         />
       ))}
     </div>
-  );
-}
-
-function ComingSoonSlide({
-  name,
-  description,
-  Icon,
-}: {
-  name: string;
-  description: string;
-  Icon: typeof Puzzle;
-}) {
-  return (
-    <CardShell>
-      <div className="flex min-h-[258px] flex-col items-center justify-center px-8 text-center sm:min-h-[221px]">
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-pink-100 text-[#a52b59]">
-          <Icon className="h-10 w-10" />
-        </div>
-        <h3 className="mt-5 text-2xl font-black text-[#6e1638] dark:text-[#ffd1e5]">{name}</h3>
-        <p className="mt-2 text-sm text-[#a52b59] dark:text-[#f7a8cb]">{description}</p>
-        <span className="mt-5 inline-flex items-center gap-1 rounded-full border border-pink-200 px-4 py-2 text-[10px] font-bold uppercase text-[#9e1b4a] dark:text-[#ffd1e5]">
-          <LockKeyhole className="h-3.5 w-3.5" /> Em breve
-        </span>
-      </div>
-    </CardShell>
   );
 }
