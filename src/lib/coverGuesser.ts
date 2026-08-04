@@ -7,11 +7,7 @@ import {
   getDailyGameDate,
   getDailyGameDifficultyCycle,
 } from "@/lib/dailyGamesPolicy";
-import {
-  checkCoverAnswer,
-  COVER_GUESSER_TITLES,
-  getCoverGuesserTitle,
-} from "@/lib/coverGuesserTitles";
+import { checkCoverAnswer } from "@/lib/coverGuesserTitles";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const GAME_KEY = "cover_guesser";
@@ -46,7 +42,9 @@ async function gameAdmin(userId: string) {
 async function loadSession(admin: any, userId: string, sessionId?: string) {
   let query = admin
     .from("cover_guesser_sessions")
-    .select("id,difficulty,sticker_id,hints_allowed,hints_used,status,won_at,created_at")
+    .select(
+      "id,difficulty,sticker_id,hints_allowed,hints_used,status,won_at,created_at,memory_game_stickers(title)",
+    )
     .eq("user_id", userId)
     .in("status", ["in_progress", "won"])
     .order("created_at", { ascending: false })
@@ -54,14 +52,16 @@ async function loadSession(admin: any, userId: string, sessionId?: string) {
   if (sessionId)
     query = admin
       .from("cover_guesser_sessions")
-      .select("id,difficulty,sticker_id,hints_allowed,hints_used,status,won_at,created_at")
+      .select(
+        "id,difficulty,sticker_id,hints_allowed,hints_used,status,won_at,created_at,memory_game_stickers(title)",
+      )
       .eq("id", sessionId)
       .eq("user_id", userId)
       .limit(1);
   const { data, error } = await query.maybeSingle();
   if (error || !data) return null;
 
-  const title = getCoverGuesserTitle(data.sticker_id);
+  const title = data.memory_game_stickers?.title as string | undefined;
   if (!title) return null;
 
   // Calcular quais posições de letras estão reveladas por dicas
@@ -218,13 +218,12 @@ export const startCoverGuesser = createServerFn({ method: "POST" })
     // Sortear um sticker aleatório do catálogo
     const { data: stickers, error: stickerError } = await admin
       .from("memory_game_stickers")
-      .select("id, front_image_path")
+      .select("id, front_image_path, title")
       .eq("is_active", true);
     if (stickerError || !stickers || stickers.length === 0)
       throw new Error("Não foi possível carregar as capas do jogo.");
 
-    // Filtrar apenas stickers que têm título mapeado
-    const validStickers = stickers.filter((s: any) => getCoverGuesserTitle(s.id) !== null);
+    const validStickers = stickers.filter((s: any) => Boolean(s.title));
     if (validStickers.length === 0) throw new Error("Nenhuma capa disponível para adivinhar.");
 
     const chosen = validStickers[Math.floor(Math.random() * validStickers.length)];
@@ -255,7 +254,7 @@ export const useHint = createServerFn({ method: "POST" })
     if (!available) throw new Error("Este recurso não está disponível.");
     const { data: session, error: loadErr } = await admin
       .from("cover_guesser_sessions")
-      .select("sticker_id, hints_allowed, hints_used, status")
+      .select("sticker_id,hints_allowed,hints_used,status,memory_game_stickers(title)")
       .eq("id", data.sessionId)
       .eq("user_id", context.userId)
       .single();
@@ -265,7 +264,7 @@ export const useHint = createServerFn({ method: "POST" })
     if (session.hints_used >= session.hints_allowed) {
       throw new Error("Você já usou todas as dicas disponíveis.");
     }
-    const title = getCoverGuesserTitle(session.sticker_id);
+    const title = session.memory_game_stickers?.title as string | undefined;
     if (!title) throw new Error("Título não encontrado.");
 
     const newHintsUsed = session.hints_used + 1;
@@ -291,14 +290,14 @@ export const submitCoverGuess = createServerFn({ method: "POST" })
     if (!available) throw new Error("Este recurso não está disponível.");
     const { data: session, error: loadErr } = await admin
       .from("cover_guesser_sessions")
-      .select("sticker_id, status")
+      .select("sticker_id,status,memory_game_stickers(title)")
       .eq("id", data.sessionId)
       .eq("user_id", context.userId)
       .single();
     if (loadErr || !session || session.status !== "in_progress") {
       throw new Error("Sessão inválida ou finalizada.");
     }
-    const title = getCoverGuesserTitle(session.sticker_id);
+    const title = session.memory_game_stickers?.title as string | undefined;
     if (!title) throw new Error("Título não encontrado.");
 
     const correct = checkCoverAnswer(data.guess, title);
@@ -354,6 +353,3 @@ export const abandonCoverGuesser = createServerFn({ method: "POST" })
     if (error) throw new Error("Não foi possível reiniciar a partida.");
     return { success: true };
   });
-
-// Re-export titles for use in the client (sticker ID → image path from memory_game_stickers)
-export { COVER_GUESSER_TITLES, getCoverGuesserTitle };

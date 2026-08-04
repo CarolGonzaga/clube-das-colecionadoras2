@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getMemoryCoverPath } from "@/lib/memoryImagePath";
 import {
   expireStaleDailyGameSessions,
   getActiveDailyGame,
@@ -63,7 +62,9 @@ async function load(admin: any, userId: string, sessionId?: string) {
   if (!session) return null;
   const { data: cards, error: cardsError } = await admin
     .from("memory_game_cards")
-    .select("card_instance_id,board_position,matched_at,source_sticker_id")
+    .select(
+      "card_instance_id,board_position,matched_at,source_sticker_id,memory_game_stickers(front_image_path,alt_text)",
+    )
     .eq("session_id", session.id)
     .order("board_position");
   if (cardsError) throw new Error("Não foi possível carregar o tabuleiro.");
@@ -81,7 +82,8 @@ async function load(admin: any, userId: string, sessionId?: string) {
         // A frente viaja com a sessão para que o cliente possa pré-carregar apenas
         // as cartas desta partida e responder ao toque sem uma ida extra ao servidor.
         // A comparação e a vitória continuam sendo validadas pela RPC autoritativa.
-        frontImage: getMemoryCoverPath(card.source_sticker_id) || undefined,
+        frontImage: card.memory_game_stickers?.front_image_path || undefined,
+        altText: card.memory_game_stickers?.alt_text || "Capa de livro",
         backImage: "/verso-card.webp",
       };
     }),

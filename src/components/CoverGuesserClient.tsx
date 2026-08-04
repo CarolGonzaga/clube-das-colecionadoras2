@@ -11,7 +11,7 @@ import {
   getCoverGuesserState,
   startCoverGuesser,
   submitCoverGuess,
-  useHint,
+  useHint as requestHint,
 } from "@/lib/coverGuesser";
 import {
   ArrowLeft,
@@ -90,15 +90,17 @@ export default function CoverGuesserClient() {
   // Derived state
   const session = gameState?.session;
   const reward = gameState?.reward;
-  const availableDifficulties: string[] = gameState?.availableDifficulties || ["easy", "medium", "hard"];
+  const availableDifficulties: string[] = gameState?.availableDifficulties || [
+    "easy",
+    "medium",
+    "hard",
+  ];
   const usedDifficulties: string[] = gameState?.usedDifficulties || [];
   const canPlay = gameState?.canPlay;
   const blockedByGame = gameState?.blockedByGame;
 
   const coverPath = session?.stickerId ? getMemoryCoverPath(session.stickerId) : null;
-  const coverUrl = coverPath
-    ? getBundledMemoryCoverUrl(coverPath) || coverPath
-    : null;
+  const coverUrl = coverPath ? getBundledMemoryCoverUrl(coverPath) || coverPath : null;
 
   // ── load state ──────────────────────────────────────────────────────────
   const loadState = useCallback(async () => {
@@ -119,32 +121,29 @@ export default function CoverGuesserClient() {
   }, [loadState]);
 
   // ── start game ──────────────────────────────────────────────────────────
-  const handleStart = useCallback(
-    async (diff: "easy" | "medium" | "hard") => {
-      setStarting(true);
-      setErrorMsg(null);
-      try {
-        const sess = await startCoverGuesser({ data: { difficulty: diff } });
-        setGameState((prev: any) => ({ ...prev, session: sess, canPlay: false }));
-        setGuessInput("");
-        setGuessError(null);
-        setShowReveal(false);
-        setTimeout(() => inputRef.current?.focus(), 300);
-      } catch (e: any) {
-        setErrorMsg(e?.message || "Não foi possível iniciar o jogo.");
-      } finally {
-        setStarting(false);
-      }
-    },
-    [],
-  );
+  const handleStart = useCallback(async (diff: "easy" | "medium" | "hard") => {
+    setStarting(true);
+    setErrorMsg(null);
+    try {
+      const sess = await startCoverGuesser({ data: { difficulty: diff } });
+      setGameState((prev: any) => ({ ...prev, session: sess, canPlay: false }));
+      setGuessInput("");
+      setGuessError(null);
+      setShowReveal(false);
+      setTimeout(() => inputRef.current?.focus(), 300);
+    } catch (e: any) {
+      setErrorMsg(e?.message || "Não foi possível iniciar o jogo.");
+    } finally {
+      setStarting(false);
+    }
+  }, []);
 
   // ── use hint ────────────────────────────────────────────────────────────
   const handleHint = useCallback(async () => {
     if (!session) return;
     setUsingHint(true);
     try {
-      const result = await useHint({ data: { sessionId: session.id } });
+      const result = await requestHint({ data: { sessionId: session.id } });
       setGameState((prev: any) => ({
         ...prev,
         session: {
@@ -155,7 +154,7 @@ export default function CoverGuesserClient() {
         },
       }));
     } catch (e: any) {
-      ui.toast?.({ message: e?.message || "Não foi possível usar a dica.", type: "error" });
+      ui.toast(e?.message || "Não foi possível usar a dica.");
     } finally {
       setUsingHint(false);
     }
@@ -248,7 +247,7 @@ export default function CoverGuesserClient() {
   }
 
   // ── Already completed today ─────────────────────────────────────────────
-  if (reward || (session?.status === "claimed")) {
+  if (reward || session?.status === "claimed") {
     return (
       <div className="cover-guesser-wrap">
         <header className="cover-guesser-header">
@@ -267,7 +266,7 @@ export default function CoverGuesserClient() {
           {(reward || claimResult) && (
             <div className="cover-guesser-reward-badge">
               <Sparkles size={16} />
-              Figurinha #{(reward?.sticker_number || claimResult?.number)} desbloqueada!
+              Figurinha #{reward?.sticker_number || claimResult?.number} desbloqueada!
             </div>
           )}
         </div>
@@ -321,7 +320,10 @@ export default function CoverGuesserClient() {
                 id={`cover-guesser-diff-${diff}`}
                 className={`cover-guesser-diff-btn${isUsed ? " used" : ""}${!isAvail && !isUsed ? " locked" : ""}`}
                 disabled={isDisabled}
-                onClick={() => { setDifficulty(diff); handleStart(diff); }}
+                onClick={() => {
+                  setDifficulty(diff);
+                  handleStart(diff);
+                }}
               >
                 {isUsed ? (
                   <>
@@ -362,10 +364,7 @@ export default function CoverGuesserClient() {
   return (
     <div className="cover-guesser-wrap">
       <header className="cover-guesser-header">
-        <button
-          className="cover-guesser-back-btn"
-          onClick={handleAbandon}
-        >
+        <button className="cover-guesser-back-btn" onClick={handleAbandon}>
           <ArrowLeft size={16} /> Sair
         </button>
         <h1>Adivinhe a Capa</h1>
@@ -407,11 +406,16 @@ export default function CoverGuesserClient() {
                 if (!cell.isLetter) {
                   // Non-letter chars like – always visible
                   return (
-                    <span key={ci} className="cover-guesser-nonletter">{cell.char}</span>
+                    <span key={ci} className="cover-guesser-nonletter">
+                      {cell.char}
+                    </span>
                   );
                 }
                 return (
-                  <span key={ci} className={`cover-guesser-cell${cell.revealed ? " revealed" : ""}`}>
+                  <span
+                    key={ci}
+                    className={`cover-guesser-cell${cell.revealed ? " revealed" : ""}`}
+                  >
                     {cell.revealed ? cell.char : <span className="cover-guesser-dash">_</span>}
                   </span>
                 );
@@ -431,7 +435,9 @@ export default function CoverGuesserClient() {
                 onClick={handleHint}
               >
                 <HelpCircle size={16} />
-                {usingHint ? "Revelando…" : `Dica (${hintsLeft} restante${hintsLeft > 1 ? "s" : ""})`}
+                {usingHint
+                  ? "Revelando…"
+                  : `Dica (${hintsLeft} restante${hintsLeft > 1 ? "s" : ""})`}
               </button>
             ) : session.hintsAllowed > 0 ? (
               <span className="cover-guesser-no-hints">Nenhuma dica restante</span>
@@ -451,7 +457,10 @@ export default function CoverGuesserClient() {
               className="cover-guesser-input"
               placeholder="Digite o nome do livro…"
               value={guessInput}
-              onChange={(e) => { setGuessInput(e.target.value); setGuessError(null); }}
+              onChange={(e) => {
+                setGuessInput(e.target.value);
+                setGuessError(null);
+              }}
               onKeyDown={onKeyDown}
               disabled={submitting}
               autoComplete="off"
@@ -483,9 +492,13 @@ export default function CoverGuesserClient() {
               onClick={handleClaim}
             >
               {claiming ? (
-                <><div className="cover-guesser-spinner-sm" /> Resgatando…</>
+                <>
+                  <div className="cover-guesser-spinner-sm" /> Resgatando…
+                </>
               ) : (
-                <><Gift size={18} /> Resgatar figurinha</>
+                <>
+                  <Gift size={18} /> Resgatar figurinha
+                </>
               )}
             </button>
           </div>

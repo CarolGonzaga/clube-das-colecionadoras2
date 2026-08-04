@@ -1,4 +1,4 @@
--- Execute depois de 20260731000500_harden_memory_daily_cycle.sql em um banco de teste.
+-- Execute depois de 20260803000900_enrich_and_renumber_memory_catalog.sql em um banco de teste.
 begin;
 
 do $$

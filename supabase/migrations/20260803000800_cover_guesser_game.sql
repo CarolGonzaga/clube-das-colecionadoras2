@@ -1,5 +1,5 @@
 -- Jogo "Adivinhe a Capa": adivinhe o titulo do livro a partir da capa borrada.
--- Usa o mesmo catalogo da memory_game_stickers (IDs 361-427).
+-- Usa o mesmo catalogo da memory_game_stickers.
 -- Feature flag nasce desligada. Apenas os 3 testers tem acesso inicial.
 begin;
 
