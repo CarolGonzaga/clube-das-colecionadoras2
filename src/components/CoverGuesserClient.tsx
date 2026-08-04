@@ -6,7 +6,6 @@ import { useUI } from "@/components/UIProvider";
 import { getBundledMemoryCoverUrl } from "@/lib/memoryCoverAssets";
 import { getMemoryCoverPath } from "@/lib/memoryImagePath";
 import {
-  abandonCoverGuesser,
   claimCoverGuesserReward,
   getCoverGuesserState,
   startCoverGuesser,
@@ -215,14 +214,6 @@ export default function CoverGuesserClient() {
   }, [session, loadState, ui]);
 
   // ── abandon ─────────────────────────────────────────────────────────────
-  const handleAbandon = useCallback(async () => {
-    if (!session) return;
-    try {
-      await abandonCoverGuesser({ data: { sessionId: session.id } });
-      await loadState();
-    } catch {}
-  }, [session, loadState]);
-
   // ── keyboard enter ───────────────────────────────────────────────────────
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -315,21 +306,30 @@ export default function CoverGuesserClient() {
             <summary className="cursor-pointer font-black">Como jogar</summary>
             <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
               <li>
-                Escolha o nível de dificuldade: <strong>Fácil</strong> (2 dicas, blur leve), <strong>Médio</strong> (1 dica, blur médio) ou <strong>Difícil</strong> (sem dicas, blur intenso).
+                Escolha o nível de dificuldade: <strong>Fácil</strong> (2 dicas, blur leve),{" "}
+                <strong>Médio</strong> (1 dica, blur médio) ou <strong>Difícil</strong> (sem dicas,
+                blur intenso).
               </li>
               <li>
-                Veja a imagem da capa do livro borrada com os traços indicando a quantidade de letras de cada palavra.
+                Veja a imagem da capa do livro borrada com os traços indicando a quantidade de
+                letras de cada palavra.
+              </li>
+              <li>Use o botão "Dica" para revelar letras se precisar de ajuda.</li>
+              <li>
+                Digite o nome do livro no campo de texto e clique em <strong>Confirmar</strong> para
+                acertar.
               </li>
               <li>
-                Use o botão "Dica" para revelar letras se precisar de ajuda.
-              </li>
-              <li>
-                Digite o nome do livro no campo de texto e clique em <strong>Confirmar</strong> para acertar.
-              </li>
-              <li>
-                <strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis, todos os níveis voltam a ficar disponíveis!
+                <strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como{" "}
+                <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar
+                também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis, todos
+                os níveis voltam a ficar disponíveis!
               </li>
               <li>Cada jogo permite 1 resgate de recompensa por dia.</li>
+              <li>
+                Depois de iniciar, esta partida fica reservada até você vencer. Se não concluir até
+                a virada do dia, ela expira e você poderá começar uma nova partida do zero.
+              </li>
             </ul>
           </details>
         </div>
@@ -389,7 +389,10 @@ export default function CoverGuesserClient() {
   return (
     <div className="cover-guesser-wrap">
       <header className="cover-guesser-header">
-        <button className="cover-guesser-back-btn" onClick={handleAbandon}>
+        <button
+          className="cover-guesser-back-btn"
+          onClick={() => router.navigate({ to: "/clubedascolecionadoras" as any })}
+        >
           <ArrowLeft size={16} /> Sair
         </button>
         <h1>Adivinhe a Capa</h1>

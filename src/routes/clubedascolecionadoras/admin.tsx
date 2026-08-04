@@ -2,7 +2,7 @@ import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { BadgePercent, Boxes, Gamepad2, KeyRound, LayoutDashboard, LogOut, ReceiptText, Users } from "lucide-react";
 import "@/admin.css";
-import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct, setAdminRedeemCodeActive, setMemoryGameAccess, setMemoryGameEnabled, setWordSearchAccess, setWordSearchEnabled } from "@/lib/admin";
+import { archiveAdminProduct, deleteAdminCoupon, getAdminDashboard, saveAdminCoupon, saveAdminProduct, setAdminRedeemCodeActive, setMemoryGameEnabled, setWordSearchEnabled } from "@/lib/admin";
 import { dbService } from "@/lib/db";
 
 export const Route = createFileRoute("/clubedascolecionadoras/admin")({
@@ -21,7 +21,6 @@ function AdminPage() {
   const [data, setData] = useState(initial);
   const [tab, setTab] = useState<"overview" | "users" | "sales" | "coupons" | "redeemCodes" | "products" | "games">("overview");
   const [search, setSearch] = useState("");
-  const [gameSearch, setGameSearch] = useState("");
   const [codeSearch, setCodeSearch] = useState("");
   const [message, setMessage] = useState("");
   const [coupon, setCoupon] = useState<any>({ code: "", discountPercent: 10, expiresAt: "", maxUses: "", maxUsesPerUser: 1, active: true });
@@ -37,22 +36,6 @@ function AdminPage() {
   const approvedRevenue = approvedOrders.reduce((sum: number, order: any) => sum + Number(order.amount_due_cents || 0), 0);
   const activeCoupons = data.coupons.filter((item: any) => item.is_active).length;
   const activeProducts = data.products.filter((item: any) => item.active).length;
-  const gameUsers = [...data.gameUsers]
-    .filter((user: any) => {
-      const term = gameSearch.trim().toLocaleLowerCase("pt-BR");
-      return !term
-        || user.email.toLocaleLowerCase("pt-BR").includes(term)
-        || String(user.nick || "").toLocaleLowerCase("pt-BR").includes(term)
-        || user.id.toLocaleLowerCase("pt-BR").includes(term);
-    })
-    .sort((left: any, right: any) => {
-      const leftGrant = data.gameAccess.find((item: any) => item.user_id === left.id);
-      const rightGrant = data.gameAccess.find((item: any) => item.user_id === right.id);
-      const leftActive = Boolean(leftGrant?.is_active && !leftGrant?.revoked_at);
-      const rightActive = Boolean(rightGrant?.is_active && !rightGrant?.revoked_at);
-      if (leftActive !== rightActive) return leftActive ? -1 : 1;
-      return String(left.email || "").localeCompare(String(right.email || ""), "pt-BR");
-    });
   const navigation = [
     ["overview", "Visão geral", LayoutDashboard],
     ["users", "Usuárias", Users],
@@ -118,20 +101,12 @@ function AdminPage() {
     </section>}
 
     {tab === "games" && <section className="admin-panel">
-      <div className="admin-panel-title"><div><h2>Caça-Palavras</h2><p>A flag global prevalece sobre todas as permissões individuais.</p></div><button className={data.wordSearchEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setWordSearchEnabled({data:{enabled:!data.wordSearchEnabled}}))}>{data.wordSearchEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
-      <p><b>Status:</b> {data.wordSearchEnabled ? "Ativo para testadoras autorizadas" : "Desativado para todas as contas"}</p>
-      {!data.wordSearchEnabled && <p className="admin-message">Enquanto estiver desativado globalmente, nenhuma conta verá o jogo, mesmo que apareça como autorizada abaixo.</p>}
-      <div className="admin-toolbar"><input value={gameSearch} onChange={(event)=>setGameSearch(event.target.value)} placeholder="Buscar por e-mail, nick ou UUID"/></div>
-      <p>{gameUsers.length} de {data.gameUsers.length} usuárias exibidas · autorizadas aparecem primeiro</p>
-      <div className="admin-table-wrap"><table><thead><tr><th>Usuária</th><th>Acesso</th><th>Concedido em</th><th>Revogado em</th><th>Ação</th></tr></thead><tbody>
-        {gameUsers.map((user:any)=>{const grant=data.gameAccess.find((item:any)=>item.user_id===user.id&&item.game_key==="word_search");const active=Boolean(grant?.is_active&&!grant?.revoked_at);return <tr key={user.id}><td><b>@{user.nick||"sem-nick"}</b><small>{user.email}</small><small>{user.id}</small></td><td>{active?"Autorizada":"Sem acesso"}</td><td>{date(grant?.granted_at)}</td><td>{date(grant?.revoked_at)}</td><td><button className={active?"admin-danger-soft":"admin-success-soft"} onClick={()=>run(()=>setWordSearchAccess({data:{userId:user.id,active:!active}}))}>{active?"Revogar":"Conceder"}</button></td></tr>})}
-      </tbody></table></div>
-      <div className="admin-panel-title" style={{marginTop:32}}><div><h2>Jogo da Memória</h2><p>Catálogo privado com 70 cartas. A flag permanece desligada até a homologação.</p></div><button className={data.memoryGameEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setMemoryGameEnabled({data:{enabled:!data.memoryGameEnabled}}))}>{data.memoryGameEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
-      <p><b>Status:</b> {data.memoryGameEnabled ? "Ativo para testadoras autorizadas" : "Desativado para todas as contas"}</p>
+      <div className="admin-panel-title"><div><h2>Caça-Palavras</h2><p>A flag global libera ou bloqueia o jogo para todas as usuárias.</p></div><button className={data.wordSearchEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setWordSearchEnabled({data:{enabled:!data.wordSearchEnabled}}))}>{data.wordSearchEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
+      <p><b>Status:</b> {data.wordSearchEnabled ? "Ativo para todas as usuárias" : "Desativado para todas as contas"}</p>
+      {!data.wordSearchEnabled && <p className="admin-message">Enquanto estiver desativado globalmente, nenhuma conta verá o jogo.</p>}
+      <div className="admin-panel-title" style={{marginTop:32}}><div><h2>Jogo da Memória</h2><p>Catálogo com 70 cartas e acesso controlado pela flag global.</p></div><button className={data.memoryGameEnabled ? "admin-danger-soft" : "admin-success-soft"} onClick={()=>run(()=>setMemoryGameEnabled({data:{enabled:!data.memoryGameEnabled}}))}>{data.memoryGameEnabled ? "Desligar globalmente" : "Ativar globalmente"}</button></div>
+      <p><b>Status:</b> {data.memoryGameEnabled ? "Ativo para todas as usuárias" : "Desativado para todas as contas"}</p>
       {!data.memoryGameEnabled && <p className="admin-message">Nenhuma conta verá o Jogo da Memória enquanto a flag global estiver desativada.</p>}
-      <div className="admin-table-wrap"><table><thead><tr><th>Usuária</th><th>Acesso</th><th>Concedido em</th><th>Revogado em</th><th>Ação</th></tr></thead><tbody>
-        {gameUsers.map((user:any)=>{const grant=data.gameAccess.find((item:any)=>item.user_id===user.id&&item.game_key==="memory_game");const active=Boolean(grant?.is_active&&!grant?.revoked_at);return <tr key={user.id}><td><b>@{user.nick||"sem-nick"}</b><small>{user.email}</small><small>{user.id}</small></td><td>{active?"Autorizada":"Sem acesso"}</td><td>{date(grant?.granted_at)}</td><td>{date(grant?.revoked_at)}</td><td><button className={active?"admin-danger-soft":"admin-success-soft"} onClick={()=>run(()=>setMemoryGameAccess({data:{userId:user.id,active:!active}}))}>{active?"Revogar":"Conceder"}</button></td></tr>})}
-      </tbody></table></div>
     </section>}
     </div>
   </main>;

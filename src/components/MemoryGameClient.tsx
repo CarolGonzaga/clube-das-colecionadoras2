@@ -281,6 +281,10 @@ export default function MemoryGameClient({ initialState }: { initialState: State
                   todos os níveis voltam a ficar disponíveis!
                 </li>
                 <li>Cada jogo permite 1 resgate de recompensa por dia.</li>
+                <li>
+                  Depois de iniciar, esta partida fica reservada até você vencer. Se não concluir
+                  até a virada do dia, ela expira e você poderá começar uma nova partida do zero.
+                </li>
               </ul>
             </details>
             <h2 className="text-center text-sm font-bold text-[#6e1638] dark:text-[#ffd1e5]">

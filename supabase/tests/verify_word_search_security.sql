@@ -50,9 +50,9 @@ begin
 
   if not exists (
     select 1 from public.game_settings
-    where key = 'word_search_enabled' and value = 'false'::jsonb
+    where key = 'word_search_enabled' and value = 'true'::jsonb
   ) then
-    raise exception 'Feature flag must remain disabled after migration.';
+    raise exception 'Feature flag must be enabled for the public release.';
   end if;
 end
 $$;

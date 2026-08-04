@@ -5,11 +5,7 @@ import { useRouter } from "@tanstack/react-router";
 import { ArrowLeft, Check, Gift, Sparkles, Trophy, X } from "lucide-react";
 import { useUI } from "@/components/UIProvider";
 import { claimDailyGameReward, startWordSearch, submitWordPath } from "@/lib/games";
-import {
-  pathsMatch,
-  type CellCoordinate,
-  type WordSearchDifficulty,
-} from "@/lib/wordSearchGenerator";
+import { type CellCoordinate, type WordSearchDifficulty } from "@/lib/wordSearchGenerator";
 
 type Session = {
   id: string;
@@ -23,7 +19,6 @@ type Session = {
     displayWord: string;
     category: string;
     found: boolean;
-    solutionPath: CellCoordinate[];
   }[];
   foundPaths: CellCoordinate[][];
 };
@@ -147,14 +142,6 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
 
   const submit = async () => {
     if (!session || selection.length < 4) return;
-    const localMatch = session.words.find(
-      (word) => !word.found && pathsMatch(selection, word.solutionPath),
-    );
-    if (!localMatch) {
-      setMessage("Essa sequência não está na lista. Tente outra.");
-      setSelection([]);
-      return;
-    }
     setLoading(true);
     try {
       const result = await submitWordPath({ data: { sessionId: session.id, path: selection } });
@@ -260,12 +247,29 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
               <summary className="cursor-pointer font-black">Como jogar</summary>
               <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
-                <li>Escolha o nível de dificuldade: <strong>Fácil</strong>, <strong>Médio</strong> ou <strong>Difícil</strong>.</li>
-                <li>Clique nas letras em sequência para formar a palavra, em células vizinhas na horizontal, vertical ou diagonal.</li>
+                <li>
+                  Escolha o nível de dificuldade: <strong>Fácil</strong>, <strong>Médio</strong> ou{" "}
+                  <strong>Difícil</strong>.
+                </li>
+                <li>
+                  Clique nas letras em sequência para formar a palavra, em células vizinhas na
+                  horizontal, vertical ou diagonal.
+                </li>
                 <li>Nos níveis Médio e Difícil, algumas palavras aparecem de trás para frente.</li>
-                <li>Encontre todas as palavras da lista para liberar a recompensa do Caça-Palavras.</li>
-                <li><strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis, todos os níveis voltam a ficar disponíveis!</li>
+                <li>
+                  Encontre todas as palavras da lista para liberar a recompensa do Caça-Palavras.
+                </li>
+                <li>
+                  <strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como{" "}
+                  <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar
+                  também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis,
+                  todos os níveis voltam a ficar disponíveis!
+                </li>
                 <li>Cada jogo permite 1 resgate de recompensa por dia.</li>
+                <li>
+                  Depois de iniciar, esta partida fica reservada até você vencer. Se não concluir
+                  até a virada do dia, ela expira e você poderá começar uma nova partida do zero.
+                </li>
               </ul>
             </details>
             <fieldset>

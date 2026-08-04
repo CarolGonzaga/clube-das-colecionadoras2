@@ -11,11 +11,6 @@ import {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type MemoryDifficulty = "easy" | "medium" | "hard";
 const GAME_KEY = "memory_game";
-const MEMORY_TEST_USER_IDS = new Set([
-  "a2c66f5b-6cba-4984-a256-c189051e6630",
-  "483f4e4b-20b0-4340-a1bb-4666acd54b32",
-  "f8721040-035f-414a-8153-b5e12fec64d7",
-]);
 const difficultySchema = z.enum(["easy", "medium", "hard"]);
 const sessionSchema = z.object({ sessionId: z.string().uuid() });
 const compareSchema = sessionSchema.extend({
@@ -26,20 +21,13 @@ const compareSchema = sessionSchema.extend({
 async function access(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin as any;
-  const [{ data: setting }, { data: grant }] = await Promise.all([
-    admin.from("game_settings").select("value").eq("key", "memory_game_enabled").maybeSingle(),
-    admin
-      .from("game_access_grants")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("game_key", GAME_KEY)
-      .eq("is_active", true)
-      .is("revoked_at", null)
-      .maybeSingle(),
-  ]);
+  const { data: setting } = await admin
+    .from("game_settings")
+    .select("value")
+    .eq("key", "memory_game_enabled")
+    .maybeSingle();
   const enabled = setting?.value === true;
-  const authorized = MEMORY_TEST_USER_IDS.has(userId) && Boolean(grant);
-  return { admin, enabled, authorized, available: enabled && authorized };
+  return { admin, enabled, authorized: enabled, available: enabled };
 }
 
 async function load(admin: any, userId: string, sessionId?: string) {

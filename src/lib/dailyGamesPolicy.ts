@@ -21,7 +21,7 @@ export function calculateUsedDifficulties(history: readonly DailyGameDifficulty[
 
 /**
  * Daily-game contract shared by every game:
- * - only one active game and one victory/reward per user and local day;
+ * - only one active session at a time and one victory/reward per game and local day;
  * - unfinished or unclaimed sessions expire when the local day changes;
  * - only claimed sessions consume a difficulty in the three-level cycle.
  * Database triggers enforce the same contract transactionally. Future games must
@@ -65,7 +65,6 @@ export async function expireStaleDailyGameSessions(
   }
 }
 
-
 export async function getActiveDailyGame(
   admin: AdminClient,
   userId: string,
@@ -77,7 +76,7 @@ export async function getActiveDailyGame(
       .select("id,status,local_date")
       .eq("user_id", userId)
       .eq("local_date", today)
-      .eq("status", "in_progress")
+      .in("status", ["in_progress", "won"])
       .limit(1)
       .maybeSingle(),
     admin
@@ -85,7 +84,7 @@ export async function getActiveDailyGame(
       .select("id,status,local_date")
       .eq("user_id", userId)
       .eq("local_date", today)
-      .eq("status", "in_progress")
+      .in("status", ["in_progress", "won"])
       .limit(1)
       .maybeSingle(),
     admin
@@ -93,7 +92,7 @@ export async function getActiveDailyGame(
       .select("id,status,local_date")
       .eq("user_id", userId)
       .eq("local_date", today)
-      .eq("status", "in_progress")
+      .in("status", ["in_progress", "won"])
       .limit(1)
       .maybeSingle(),
     admin
@@ -101,7 +100,7 @@ export async function getActiveDailyGame(
       .select("id,status,local_date")
       .eq("user_id", userId)
       .eq("local_date", today)
-      .eq("status", "in_progress")
+      .in("status", ["in_progress", "won"])
       .limit(1)
       .maybeSingle(),
   ]);

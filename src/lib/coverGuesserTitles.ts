@@ -96,6 +96,7 @@ export function normalizeCoverAnswer(text: string): string {
     .trim()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // remove diacríticos
+    .replace(/[^a-z0-9]+/gi, " ")
     .replace(/\s+/g, " ")
     .toLowerCase();
 }
@@ -106,5 +107,9 @@ export function normalizeCoverAnswer(text: string): string {
  * (sem acentos) bata com o título normalizado.
  */
 export function checkCoverAnswer(userAnswer: string, correctTitle: string): boolean {
-  return normalizeCoverAnswer(userAnswer) === normalizeCoverAnswer(correctTitle);
+  const answer = normalizeCoverAnswer(userAnswer);
+  const fullTitle = normalizeCoverAnswer(correctTitle);
+  if (answer === fullTitle) return true;
+  const mainTitle = normalizeCoverAnswer(correctTitle.split(/[:–—-]/, 1)[0]);
+  return mainTitle.length >= 4 && answer === mainTitle;
 }

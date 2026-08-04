@@ -15,7 +15,11 @@ import {
   getDailyGameDate,
   getDailyGameDifficultyCycle,
 } from "@/lib/dailyGamesPolicy";
-import { PUZZLE_GRID_CONFIG, type PuzzleDifficulty } from "@/lib/puzzleGenerator";
+import {
+  PUZZLE_GRID_CONFIG,
+  validateCompletedPuzzleBoard,
+  type PuzzleDifficulty,
+} from "@/lib/puzzleGenerator";
 
 // The generated Supabase types predate the incremental game migration. Keep the
 // escape hatch isolated here until types are regenerated after the migration.
@@ -43,19 +47,13 @@ async function gameAdmin(userId: string, gameKey = GAME_KEY) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin as any;
   const settingKey = `${gameKey}_enabled`;
-  const [{ data: setting }, { data: grant }] = await Promise.all([
-    admin.from("game_settings").select("value").eq("key", settingKey).maybeSingle(),
-    admin
-      .from("game_access_grants")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("game_key", gameKey)
-      .eq("is_active", true)
-      .is("revoked_at", null)
-      .maybeSingle(),
-  ]);
+  const { data: setting } = await admin
+    .from("game_settings")
+    .select("value")
+    .eq("key", settingKey)
+    .maybeSingle();
   const enabled = setting?.value === true;
-  return { admin, enabled, authorized: Boolean(grant), available: enabled && Boolean(grant) };
+  return { admin, enabled, authorized: enabled, available: enabled };
 }
 
 function publicSession(session: any, words: any[]) {
@@ -70,7 +68,6 @@ function publicSession(session: any, words: any[]) {
           : word.display_word,
       category: word.category,
       found: isFound,
-      solutionPath: word.path as CellCoordinate[],
     };
   });
   return {
@@ -301,26 +298,6 @@ export const claimDailyGameReward = createServerFn({ method: "POST" })
     };
   });
 
-export const abandonWordSearch = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((value) => sessionSchema.parse(value))
-  .handler(async ({ context, data }) => {
-    const { admin, available } = await gameAdmin(context.userId);
-    if (!available) throw new Error(unavailable);
-    const { error } = await admin
-      .from("word_search_sessions")
-      .update({
-        status: "abandoned",
-        abandoned_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.sessionId)
-      .eq("user_id", context.userId)
-      .eq("status", "in_progress");
-    if (error) throw new Error("Não foi possível reiniciar a partida.");
-    return { success: true };
-  });
-
 async function loadPuzzleSession(admin: any, userId: string, sessionId?: string) {
   let query = admin
     .from("puzzle_game_sessions")
@@ -458,34 +435,58 @@ export const startPuzzleGame = createServerFn({ method: "POST" })
 
 export const savePuzzleProgress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator(
-    (value) =>
-      z
-        .object({
-          sessionId: z.string().uuid(),
-          placedPieces: z.number().int().min(0),
-          boardState: z.array(z.any()),
-        })
-        .parse(value),
+  .validator((value) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        placedPieces: z.number().int().min(0),
+        boardState: z.array(
+          z.object({
+            id: z.number().int().min(0),
+            isPlaced: z.boolean(),
+            x: z.number().finite(),
+            y: z.number().finite(),
+            rotation: z.number().int(),
+          }),
+        ),
+      })
+      .parse(value),
   )
   .handler(async ({ context, data }) => {
     const { admin, available } = await gameAdmin(context.userId, PUZZLE_GAME_KEY);
     if (!available) throw new Error(unavailable);
     const { data: session, error: loadErr } = await admin
       .from("puzzle_game_sessions")
-      .select("total_pieces, status")
+      .select("total_pieces,grid_rows,grid_cols,status")
       .eq("id", data.sessionId)
       .eq("user_id", context.userId)
       .single();
     if (loadErr || !session || session.status !== "in_progress") {
       throw new Error("Sessão inválida ou finalizada.");
     }
-    const won = data.placedPieces >= session.total_pieces;
+    const boardIds = new Set(data.boardState.map((piece) => piece.id));
+    if (
+      data.boardState.length !== session.total_pieces ||
+      boardIds.size !== session.total_pieces ||
+      data.boardState.some((piece) => piece.id < 0 || piece.id >= session.total_pieces)
+    ) {
+      throw new Error("O tabuleiro recebido é inválido.");
+    }
+    const completeBoard = validateCompletedPuzzleBoard(
+      data.boardState,
+      session.grid_rows,
+      session.grid_cols,
+    );
+    const verifiedPlacedPieces = data.boardState.filter((piece) => piece.isPlaced).length;
+    if (data.placedPieces !== verifiedPlacedPieces) {
+      throw new Error("O progresso recebido é inconsistente.");
+    }
+    const won = completeBoard;
     const now = new Date().toISOString();
     const { error } = await admin
       .from("puzzle_game_sessions")
       .update({
-        placed_pieces: data.placedPieces,
+        placed_pieces: verifiedPlacedPieces,
         board_state: data.boardState,
         status: won ? "won" : "in_progress",
         won_at: won ? now : null,
@@ -516,24 +517,4 @@ export const claimPuzzleGameReward = createServerFn({ method: "POST" })
       resultType: string;
       idempotent: boolean;
     };
-  });
-
-export const abandonPuzzleGame = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((value) => sessionSchema.parse(value))
-  .handler(async ({ context, data }) => {
-    const { admin, available } = await gameAdmin(context.userId, PUZZLE_GAME_KEY);
-    if (!available) throw new Error(unavailable);
-    const { error } = await admin
-      .from("puzzle_game_sessions")
-      .update({
-        status: "abandoned",
-        abandoned_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.sessionId)
-      .eq("user_id", context.userId)
-      .eq("status", "in_progress");
-    if (error) throw new Error("Não foi possível reiniciar a partida.");
-    return { success: true };
   });

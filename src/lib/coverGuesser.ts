@@ -23,20 +23,13 @@ const sessionSchema = z.object({ sessionId: z.string().uuid() });
 async function gameAdmin(userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin as any;
-  const [{ data: setting }, { data: grant }] = await Promise.all([
-    admin.from("game_settings").select("value").eq("key", "cover_guesser_enabled").maybeSingle(),
-    admin
-      .from("game_access_grants")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("game_key", GAME_KEY)
-      .eq("is_active", true)
-      .is("revoked_at", null)
-      .maybeSingle(),
-  ]);
+  const { data: setting } = await admin
+    .from("game_settings")
+    .select("value")
+    .eq("key", "cover_guesser_enabled")
+    .maybeSingle();
   const enabled = setting?.value === true;
-  const authorized = Boolean(grant);
-  return { admin, enabled, authorized, available: enabled && authorized };
+  return { admin, enabled, authorized: enabled, available: enabled };
 }
 
 async function loadSession(admin: any, userId: string, sessionId?: string) {
@@ -332,24 +325,4 @@ export const claimCoverGuesserReward = createServerFn({ method: "POST" })
       resultType: string;
       idempotent: boolean;
     };
-  });
-
-export const abandonCoverGuesser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((value) => sessionSchema.parse(value))
-  .handler(async ({ context, data }) => {
-    const { admin, available } = await gameAdmin(context.userId);
-    if (!available) throw new Error("Este recurso não está disponível.");
-    const { error } = await admin
-      .from("cover_guesser_sessions")
-      .update({
-        status: "abandoned",
-        abandoned_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.sessionId)
-      .eq("user_id", context.userId)
-      .eq("status", "in_progress");
-    if (error) throw new Error("Não foi possível reiniciar a partida.");
-    return { success: true };
   });

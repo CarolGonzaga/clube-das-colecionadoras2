@@ -24,8 +24,8 @@ begin
      or has_function_privilege('authenticated','public.compare_memory_cards(uuid,uuid,uuid,uuid)','EXECUTE')
      or has_function_privilege('authenticated','public.claim_daily_game_reward(uuid,text,uuid,double precision,double precision)','EXECUTE')
   then raise exception 'Clientes autenticados podem executar RPCs privadas.'; end if;
-  if not exists(select 1 from public.game_settings where key='memory_game_enabled' and value='false'::jsonb)
-  then raise exception 'A feature flag deve nascer desligada.'; end if;
+  if not exists(select 1 from public.game_settings where key='memory_game_enabled' and value='true'::jsonb)
+  then raise exception 'A feature flag deve estar ligada no lancamento.'; end if;
   if not exists (
     select 1 from pg_indexes where schemaname='public' and tablename='daily_game_rewards'
       and indexdef ilike '%unique%' and indexdef ilike '%user_id%reward_date%'
@@ -38,10 +38,9 @@ begin
   if not exists (
     select 1 from pg_proc
     where proname='start_memory_game'
-      and prosrc ilike '%is_memory_game_tester%'
       and prosrc ilike '%daily_game_rewards%'
-      and prosrc ilike '%completed_local_date%'
-  ) then raise exception 'A trava rigida de acesso ou de uma partida diaria esta ausente.'; end if;
+      and prosrc not ilike '%is_memory_game_tester%'
+  ) then raise exception 'A trava diaria ou a liberacao publica da Memoria esta incorreta.'; end if;
   if exists (
     select 1 from information_schema.table_constraints
     where table_schema='public' and table_name='daily_game_rewards'

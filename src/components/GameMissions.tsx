@@ -219,7 +219,7 @@ export default function GameMissions() {
           <Gamepad2 className="h-3.5 w-3.5" /> Jogos e missões
         </p>
         <span className="text-[10px] font-semibold text-[#bf2a5e] dark:text-[#f7a8cb]">
-          1 resgate por dia
+          1 resgate por jogo/dia
         </span>
       </div>
 
