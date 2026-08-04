@@ -192,13 +192,27 @@ export default function CoverGuesserClient() {
     try {
       const result = await claimCoverGuesserReward({ data: { sessionId: session.id } });
       setClaimResult(result);
+      ui.triggerHearts();
+      ui.showReveals(
+        [
+          {
+            slug: `sticker-${result.number}`,
+            number: result.number,
+            wasNew: result.wasNew,
+            isRare: result.isRare,
+            repeat: !result.wasNew,
+            reward: null,
+          },
+        ],
+        result.isRare ? "Figurinha Rara Desbloqueada! ✦" : "Figurinha Desbloqueada!",
+      );
       await loadState();
     } catch (e: any) {
       setErrorMsg(e?.message || "Não foi possível resgatar a figurinha.");
     } finally {
       setClaiming(false);
     }
-  }, [session, loadState]);
+  }, [session, loadState, ui]);
 
   // ── abandon ─────────────────────────────────────────────────────────────
   const handleAbandon = useCallback(async () => {
@@ -259,16 +273,14 @@ export default function CoverGuesserClient() {
           </button>
           <h1>Adivinhe a Capa</h1>
         </header>
-        <div className="cover-guesser-done-card">
-          <Trophy size={48} className="cover-guesser-done-icon" />
-          <h2>Missão concluída hoje!</h2>
-          <p>Volte amanhã para jogar novamente!</p>
-          {(reward || claimResult) && (
-            <div className="cover-guesser-reward-badge">
-              <Sparkles size={16} />
-              Figurinha #{reward?.sticker_number || claimResult?.number} desbloqueada!
-            </div>
-          )}
+        <div className="mx-auto mt-12 max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center shadow-sm dark:border-emerald-900/50 dark:bg-[#0c2419]">
+          <Trophy className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+          <h2 className="mt-3 text-lg font-black text-emerald-800 dark:text-emerald-200">
+            🏆 Missão concluída hoje!
+          </h2>
+          <p className="mt-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            Volte amanhã para jogar novamente!
+          </p>
         </div>
       </div>
     );
@@ -298,15 +310,28 @@ export default function CoverGuesserClient() {
           </div>
         )}
 
-        {blocked && !blockedByGame && (
-          <div className="cover-guesser-blocked">
-            Você já completou este jogo hoje. Volte amanhã!
-          </div>
-        )}
-
-        <div className="cover-guesser-desc">
-          <Search size={20} />
-          <p>Veja a capa borrada e descubra qual é o livro! Escreva o nome para vencer.</p>
+        <div className="mx-auto mt-4 w-full max-w-sm px-5">
+          <details className="rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">
+            <summary className="cursor-pointer font-black">Como jogar</summary>
+            <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed">
+              <li>
+                Escolha o nível de dificuldade: <strong>Fácil</strong> (2 dicas, blur leve), <strong>Médio</strong> (1 dica, blur médio) ou <strong>Difícil</strong> (sem dicas, blur intenso).
+              </li>
+              <li>
+                Veja a imagem da capa do livro borrada com os traços indicando a quantidade de letras de cada palavra.
+              </li>
+              <li>
+                Use o botão "Dica" para revelar letras se precisar de ajuda.
+              </li>
+              <li>
+                Digite o nome do livro no campo de texto e clique em <strong>Confirmar</strong> para acertar.
+              </li>
+              <li>
+                <strong>Ciclo de Partidas:</strong> Cada nível jogado fica marcado como <em>"já usado"</em>. Para escolher o nível Fácil novamente, você precisará jogar também o Médio e o Difícil. Após concluir uma partida em cada um dos 3 níveis, todos os níveis voltam a ficar disponíveis!
+              </li>
+              <li>Cada jogo permite 1 resgate de recompensa por dia.</li>
+            </ul>
+          </details>
         </div>
 
         <div className="cover-guesser-diff-grid">
@@ -506,18 +531,14 @@ export default function CoverGuesserClient() {
 
         {/* After claim */}
         {claimResult && (
-          <div className="cover-guesser-claimed-panel">
-            <Sparkles size={32} className="cover-guesser-sparkle" />
-            <h3>Figurinha #{claimResult.number} desbloqueada!</h3>
-            {claimResult.wasNew ? (
-              <p>Nova figurinha adicionada ao seu álbum! 🌟</p>
-            ) : (
-              <p>Figurinha repetida — mas vale a coleção!</p>
-            )}
-            <div className="cover-guesser-done-msg">
-              <Trophy size={16} />
-              Missão concluída hoje! Volte amanhã para jogar novamente!
-            </div>
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center dark:border-emerald-900/50 dark:bg-[#0c2419]">
+            <Trophy className="mx-auto h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="mt-2 text-base font-black text-emerald-800 dark:text-emerald-200">
+              🏆 Missão concluída hoje!
+            </h2>
+            <p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+              Volte amanhã para jogar novamente!
+            </p>
           </div>
         )}
       </div>
