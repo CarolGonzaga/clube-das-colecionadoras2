@@ -246,11 +246,19 @@ export default function MemoryGameClient({ initialState }: { initialState: State
             Encontre todos os pares para liberar a recompensa diária.
           </p>
         </header>
-        {!session && !reward && initialState.canPlay === false && (
+        {!session && reward ? (
+          <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
+            <Trophy className="mx-auto h-8 w-8 text-emerald-600" />
+            <h2 className="mt-2 text-base font-black text-emerald-800">Missão concluída hoje!</h2>
+            <p className="mt-1 text-xs font-semibold text-emerald-700">
+              Volte amanhã para jogar novamente!
+            </p>
+          </div>
+        ) : !session && !reward && initialState.canPlay === false ? (
           <div className="mx-auto mt-6 max-w-sm rounded-2xl border border-pink-200 bg-pink-50 p-5 text-center text-xs font-semibold text-[#8e1745] dark:bg-[#260c20] dark:text-[#f7a8cb]">
             Você já tem uma partida em andamento. Conclua o jogo atual antes de iniciar outro.
           </div>
-        )}
+        ) : null}
         {!session && !reward && initialState.canPlay !== false && (
           <div className="mt-6">
             <details className="mb-5 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left text-xs text-[#7f3152] dark:bg-[#260c20] dark:text-[#f7a8cb]">

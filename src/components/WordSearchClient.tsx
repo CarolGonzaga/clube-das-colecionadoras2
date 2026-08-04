@@ -248,7 +248,7 @@ export default function WordSearchClient({ initialState }: { initialState: Initi
             <Trophy className="mx-auto h-8 w-8 text-emerald-600" />
             <h2 className="mt-2 text-base font-black text-emerald-800">Missão concluída hoje!</h2>
             <p className="mt-1 text-xs font-semibold text-emerald-700">
-              Sua figurinha já foi resgatada. Volte amanhã para jogar novamente.
+              Volte amanhã para jogar novamente!
             </p>
           </div>
         ) : !session && initialState.canPlay === false ? (
