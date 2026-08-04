@@ -290,14 +290,55 @@ export default function PuzzleGameClient() {
     }
   };
 
-  const handleAbandon = async () => {
+  const handleRestartMatch = async () => {
     if (!session) return;
     try {
       setLoading(true);
-      await abandonPuzzleGame({ data: { sessionId: session.id } });
-      await loadState();
+      setErrorMsg(null);
+
+      // Generate fresh random scatter and rotations for all pieces
+      const seed = Math.floor(Math.random() * 100000) + 1;
+      const defs = generateGridPieceDefinitions(GRID_ROWS, GRID_COLS, PIECE_W, PIECE_H, seed);
+      const scatter = generateScatter(defs.length, CONTAINER_W, CONTAINER_H, BOARD_LEFT, BOARD_TOP, BOARD_W, BOARD_H, PIECE_W, PIECE_H);
+      const ROTATIONS = [0, 90, 180, 270];
+
+      const resetPieces: PieceState[] = defs.map((def, idx) => {
+        const correctX = BOARD_LEFT + def.col * PIECE_W;
+        const correctY = BOARD_TOP + def.row * PIECE_H;
+        const rotation = ROTATIONS[Math.floor(Math.random() * 4)];
+        return {
+          id: def.id,
+          row: def.row,
+          col: def.col,
+          svgPath: def.svgPath,
+          placed: false,
+          correctX,
+          correctY,
+          x: scatter[idx].x,
+          y: scatter[idx].y,
+          rotation,
+          z: idx + 2,
+        };
+      });
+
+      setPieces(resetPieces);
+
+      // Save reset boardState in DB for the same session (0 placed pieces)
+      await savePuzzleProgress({
+        data: {
+          sessionId: session.id,
+          placedPieces: 0,
+          boardState: resetPieces.map(p => ({
+            id: p.id,
+            isPlaced: false,
+            x: p.x,
+            y: p.y,
+            rotation: p.rotation,
+          })),
+        },
+      });
     } catch (err: any) {
-      setErrorMsg(err.message || "Erro ao recomeçar.");
+      setErrorMsg(err.message || "Erro ao recomeçar a partida.");
     } finally {
       setLoading(false);
     }
@@ -573,7 +614,7 @@ export default function PuzzleGameClient() {
                     {showGuide ? "Ocultar Guia" : "Mostrar Guia"}
                   </button>
                 )}
-                <button type="button" onClick={handleAbandon}
+                <button type="button" onClick={handleRestartMatch}
                   className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-bold text-gray-600 hover:bg-gray-50 dark:border-pink-900 dark:bg-[#260c20] dark:text-gray-300">
                   <RotateCcw className="h-3.5 w-3.5" /> Recomeçar
                 </button>
@@ -627,7 +668,7 @@ export default function PuzzleGameClient() {
                       left: BOARD_LEFT, top: BOARD_TOP, width: BOARD_W, height: BOARD_H,
                       backgroundImage: `url(${coverUrl})`,
                       backgroundSize: "100% 100%",
-                      opacity: 0.20,
+                      opacity: 0.08,
                     }}
                   />
                 )}
