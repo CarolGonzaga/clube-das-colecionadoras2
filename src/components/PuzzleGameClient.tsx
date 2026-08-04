@@ -27,6 +27,7 @@ import {
   Puzzle,
   Gift,
   RotateCw,
+  Palette,
 } from "lucide-react";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -136,7 +137,62 @@ function generateScatter(
   return placed;
 }
 
-// ─── types ───────────────────────────────────────────────────────────────────
+// ─── types & presets ─────────────────────────────────────────────────────────
+
+export type PuzzleBgColor = "dark" | "light" | "green" | "black";
+
+export const BG_PRESETS: Record<
+  PuzzleBgColor,
+  {
+    label: string;
+    workbenchBg: string;
+    boardBg: string;
+    boardBorder: string;
+    slotBorder: string;
+    pieceStroke: string;
+    btnBg: string;
+  }
+> = {
+  dark: {
+    label: "Escuro (Padrão)",
+    workbenchBg:
+      "repeating-linear-gradient(115deg, #2a1020 0px, #2a1020 3px, #2e1225 3px, #2e1225 6px)",
+    boardBg: "#190615",
+    boardBorder: "rgba(194, 24, 91, 0.3)",
+    slotBorder: "rgba(255, 255, 255, 0.12)",
+    pieceStroke: "rgba(0, 0, 0, 0.35)",
+    btnBg: "#2a1020",
+  },
+  light: {
+    label: "Claro (Alto Contraste)",
+    workbenchBg:
+      "repeating-linear-gradient(115deg, #f1f5f9 0px, #f1f5f9 3px, #e2e8f0 3px, #e2e8f0 6px)",
+    boardBg: "#ffffff",
+    boardBorder: "rgba(148, 163, 184, 0.6)",
+    slotBorder: "rgba(51, 65, 85, 0.3)",
+    pieceStroke: "rgba(15, 23, 42, 0.45)",
+    btnBg: "#ffffff",
+  },
+  green: {
+    label: "Verde Feltro",
+    workbenchBg:
+      "repeating-linear-gradient(115deg, #142e22 0px, #142e22 3px, #1a382a 3px, #1a382a 6px)",
+    boardBg: "#0d1f17",
+    boardBorder: "rgba(34, 197, 94, 0.35)",
+    slotBorder: "rgba(255, 255, 255, 0.16)",
+    pieceStroke: "rgba(0, 0, 0, 0.4)",
+    btnBg: "#142e22",
+  },
+  black: {
+    label: "Preto Absoluto",
+    workbenchBg: "#000000",
+    boardBg: "#0a0a0a",
+    boardBorder: "rgba(255, 255, 255, 0.4)",
+    slotBorder: "rgba(255, 255, 255, 0.22)",
+    pieceStroke: "rgba(255, 255, 255, 0.3)",
+    btnBg: "#000000",
+  },
+};
 
 interface PieceState {
   id: number;
@@ -169,6 +225,23 @@ export default function PuzzleGameClient() {
   const [pieces, setPieces] = useState<PieceState[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [showGuide, setShowGuide] = useState(true);
+
+  const [bgColor, setBgColor] = useState<PuzzleBgColor>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("puzzle_bg_color");
+      if (saved && saved in BG_PRESETS) return saved as PuzzleBgColor;
+    }
+    return "dark";
+  });
+
+  const handleBgChange = (color: PuzzleBgColor) => {
+    setBgColor(color);
+    try {
+      localStorage.setItem("puzzle_bg_color", color);
+    } catch {}
+  };
+
+  const currentBgPreset = BG_PRESETS[bgColor] || BG_PRESETS.dark;
 
   // viewport dimensions for responsive scale
   const [viewportW, setViewportW] = useState(
@@ -766,7 +839,36 @@ export default function PuzzleGameClient() {
               <span className="text-xs font-black text-[#6e1638] dark:text-[#ffd1e5]">
                 {gridConfig.label} · {placedCount}/{TOTAL_PIECES} peças encaixadas
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Background color selector */}
+                <div className="flex items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50/80 px-2.5 py-1 text-xs dark:border-pink-900/50 dark:bg-[#260c20]">
+                  <Palette className="h-3.5 w-3.5 text-[#9e1b4a] dark:text-[#f7a8cb]" />
+                  <span className="hidden text-[11px] font-bold text-[#6e1638] sm:inline dark:text-[#ffd1e5]">
+                    Fundo:
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {(["dark", "light", "green", "black"] as const).map((key) => {
+                      const preset = BG_PRESETS[key];
+                      const active = bgColor === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          title={preset.label}
+                          aria-label={preset.label}
+                          onClick={() => handleBgChange(key)}
+                          className={`h-4.5 w-4.5 rounded-full border transition-all ${
+                            active
+                              ? "scale-110 border-[#9e1b4a] ring-2 ring-[#9e1b4a]/40 dark:border-pink-400 dark:ring-pink-400/50"
+                              : "border-gray-400/60 opacity-60 hover:opacity-100 dark:border-gray-500"
+                          }`}
+                          style={{ backgroundColor: preset.btnBg }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {session.difficulty === "easy" && (
                   <button
                     type="button"
@@ -818,26 +920,27 @@ export default function PuzzleGameClient() {
               }}
             >
               <div
-                className="relative"
+                className="relative transition-colors duration-200"
                 style={{
                   width: CONTAINER_W,
                   height: CONTAINER_H,
                   transform: `scale(${fitScale})`,
                   transformOrigin: "0 0",
-                  background:
-                    "repeating-linear-gradient(115deg, #2a1020 0px, #2a1020 3px, #2e1225 3px, #2e1225 6px)",
+                  background: currentBgPreset.workbenchBg,
                 }}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
               >
                 {/* Board frame */}
                 <div
-                  className="absolute z-0 rounded-2xl border-2 border-[#c2185b]/30 bg-[#190615] shadow-inner"
+                  className="absolute z-0 rounded-2xl border-2 shadow-inner transition-colors duration-200"
                   style={{
                     left: BOARD_LEFT - 14,
                     top: BOARD_TOP - 14,
                     width: BOARD_W + 28,
                     height: BOARD_H + 28,
+                    backgroundColor: currentBgPreset.boardBg,
+                    borderColor: currentBgPreset.boardBorder,
                   }}
                 />
 
@@ -857,19 +960,20 @@ export default function PuzzleGameClient() {
                   />
                 )}
 
-                {/* Slot grid (subtle dashes, no highlight on click) */}
+                {/* Slot grid (subtle dashes) */}
                 {Array.from({ length: TOTAL_PIECES }).map((_, idx) => {
                   const rr = Math.floor(idx / GRID_COLS);
                   const cc = idx % GRID_COLS;
                   return (
                     <div
                       key={idx}
-                      className="absolute border border-dashed border-white/10 pointer-events-none"
+                      className="absolute border border-dashed pointer-events-none transition-colors duration-200"
                       style={{
                         left: BOARD_LEFT + cc * PIECE_W,
                         top: BOARD_TOP + rr * PIECE_H,
                         width: PIECE_W,
                         height: PIECE_H,
+                        borderColor: currentBgPreset.slotBorder,
                       }}
                     />
                   );
@@ -930,7 +1034,7 @@ export default function PuzzleGameClient() {
                         <path
                           d={p.svgPath}
                           fill="none"
-                          stroke={p.placed ? "rgba(194,24,91,0.6)" : "rgba(0,0,0,0.35)"}
+                          stroke={p.placed ? "rgba(194,24,91,0.6)" : currentBgPreset.pieceStroke}
                           strokeWidth={p.placed ? 1.5 : 1}
                           style={{ overflow: "visible" } as React.CSSProperties}
                         />
