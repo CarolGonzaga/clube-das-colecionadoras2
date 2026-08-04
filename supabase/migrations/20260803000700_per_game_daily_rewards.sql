@@ -1,5 +1,15 @@
--- Permitir 1 partida/recompensa por dia por jogo para cada usuario em todos os RPCs.
 begin;
+
+-- Atualizar restricao para permitir 1 recompensa por dia PARA CADA JOGO (user_id, reward_date, game_key)
+alter table public.daily_game_rewards
+  drop constraint if exists daily_game_rewards_user_id_reward_date_key;
+
+alter table public.daily_game_rewards
+  drop constraint if exists daily_game_rewards_user_reward_game_key;
+
+alter table public.daily_game_rewards
+  add constraint daily_game_rewards_user_reward_game_key
+  unique (user_id, reward_date, game_key);
 
 create or replace function public.guard_daily_game_start()
 returns trigger language plpgsql security definer set search_path = public as $$
