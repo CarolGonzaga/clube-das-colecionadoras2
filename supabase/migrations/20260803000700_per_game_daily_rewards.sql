@@ -217,6 +217,7 @@ begin
   end if;
   v_number:=v_candidates[least(cardinality(v_candidates),floor(greatest(0,least(v_pick,.999999999))*cardinality(v_candidates))::integer+1)];
   v_was_new:=not exists(select 1 from public.user_stickers where user_id=p_user_id and sticker_number=v_number and copies>0);
+  v_result:=case when v_was_new then 'new' else 'duplicate' end;
   insert into public.user_stickers(user_id,sticker_number,copies,is_rare,first_unlocked_at) values(p_user_id,v_number,1,v_is_rare,now())
     on conflict(user_id,sticker_number) do update set copies=public.user_stickers.copies+1,is_rare=public.user_stickers.is_rare or excluded.is_rare;
   insert into public.daily_game_rewards(user_id,reward_date,game_key,session_id,sticker_number,result_type,is_rare,rare_bonus_applied,missing_pool_size,owned_pool_size)
