@@ -164,7 +164,7 @@ export function generateWordSearch(
   if (unique.length < targetCount) throw new Error("Não há palavras válidas suficientes.");
 
   const baseSize = difficulty === "easy" ? 10 : difficulty === "medium" ? 11 : 12;
-  for (let setAttempt = 0; setAttempt < 12; setAttempt += 1) {
+  for (let setAttempt = 0; setAttempt < 48; setAttempt += 1) {
     const selected = shuffle(unique, random).slice(0, targetCount);
     const longest = Math.max(...selected.map((word) => word.normalizedWord.length));
     const size = Math.min(maximumWordLength, Math.max(baseSize, longest));
@@ -174,55 +174,78 @@ export function generateWordSearch(
       Array.from({ length: size }, () => null),
     );
     const placed: PlacedWord[] = [];
-    let diagonalCount = 0;
-    let reversedCount = 0;
-
-    for (let wordIndex = 0; wordIndex < selected.length; wordIndex += 1) {
+    const placeWord = (wordIndex: number): boolean => {
       const source = selected[wordIndex];
-      let didPlace = false;
-      const availableDirections = directionsFor(difficulty);
+      const requiredDirection = requiredDirectionFor(difficulty, wordIndex);
+      const availableDirections = requiredDirection
+        ? [requiredDirection]
+        : shuffle(directionsFor(difficulty), random);
+      const options: Array<{
+        directionName: keyof typeof DIRECTIONS;
+        path: CellCoordinate[];
+      }> = [];
 
-      for (let attempt = 0; attempt < attemptLimit && !didPlace; attempt += 1) {
-        const directionName =
-          requiredDirectionFor(difficulty, wordIndex) || shuffle(availableDirections, random)[0];
+      for (const directionName of availableDirections) {
         const [rowDelta, colDelta] = DIRECTIONS[directionName];
-        const row = Math.floor(random() * size);
-        const col = Math.floor(random() * size);
-        const path = Array.from({ length: source.normalizedWord.length }, (_, index) => ({
-          row: row + rowDelta * index,
-          col: col + colDelta * index,
-        }));
-        if (
-          path.some((cell) => cell.row < 0 || cell.col < 0 || cell.row >= size || cell.col >= size)
-        )
-          continue;
+        for (let row = 0; row < size; row += 1) {
+          for (let col = 0; col < size; col += 1) {
+            const path = Array.from({ length: source.normalizedWord.length }, (_, index) => ({
+              row: row + rowDelta * index,
+              col: col + colDelta * index,
+            }));
+            if (
+              path.every(
+                (cell) =>
+                  cell.row >= 0 && cell.col >= 0 && cell.row < size && cell.col < size,
+              )
+            ) {
+              options.push({ directionName, path });
+            }
+          }
+        }
+      }
+
+      const shuffledOptions = shuffle(options, random).slice(0, Math.max(0, attemptLimit));
+      for (const { directionName, path } of shuffledOptions) {
         if (
           path.some(
             (cell, index) =>
               board[cell.row][cell.col] !== null &&
               board[cell.row][cell.col] !== source.normalizedWord[index],
           )
-        )
+        ) {
           continue;
+        }
 
         path.forEach((cell, index) => {
           board[cell.row][cell.col] = source.normalizedWord[index];
         });
-        const isDiagonal = rowDelta !== 0 && colDelta !== 0;
+        const [rowDelta, colDelta] = DIRECTIONS[directionName];
         const isReversed = rowDelta < 0 || colDelta < 0;
-        if (isDiagonal) diagonalCount += 1;
-        if (isReversed) reversedCount += 1;
         placed.push({ ...source, path, direction: directionName, isReversed });
-        didPlace = true;
+        return true;
       }
-      if (!didPlace) break;
+      return false;
+    };
+
+    let completed = true;
+    for (let wordIndex = 0; wordIndex < selected.length; wordIndex += 1) {
+      if (!placeWord(wordIndex)) {
+        completed = false;
+        break;
+      }
     }
+    const diagonalCount = placed.filter((word) =>
+      ["downRight", "downLeft", "upRight", "upLeft"].includes(word.direction),
+    ).length;
+    const reversedCount = placed.filter((word) => word.isReversed).length;
 
     const hasHorizontal = placed.some((word) => ["right", "left"].includes(word.direction));
     const hasVertical = placed.some((word) => ["down", "up"].includes(word.direction));
     const hasDiagonal = diagonalCount > 0;
     const hasRequiredReversals = difficulty === "easy" || reversedCount >= 2;
     if (
+      completed &&
       placed.length === targetCount &&
       hasHorizontal &&
       hasVertical &&

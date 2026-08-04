@@ -123,6 +123,17 @@ test("difícil gera 5 palavras completas com direções variadas e inversões", 
   }
 });
 
+test("gera quadros completos de forma consistente para sementes diferentes", () => {
+  for (const difficulty of ["easy", "medium", "hard"] as const) {
+    const expectedWords = difficulty === "easy" ? 7 : 5;
+    for (let index = 0; index < 100; index += 1) {
+      const game = generateWordSearch(candidates, difficulty, `${difficulty}-stress-${index}`);
+      assert.equal(game.words.length, expectedWords);
+      assert.ok(game.words.every((word) => word.path.length === word.normalizedWord.length));
+    }
+  }
+});
+
 test("validação rejeita salto, curva, repetição e coordenada externa", () => {
   assert.equal(
     isStraightContinuousPath(
