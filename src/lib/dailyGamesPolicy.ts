@@ -19,6 +19,18 @@ export function calculateUsedDifficulties(history: readonly DailyGameDifficulty[
   return [...used];
 }
 
+export function calculateDisplayedDifficulties(
+  history: readonly { difficulty: DailyGameDifficulty; rewardDate: string }[],
+  today = getDailyGameDate(),
+) {
+  const cycleUsed = calculateUsedDifficulties(history.map((item) => item.difficulty));
+  const completedToday = history.filter((item) => item.rewardDate === today).at(-1)?.difficulty;
+  if (completedToday && !cycleUsed.includes(completedToday)) {
+    return [...cycleUsed, completedToday];
+  }
+  return cycleUsed;
+}
+
 /**
  * Daily-game contract shared by every game:
  * - only one active session at a time and one victory/reward per game and local day;
@@ -145,13 +157,18 @@ export async function getDailyGameDifficultyCycle(
   if (sessionError) throw new Error("Não foi possível carregar o ciclo de dificuldades.");
   const byId = new Map((sessions || []).map((session: any) => [session.id, session.difficulty]));
   const history = (rewards || [])
-    .map((reward: any) => byId.get(reward.session_id) as DailyGameDifficulty | undefined)
-    .filter((difficulty: DailyGameDifficulty | undefined): difficulty is DailyGameDifficulty =>
-      Boolean(difficulty),
+    .map((reward: any) => ({
+      difficulty: byId.get(reward.session_id) as DailyGameDifficulty | undefined,
+      rewardDate: reward.reward_date as string,
+    }))
+    .filter(
+      (item): item is { difficulty: DailyGameDifficulty; rewardDate: string } =>
+        Boolean(item.difficulty),
     );
-  const used = calculateUsedDifficulties(history);
+  const cycleUsed = calculateUsedDifficulties(history.map((item) => item.difficulty));
+  const used = calculateDisplayedDifficulties(history);
   return {
     used,
-    available: DAILY_GAME_DIFFICULTIES.filter((difficulty) => !used.includes(difficulty)),
+    available: DAILY_GAME_DIFFICULTIES.filter((difficulty) => !cycleUsed.includes(difficulty)),
   };
 }

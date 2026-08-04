@@ -382,7 +382,13 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
                   >
                     <span>{level.label}</span>
                     <small className="mt-1 block text-[7px] leading-none">
-                      {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
+                      {completed
+                        ? "Já usado"
+                        : current && session?.status === "won"
+                          ? "Aguardando resgate"
+                          : current
+                            ? "Em andamento"
+                            : "Disponível"}
                     </small>
                   </div>
                 );
@@ -398,7 +404,9 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
                 : thisGameClaimed
                   ? "Concluído hoje"
                   : session
-                    ? "Continuar"
+                    ? session.status === "won"
+                      ? "Resgatar"
+                      : "Continuar"
                     : available
                       ? "Jogar agora"
                       : "Em breve"}
@@ -421,8 +429,10 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
       ? "Recompensa já resgatada hoje"
       : state.blockedByGame
         ? "Finalize a partida em andamento"
-        : session
-          ? "Partida em andamento"
+        : session?.status === "won"
+          ? "Você venceu! Resgate sua figurinha"
+          : session
+            ? "Partida em andamento"
           : available
             ? "Pronto para jogar"
             : "Disponível em breve";
@@ -467,7 +477,13 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
                   >
                     <span>{name}</span>
                     <small className="mt-1 block text-[7px] leading-none">
-                      {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
+                      {completed
+                        ? "Já usado"
+                        : current && session?.status === "won"
+                          ? "Aguardando resgate"
+                          : current
+                            ? "Em andamento"
+                            : "Disponível"}
                     </small>
                   </div>
                 );
@@ -483,7 +499,9 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
                 : thisGameClaimed
                   ? "Concluído hoje"
                   : session
-                    ? "Continuar"
+                    ? session.status === "won"
+                      ? "Resgatar"
+                      : "Continuar"
                     : available
                       ? "Jogar agora"
                       : "Em breve"}
@@ -506,8 +524,10 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
       ? "Recompensa já resgatada hoje"
       : state.blockedByGame
         ? "Finalize a partida em andamento"
-        : session
-          ? "Partida em andamento"
+        : session?.status === "won"
+          ? "Você venceu! Resgate sua figurinha"
+          : session
+            ? "Partida em andamento"
           : available
             ? "Pronto para jogar"
             : "Disponível em breve";
@@ -560,7 +580,13 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
                   >
                     <span>{name}</span>
                     <small className="mt-1 block text-[7px] leading-none">
-                      {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
+                      {completed
+                        ? "Já usado"
+                        : current && session?.status === "won"
+                          ? "Aguardando resgate"
+                          : current
+                            ? "Em andamento"
+                            : "Disponível"}
                     </small>
                   </div>
                 );
@@ -576,7 +602,9 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
                 : thisGameClaimed
                   ? "Concluído hoje"
                   : session
-                    ? "Continuar"
+                    ? session.status === "won"
+                      ? "Resgatar"
+                      : "Continuar"
                     : available
                       ? "Jogar agora"
                       : "Em breve"}
@@ -605,8 +633,10 @@ function CoverGuesserSlide({
       ? "Recompensa já resgatada hoje"
       : state.blockedByGame
         ? "Finalize a partida em andamento"
-        : session
-          ? "Partida em andamento"
+        : session?.status === "won"
+          ? "Você venceu! Resgate sua figurinha"
+          : session
+            ? "Partida em andamento"
           : available
             ? "Pronto para jogar"
             : "Disponível em breve";
@@ -655,7 +685,13 @@ function CoverGuesserSlide({
                   >
                     <span>{name}</span>
                     <small className="mt-1 block text-[7px] leading-none">
-                      {completed ? "Já usado" : current ? "Em andamento" : "Disponível"}
+                      {completed
+                        ? "Já usado"
+                        : current && session?.status === "won"
+                          ? "Aguardando resgate"
+                          : current
+                            ? "Em andamento"
+                            : "Disponível"}
                     </small>
                   </div>
                 );
@@ -671,7 +707,9 @@ function CoverGuesserSlide({
                 : thisGameClaimed
                   ? "Concluído hoje"
                   : session
-                    ? "Continuar"
+                    ? session.status === "won"
+                      ? "Resgatar"
+                      : "Continuar"
                     : available
                       ? "Jogar agora"
                       : "Em breve"}
