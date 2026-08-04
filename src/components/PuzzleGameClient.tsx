@@ -899,17 +899,6 @@ export default function PuzzleGameClient() {
               arrastar = girar
             </p>
 
-            {/* Clip path definitions */}
-            <svg className="absolute h-0 w-0 pointer-events-none" aria-hidden>
-              <defs>
-                {pieces.map((p) => (
-                  <clipPath key={p.id} id={`pc-${p.id}`} clipPathUnits="userSpaceOnUse">
-                    <path d={p.svgPath} />
-                  </clipPath>
-                ))}
-              </defs>
-            </svg>
-
             {/* Workbench */}
             <div
               className="mx-auto select-none overflow-hidden rounded-2xl touch-none"
@@ -920,7 +909,7 @@ export default function PuzzleGameClient() {
               }}
             >
               <div
-                className="relative transition-colors duration-200"
+                className="relative"
                 style={{
                   width: CONTAINER_W,
                   height: CONTAINER_H,
@@ -933,7 +922,7 @@ export default function PuzzleGameClient() {
               >
                 {/* Board frame */}
                 <div
-                  className="absolute z-0 rounded-2xl border-2 shadow-inner transition-colors duration-200"
+                  className="absolute z-0 rounded-2xl border-2 shadow-inner"
                   style={{
                     left: BOARD_LEFT - 14,
                     top: BOARD_TOP - 14,
@@ -967,7 +956,7 @@ export default function PuzzleGameClient() {
                   return (
                     <div
                       key={idx}
-                      className="absolute border border-dashed pointer-events-none transition-colors duration-200"
+                      className="absolute border border-dashed pointer-events-none"
                       style={{
                         left: BOARD_LEFT + cc * PIECE_W,
                         top: BOARD_TOP + rr * PIECE_H,
@@ -1002,11 +991,7 @@ export default function PuzzleGameClient() {
                           : p.placed
                             ? "left 0.18s ease, top 0.18s ease"
                             : "none",
-                        filter: isDragging
-                          ? "drop-shadow(0 12px 24px rgba(0,0,0,0.7))"
-                          : p.placed
-                            ? "drop-shadow(0 1px 2px rgba(0,0,0,0.4))"
-                            : "drop-shadow(0 4px 10px rgba(0,0,0,0.55))",
+                        willChange: isDragging ? "left, top" : "auto",
                       }}
                     >
                       {/* SVG clip container — must be overflow:visible so tabs protrude */}
@@ -1014,7 +999,17 @@ export default function PuzzleGameClient() {
                         width={PIECE_W}
                         height={PIECE_H}
                         viewBox={`0 0 ${PIECE_W} ${PIECE_H}`}
-                        style={{ overflow: "visible", position: "absolute", top: 0, left: 0 }}
+                        style={{
+                          overflow: "visible",
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          filter: isDragging
+                            ? "drop-shadow(0 10px 18px rgba(0,0,0,0.65))"
+                            : p.placed
+                              ? "drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
+                              : "drop-shadow(0 3px 8px rgba(0,0,0,0.45))",
+                        }}
                       >
                         <defs>
                           <clipPath id={`cp-${p.id}`}>
