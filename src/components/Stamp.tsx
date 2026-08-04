@@ -10,6 +10,7 @@ interface StampProps {
   auto?: boolean;
   exclusive?: boolean;
   cover?: string | null;
+  imageUrlOverride?: string | null;
 }
 
 function getScallopedPath(W: number, H: number, R: number, d: number, cornerR: number) {
@@ -57,8 +58,13 @@ function getCoverFilename(number: number): string | null {
   return sticker ? sticker.cover_url : null;
 }
 
-
-export default function Stamp({ number, owned = false, auto = false, exclusive = false, cover = null }: StampProps) {
+export default function Stamp({
+  number,
+  owned = false,
+  auto = false,
+  exclusive = false,
+  imageUrlOverride = null,
+}: StampProps) {
   const pal = exclusive
     ? { edge: "#ffffff", panel: "#f8e2f3", line: "#ab3292", num: "#ab3292", txt: "#ab3292" }
     : auto
@@ -71,8 +77,8 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
   const id = `sm-${number}-${owned ? "o" : "l"}-${auto ? "r" : exclusive ? "e" : "n"}`;
 
   const coverFilename = getCoverFilename(number);
-  const hasCover = !!coverFilename && owned;
-  const baseCoverUrl = coverFilename ? getStickerCoverUrl(coverFilename) : "";
+  const baseCoverUrl = imageUrlOverride || (coverFilename ? getStickerCoverUrl(coverFilename) : "");
+  const hasCover = !!baseCoverUrl && owned;
   const [coverUrl, setCoverUrl] = React.useState(baseCoverUrl);
   const [coverFailures, setCoverFailures] = React.useState(0);
 
@@ -139,7 +145,10 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
       </defs>
 
       {/* Frame Background & Panel */}
-      <path d={getScallopedPath(200, 280, 7.5, 0, 10)} fill={auto || exclusive ? "#FFFDF0" : pal.edge} />
+      <path
+        d={getScallopedPath(200, 280, 7.5, 0, 10)}
+        fill={auto || exclusive ? "#FFFDF0" : pal.edge}
+      />
       <rect
         x="13"
         y="13"
@@ -147,7 +156,9 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
         height="254"
         rx="6"
         fill={pal.panel}
-        stroke={auto ? `url(#goldBorderGrad-${id})` : exclusive ? `url(#purpleBorderGrad-${id})` : "none"}
+        stroke={
+          auto ? `url(#goldBorderGrad-${id})` : exclusive ? `url(#purpleBorderGrad-${id})` : "none"
+        }
         strokeWidth={auto || exclusive ? 2.5 : 0}
       />
 
@@ -193,7 +204,13 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
             height="264"
             rx="12"
             fill="none"
-            stroke={auto ? `url(#goldBorderGrad-${id})` : exclusive ? `url(#purpleBorderGrad-${id})` : "none"}
+            stroke={
+              auto
+                ? `url(#goldBorderGrad-${id})`
+                : exclusive
+                  ? `url(#purpleBorderGrad-${id})`
+                  : "none"
+            }
             strokeWidth={auto || exclusive ? "4" : "0"}
           />
           <g>
@@ -204,7 +221,13 @@ export default function Stamp({ number, owned = false, auto = false, exclusive =
               width="40"
               height="22"
               rx="9"
-              fill={auto ? `url(#goldBorderGrad-${id})` : exclusive ? `url(#purpleBorderGrad-${id})` : pal.num}
+              fill={
+                auto
+                  ? `url(#goldBorderGrad-${id})`
+                  : exclusive
+                    ? `url(#purpleBorderGrad-${id})`
+                    : pal.num
+              }
             />
             <text
               x="24"

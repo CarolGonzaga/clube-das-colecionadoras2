@@ -1,14 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Lock, Search, ShoppingCart, X } from "lucide-react";
 import type { GameAlbumSticker } from "@/lib/gameAlbum";
 import { getBundledMemoryCoverUrl } from "@/lib/memoryCoverAssets";
+import { useUI } from "@/components/UIProvider";
+import Stamp from "./Stamp";
 
 export default function GameAlbumTab({ stickers }: { stickers: GameAlbumSticker[] }) {
+  const ui = useUI();
   const [filter, setFilter] = useState<"all" | "owned" | "missing">("all");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<GameAlbumSticker | null>(null);
   const ownedCount = stickers.filter((item) => item.owned).length;
   const filtered = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
@@ -21,6 +23,130 @@ export default function GameAlbumTab({ stickers }: { stickers: GameAlbumSticker[
       );
     });
   }, [filter, search, stickers]);
+
+  const getImageUrl = (item: GameAlbumSticker) =>
+    getBundledMemoryCoverUrl(item.frontImagePath) || item.frontImagePath;
+
+  const openSticker = (item: GameAlbumSticker) => {
+    const imageUrl = getImageUrl(item);
+    const amazonUrl =
+      item.amazonUrl ||
+      `https://www.amazon.com.br/s?k=${encodeURIComponent(`${item.title} ${item.author}`)}`;
+
+    ui.openModal(
+      <div
+        style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            width: "100%",
+            maxWidth: "360px",
+            marginBottom: "10px",
+          }}
+        >
+          <button
+            onClick={ui.closeModal}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--magenta)",
+              fontWeight: "bold",
+              fontSize: "16px",
+              cursor: "pointer",
+              padding: "8px 4px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <X size={18} /> Fechar
+          </button>
+        </div>
+
+        <div
+          className="reveal-card"
+          style={{
+            width: "90%",
+            maxWidth: "320px",
+            aspectRatio: "200 / 280",
+            margin: "10px auto 20px",
+            position: "relative",
+          }}
+        >
+          <Stamp
+            number={item.id}
+            owned={item.owned}
+            imageUrlOverride={item.owned ? imageUrl : null}
+          />
+        </div>
+
+        <h2
+          style={{
+            textAlign: "center",
+            fontFamily: "Baloo 2",
+            fontSize: "18px",
+            color: "var(--wine)",
+            margin: "8px 0 2px",
+          }}
+        >
+          {item.owned
+            ? `#${String(item.id).padStart(3, "0")} · ${item.title}`
+            : `Figurinha misteriosa #${String(item.id).padStart(3, "0")}`}
+        </h2>
+
+        {item.owned ? (
+          <>
+            <p
+              style={{
+                textAlign: "center",
+                color: "var(--magenta)",
+                fontWeight: 800,
+                margin: "2px 0 8px",
+                fontSize: "12px",
+              }}
+            >
+              {item.author}
+            </p>
+            <a
+              className="btn sm soft"
+              style={{
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                width: "100%",
+                maxWidth: "200px",
+                margin: "8px auto 6px",
+              }}
+              href={amazonUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ShoppingCart size={15} /> Ver na Amazon
+            </a>
+          </>
+        ) : (
+          <p
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              color: "var(--magenta)",
+              fontWeight: 800,
+              margin: "10px 0",
+              fontSize: "14px",
+            }}
+          >
+            <Lock size={16} /> Jogue para desbloquear esta figurinha
+          </p>
+        )}
+      </div>,
+      { fullScreen: true },
+    );
+  };
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -60,67 +186,42 @@ export default function GameAlbumTab({ stickers }: { stickers: GameAlbumSticker[
           onChange={(event) => setFilter(event.target.value as typeof filter)}
           aria-label="Filtrar capas de jogos"
         >
-          <option value="all">Todas as capas</option>
+          <option value="all">Todas as figurinhas</option>
           <option value="owned">Coladas</option>
           <option value="missing">Faltam</option>
         </select>
         <span className="album-count-badge">
-          {ownedCount}/{stickers.length} capas
+          {ownedCount}/{stickers.length} figurinhas
         </span>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="empty">Nenhuma capa encontrada.</div>
+        <div className="empty">Nenhuma figurinha encontrada.</div>
       ) : (
         <div className="album" id="game-album-grid">
-          {filtered.map((item) => {
-            const imageUrl = getBundledMemoryCoverUrl(item.frontImagePath) || item.frontImagePath;
-            return (
-              <button
-                type="button"
-                key={item.id}
-                className={`cell game-album-cell ${item.owned ? "" : "locked"}`}
-                onClick={() => item.owned && setSelected(item)}
-                aria-label={
-                  item.owned
-                    ? `${item.title}, capa colada`
-                    : `Capa ${item.id}, ainda não conquistada`
-                }
-              >
-                <span className="game-album-number">{item.id}</span>
-                {item.owned ? (
-                  <img src={imageUrl} alt={item.altText} loading="lazy" decoding="async" />
-                ) : (
-                  <img src="/verso-card.webp" alt="Capa ainda não conquistada" loading="lazy" />
-                )}
-                <span className="game-album-label">{item.owned ? item.title : "?"}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {selected && (
-        <div
-          className="modal-overlay active"
-          role="dialog"
-          aria-modal="true"
-          aria-label={selected.title}
-          onClick={() => setSelected(null)}
-        >
-          <div className="modal-card game-album-modal" onClick={(event) => event.stopPropagation()}>
-            <button className="modal-close" onClick={() => setSelected(null)} aria-label="Fechar">
-              <X />
-            </button>
-            <img
-              src={getBundledMemoryCoverUrl(selected.frontImagePath) || selected.frontImagePath}
-              alt={selected.altText}
-            />
-            <strong>
-              #{selected.id} · {selected.title}
-            </strong>
-            <span>{selected.author}</span>
-          </div>
+          {filtered.map((item) => (
+            <div
+              key={item.id}
+              className={`cell ${item.owned ? "" : "locked"}`}
+              onClick={() => openSticker(item)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") openSticker(item);
+              }}
+              aria-label={
+                item.owned
+                  ? `${item.title}, figurinha colada`
+                  : `Figurinha ${item.id}, ainda não conquistada`
+              }
+            >
+              <Stamp
+                number={item.id}
+                owned={item.owned}
+                imageUrlOverride={item.owned ? getImageUrl(item) : null}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>

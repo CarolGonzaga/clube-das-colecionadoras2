@@ -343,15 +343,15 @@ function WordSearchSlide({ state, onPlay }: { state: WordState | null; onPlay: (
         <img
           src={WORD_SEARCH_ART_URL}
           alt=""
-          className="pointer-events-none h-full max-h-[230px] w-full self-stretch object-contain max-lg:hidden"
+          className="pointer-events-none h-[150px] max-h-[150px] w-auto max-w-[170px] self-center justify-self-center object-contain max-lg:hidden"
         />
         <img
           src={WORD_SEARCH_ART_URL}
           alt=""
-          className="pointer-events-none absolute right-0 top-0 h-[104px] w-[clamp(84px,29vw,116px)] object-contain object-right-top lg:hidden"
+          className="pointer-events-none absolute right-2 top-2 h-[75px] max-w-[90px] object-contain object-right-top lg:hidden"
         />
         <div className="flex min-w-0 flex-col">
-          <div className="min-w-0 pr-[clamp(92px,32vw,124px)] lg:pr-0">
+          <div className="min-w-0 pr-[92px] lg:pr-0">
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
               <BookOpenText className="h-3 w-3" /> Missão diária
             </span>
@@ -429,10 +429,10 @@ function MemoryGameSlide({ state, onPlay }: { state: MemoryState | null; onPlay:
   return (
     <CardShell>
       <div className="relative z-10 grid min-h-[278px] min-w-0 lg:min-h-[221px] lg:grid-cols-[minmax(190px,28%)_minmax(0,1fr)] lg:gap-8">
-        <MemoryCardArt className="grid h-[160px] w-[190px] self-center justify-self-center max-lg:hidden" />
-        <MemoryCardArt className="absolute right-0 top-0 grid h-[82px] w-[96px] lg:hidden" />
+        <MemoryCardArt className="grid h-[150px] w-[170px] self-center justify-self-center max-lg:hidden" />
+        <MemoryCardArt className="absolute right-2 top-2 grid h-[75px] w-[90px] lg:hidden" />
         <div className="flex min-w-0 flex-col">
-          <div className="min-w-0 pr-[clamp(100px,34vw,126px)] lg:pr-0">
+          <div className="min-w-0 pr-[92px] lg:pr-0">
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
               <Grid3X3 className="h-3 w-3" /> Missão diária
             </span>
@@ -517,15 +517,15 @@ function PuzzleGameSlide({ state, onPlay }: { state: PuzzleState | null; onPlay:
         <img
           src={PUZZLE_ART_URL}
           alt=""
-          className="pointer-events-none h-full max-h-[230px] w-full self-stretch object-contain max-lg:hidden"
+          className="pointer-events-none h-[150px] max-h-[150px] w-auto max-w-[170px] self-center justify-self-center object-contain max-lg:hidden"
         />
         <img
           src={PUZZLE_ART_URL}
           alt=""
-          className="pointer-events-none absolute right-0 top-0 h-[104px] w-[clamp(84px,29vw,116px)] object-contain object-right-top lg:hidden"
+          className="pointer-events-none absolute right-2 top-2 h-[75px] max-w-[90px] object-contain object-right-top lg:hidden"
         />
         <div className="flex min-w-0 flex-col">
-          <div className="min-w-0 pr-[clamp(92px,32vw,124px)] lg:pr-0">
+          <div className="min-w-0 pr-[92px] lg:pr-0">
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
               <Puzzle className="h-3 w-3" /> Missão diária
             </span>
@@ -616,15 +616,15 @@ function CoverGuesserSlide({
         <img
           src={ADIVINHA_ART_URL}
           alt=""
-          className="pointer-events-none h-full max-h-[230px] w-full self-stretch object-contain max-lg:hidden"
+          className="pointer-events-none h-[150px] max-h-[150px] w-auto max-w-[170px] self-center justify-self-center object-contain max-lg:hidden"
         />
         <img
           src={ADIVINHA_ART_URL}
           alt=""
-          className="pointer-events-none absolute right-0 top-0 h-[104px] w-[clamp(84px,29vw,116px)] object-contain object-right-top lg:hidden"
+          className="pointer-events-none absolute right-2 top-2 h-[75px] max-w-[90px] object-contain object-right-top lg:hidden"
         />
         <div className="flex min-w-0 flex-col">
-          <div className="min-w-0 pr-[clamp(92px,32vw,124px)] lg:pr-0">
+          <div className="min-w-0 pr-[92px] lg:pr-0">
             <span className="inline-flex items-center gap-1 rounded-full bg-pink-100 px-3 py-1 text-[9px] font-black uppercase text-[#9e1b4a]">
               <BookOpen className="h-3 w-3" /> Missão diária
             </span>
