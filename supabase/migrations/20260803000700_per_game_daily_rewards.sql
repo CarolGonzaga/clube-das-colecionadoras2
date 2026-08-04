@@ -159,8 +159,10 @@ begin
     v_rare_applied, cardinality(v_missing), cardinality(v_owned)
   );
 
-  insert into public.user_stickers (user_id, sticker_number, is_original)
-  values (p_user_id, v_number, true);
+  insert into public.user_stickers (user_id, sticker_number, copies, is_rare, first_unlocked_at)
+  values (p_user_id, v_number, 1, v_is_rare, now())
+  on conflict (user_id, sticker_number) do update
+  set copies = public.user_stickers.copies + 1, is_rare = public.user_stickers.is_rare or excluded.is_rare;
 
   update public.puzzle_game_sessions
   set status = 'claimed', updated_at = now()
